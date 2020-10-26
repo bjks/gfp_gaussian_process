@@ -17,9 +17,9 @@ public:
     std::string parent_id;
 
     // Pointer to other instances of the class representing the genealogy
-    MOMAdata *parent;
-    MOMAdata *daughter1;
-    MOMAdata *daughter2;
+    MOMAdata *parent = NULL;
+    MOMAdata *daughter1 = NULL;
+    MOMAdata *daughter2 = NULL;
 
     // Time dependent quantities (and time) of the cell
     std::vector<double> time;
@@ -77,6 +77,22 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
 
 
 void print_cell_genealogy(std::vector<MOMAdata> &cell_vector){
+/*
+
+20150624.0.1.0
+	 -> daughter 1: 20150624.0.1.2
+	 -> daughter 2: 20150624.0.1.4
+20150624.0.1.1
+	 -> daughter 1: 20150624.0.1.3
+	 -> daughter 2: 20150624.0.1.5
+20150624.0.1.2 	 <- parent: 20150624.0.1.0
+	 -> daughter 1: 20150624.0.1.6
+20150624.0.1.3 	 <- parent: 20150624.0.1.1
+20150624.0.1.4 	 <- parent: 20150624.0.1.0
+20150624.0.1.5 	 <- parent: 20150624.0.1.1
+20150624.0.1.6 	 <- parent: 20150624.0.1.2
+
+*/
     for (MOMAdata cell: cell_vector){
         if (cell.parent !=NULL)
             std::cout << cell.cell_id << " \t <- parent: " << cell.parent->cell_id << std::endl;
@@ -99,7 +115,11 @@ std::vector<MOMAdata> getData(std::string filename,
     /*  
     * Parses through csv file line by line and returns the data as a vector of MOMAdata instances
     */
+    if(! std::__fs::filesystem::exists(filename)){
+        std::cout << "File " << filename << " not found! Returns empty vector" << std::endl;
+    }
     std::ifstream file(filename);
+    
     
     std::vector<std::string> vec;
     std::string line;
