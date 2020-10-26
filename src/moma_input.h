@@ -91,10 +91,11 @@ void print_cell_genealogy(std::vector<MOMAdata> &cell_vector){
 }
 
 
-std::vector<MOMAdata> getData(std::string filename, std::string delm = ",",
-                            std::string time_col = "time_sec", 
-                            std::string length_col = "length_um", 
-                            std::string fp_col = "gfp_nb"){
+std::vector<MOMAdata> getData(std::string filename,
+                            std::string time_col, 
+                            std::string length_col, 
+                            std::string fp_col, 
+                            std::string delm){
     /*  
     * Parses through csv file line by line and returns the data as a vector of MOMAdata instances
     */
