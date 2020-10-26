@@ -51,10 +51,10 @@ public:
 
         std::cout << "=== Configuration used for reading the input file: ===" << std::endl; 
 
-        std::cout   <<"-> time_col: "  << time_col << "\n" \
-                    << "-> length_col: " <<  length_col << "\n" \
-                    << "-> fp_col: " << fp_col << "\n" \
-                    << "-> delm: " << delm << "\n" << "\n" \
+        std::cout   << "# time_col: "  << time_col << "\n" \
+                    << "# length_col: " <<  length_col << "\n" \
+                    << "# fp_col: " << fp_col << "\n" \
+                    << "# delm: " << delm << "\n" \
                     << std::endl; 
     }
 };

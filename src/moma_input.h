@@ -17,9 +17,9 @@ public:
     std::string parent_id;
 
     // Pointer to other instances of the class representing the genealogy
-    MOMAdata *parent = NULL;
-    MOMAdata *daughter1 = NULL;
-    MOMAdata *daughter2 = NULL;
+    MOMAdata *parent = nullptr;
+    MOMAdata *daughter1 = nullptr;
+    MOMAdata *daughter2 = nullptr;
 
     // Time dependent quantities (and time) of the cell
     std::vector<double> time;
@@ -29,7 +29,99 @@ public:
 };
 
 
-std::string get_parent_id(std::vector<std::string> &str_vec, std::map<std::string, int> &header_indices){
+// ============================================================================= //
+// GENEALOGY
+// ============================================================================= //
+
+void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
+    /*  
+    * Assign respective pointers to parent, daughter1 and daughter2 for each cell
+    */
+    for(long k = 0; k < cell_vector.size(); ++k) {
+        for(long j = 0; j < cell_vector.size(); ++j) {
+
+            if( cell_vector[j].cell_id == cell_vector[k].parent_id ){
+                //  Assign pointers to PARENT variable of the cell
+                cell_vector[k].parent = &cell_vector[j];
+                //  Assign pointers to CELL of the parent cell to 'free' pointer
+                if (cell_vector[j].daughter1 == nullptr)
+                    cell_vector[j].daughter1 = &cell_vector[k];
+                else if (cell_vector[j].daughter2 == nullptr)
+                    cell_vector[j].daughter2 = &cell_vector[k];
+            }
+
+        }
+    }
+}
+
+
+void print_related_cells(std::vector<MOMAdata> &cell_vector){
+/*
+
+20150624.0.1.0
+	 -> daughter 1: 20150624.0.1.2
+	 -> daughter 2: 20150624.0.1.4
+20150624.0.1.1
+	 -> daughter 1: 20150624.0.1.3
+	 -> daughter 2: 20150624.0.1.5
+20150624.0.1.2 	 <- parent: 20150624.0.1.0
+	 -> daughter 1: 20150624.0.1.6
+20150624.0.1.3 	 <- parent: 20150624.0.1.1
+20150624.0.1.4 	 <- parent: 20150624.0.1.0
+20150624.0.1.5 	 <- parent: 20150624.0.1.1
+20150624.0.1.6 	 <- parent: 20150624.0.1.2
+
+*/
+    for (MOMAdata cell: cell_vector){
+        if (cell.parent !=nullptr)
+            std::cout << cell.cell_id << " \t <- parent: " << cell.parent->cell_id << std::endl;
+        else
+            std::cout << cell.cell_id << std::endl;
+
+        if (cell.daughter1 !=nullptr)
+            std::cout << "\t -> daughter 1: " << cell.daughter1->cell_id << std::endl;     
+        if (cell.daughter2 !=nullptr)
+            std::cout << "\t -> daughter 2: " << cell.daughter2->cell_id << std::endl;     
+    }
+}
+
+
+
+void follow_genealogy_recursive(MOMAdata *cell, 
+                                std::vector<MOMAdata *> &current_path, 
+                                std::vector<std::vector<MOMAdata *> > &paths){
+    if (cell == nullptr)
+        return;
+
+    current_path.push_back(cell);
+ 
+    if (cell->daughter1 == nullptr && cell->daughter2 == nullptr){
+        paths.push_back(current_path);
+    } else{  
+        follow_genealogy_recursive(cell->daughter1, current_path, paths);
+        follow_genealogy_recursive(cell->daughter2, current_path, paths);
+    }
+
+    current_path.pop_back();
+}
+
+std::vector<std::vector<MOMAdata *> > get_genealogy(MOMAdata *cell){
+    
+    std::vector<MOMAdata *> current_path;
+    std::vector<std::vector<MOMAdata *> > paths;
+
+    follow_genealogy_recursive(cell, current_path, paths);
+    return paths;
+}
+
+
+// ============================================================================= //
+// READING
+// ============================================================================= //
+
+std::string get_parent_id(std::vector<std::string> &str_vec, 
+                            std::map<std::string, 
+                            int> &header_indices){
     /*  
     * Compose parent_id of the cell
     */
@@ -54,59 +146,6 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
 }
 
 
-void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
-    /*  
-    * Assign respective pointers to parent, daughter1 and daughter2 for each cell
-    */
-    for(long k = 0; k < cell_vector.size(); ++k) {
-        for(long j = 0; j < cell_vector.size(); ++j) {
-
-            if( cell_vector[j].cell_id == cell_vector[k].parent_id ){
-                //  Assign pointers to PARENT variable of the cell
-                cell_vector[k].parent = &cell_vector[j];
-                //  Assign pointers to CELL of the parent cell to 'free' pointer
-                if (cell_vector[j].daughter1 == NULL)
-                    cell_vector[j].daughter1 = &cell_vector[k];
-                else if (cell_vector[j].daughter2 == NULL)
-                    cell_vector[j].daughter2 = &cell_vector[k];
-            }
-
-        }
-    }
-}
-
-
-void print_cell_genealogy(std::vector<MOMAdata> &cell_vector){
-/*
-
-20150624.0.1.0
-	 -> daughter 1: 20150624.0.1.2
-	 -> daughter 2: 20150624.0.1.4
-20150624.0.1.1
-	 -> daughter 1: 20150624.0.1.3
-	 -> daughter 2: 20150624.0.1.5
-20150624.0.1.2 	 <- parent: 20150624.0.1.0
-	 -> daughter 1: 20150624.0.1.6
-20150624.0.1.3 	 <- parent: 20150624.0.1.1
-20150624.0.1.4 	 <- parent: 20150624.0.1.0
-20150624.0.1.5 	 <- parent: 20150624.0.1.1
-20150624.0.1.6 	 <- parent: 20150624.0.1.2
-
-*/
-    for (MOMAdata cell: cell_vector){
-        if (cell.parent !=NULL)
-            std::cout << cell.cell_id << " \t <- parent: " << cell.parent->cell_id << std::endl;
-        else
-            std::cout << cell.cell_id << std::endl;
-
-        if (cell.daughter1 !=NULL)
-            std::cout << "\t -> daughter 1: " << cell.daughter1->cell_id << std::endl;     
-        if (cell.daughter2 !=NULL)
-            std::cout << "\t -> daughter 2: " << cell.daughter2->cell_id << std::endl;     
-    }
-}
-
-
 std::vector<MOMAdata> getData(std::string filename,
                             std::string time_col, 
                             std::string length_col, 
@@ -115,9 +154,6 @@ std::vector<MOMAdata> getData(std::string filename,
     /*  
     * Parses through csv file line by line and returns the data as a vector of MOMAdata instances
     */
-    if(! std::__fs::filesystem::exists(filename)){
-        std::cout << "File " << filename << " not found! Returns empty vector" << std::endl;
-    }
     std::ifstream file(filename);
     
     

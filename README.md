@@ -4,4 +4,5 @@
 `cd src; make`
 
 ## Run
-`./bin/gfp_gaussian <csv file>`
+`cd bin`
+`./gfp_gaussian <csv file>`
