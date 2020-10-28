@@ -4,8 +4,10 @@
 #include <iterator>
 #include <string>
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 class MOMAdata{
     /*  
@@ -22,9 +24,12 @@ public:
     MOMAdata *daughter2 = nullptr;
 
     // Time dependent quantities (and time) of the cell
-    std::vector<double> time;
-    std::vector<double> length;
-    std::vector<double> fp;
+    // stores in ublas vectors to enable lin algebra functions
+    boost::numeric::ublas::vector<double> time;
+    boost::numeric::ublas::vector<double> length;
+    boost::numeric::ublas::vector<double> fp;
+
+    double generation;
 };
 
 
@@ -32,6 +37,7 @@ public:
 // ============================================================================= //
 // GENEALOGY
 // ============================================================================= //
+
 
 void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     /*  
@@ -86,7 +92,6 @@ void print_related_cells(std::vector<MOMAdata> &cell_vector){
 }
 
 
-
 void follow_genealogy_recursive(MOMAdata *cell, 
                                 std::vector<MOMAdata *> &current_path, 
                                 std::vector<std::vector<MOMAdata *> > &paths){
@@ -113,6 +118,32 @@ std::vector<std::vector<MOMAdata *> > get_genealogy(MOMAdata *cell){
     follow_genealogy_recursive(cell, current_path, paths);
     return paths;
 }
+
+
+// ============================================================================= //
+// BINARY TREE "LOOP"
+// ============================================================================= //
+void set_generation(MOMAdata &cell){
+    if (cell.parent != nullptr){
+        cell.generation = cell.parent->generation + 1;
+    } else{
+        cell.generation = 0;
+    }
+}
+
+void apply_down_tree_recr(MOMAdata *cell, void func(MOMAdata &)){
+    /*  
+    * Recursive implementation that applies the function func to every cell in the genealogy
+    * starting from the parent cell and then moving "down" the tree
+    */
+    if (cell == nullptr)
+        return;
+    func(*cell);
+
+    apply_down_tree_recr(cell->daughter1, func);
+    apply_down_tree_recr(cell->daughter2, func);
+}
+
 
 
 // ============================================================================= //
@@ -143,6 +174,16 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
         header_indices.insert(std::pair<std::string, int>(str_vec[i], i)); 
     }
     return header_indices;
+}
+
+
+
+void append_vec(boost::numeric::ublas::vector<double> &v, double elem){
+    /*  
+    * push_back alternative for ublas vector
+    */
+    v.resize(v.size()+1);
+    v[v.size()-1] = elem;
 }
 
 
@@ -184,9 +225,10 @@ std::vector<MOMAdata> getData(std::string filename,
             data[last_idx].cell_id = curr_cell;
             data[last_idx].parent_id = get_parent_id(vec, header_indices);
         }
-        data[last_idx].time.push_back(std::stod(vec[header_indices[time_col]]));
-        data[last_idx].length.push_back(std::stod(vec[header_indices[length_col]]));
-        data[last_idx].fp.push_back(std::stod(vec[header_indices[fp_col]]));
+
+        append_vec(data[last_idx].time,  std::stod(vec[header_indices[time_col]]) );
+        append_vec(data[last_idx].length,  std::stod(vec[header_indices[length_col]]) );
+        append_vec(data[last_idx].fp,  std::stod(vec[header_indices[fp_col]]) );
 
         last_cell = curr_cell;
     }

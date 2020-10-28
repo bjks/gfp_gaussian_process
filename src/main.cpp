@@ -1,28 +1,17 @@
 #include "moma_input.h"
 #include "read_config.h"
+#include "utils.h"
+
 
 #include <iostream> 
 #include <iterator> 
 #include <map> 
 
-void pvector(std::vector <std::string> const &a) {
-    for(int i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
-    }
-    std::cout << std::endl;
-}
-
-void pvector(std::vector <double> const &a) {
-    for(int i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
-    }
-    std::cout << std::endl;
-}
-
 
 int main(int argc, char** argv){
-    std::string infile = argv[1];
 
+    std::string infile = argv[1];
+    
     if(! std::__fs::filesystem::exists(infile)){
         std::cout << "File " << infile << " not found! \nQuit" << std::endl;
         return 0;
@@ -39,16 +28,23 @@ int main(int argc, char** argv){
     build_cell_genealogy(cells);
     print_related_cells(cells);
 
+    apply_down_tree_recr(&cells[0], set_generation);
+
     // get the "tree" starting from cell[0]
     std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy(&cells[0]);
 
     std::cout << std::endl;
     for (std::vector<MOMAdata *> path : cell_paths){
-        for (MOMAdata * entry : path){
-            std::cout << " -> " << entry->cell_id ;
+        for (MOMAdata * cell : path){
+            std::cout << " -> " << cell->cell_id << " generation: " << cell->generation  ;
         }
         std::cout << std::endl;
     }
+    
+    /*
+    -> 20150624.0.1.0 generation: 0 -> 20150624.0.1.2 generation: 1 -> 20150624.0.1.6 generation: 2
+    -> 20150624.0.1.0 generation: 0 -> 20150624.0.1.4 generation: 1
+    */
 
 
     // print the data of the first cell
