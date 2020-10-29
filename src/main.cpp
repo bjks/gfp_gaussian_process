@@ -1,6 +1,8 @@
-#include "moma_input.h"
 #include "read_config.h"
+#include "moma_input.h"
 #include "utils.h"
+#include "likelihood.h"
+
 
 
 #include <iostream> 
@@ -28,10 +30,13 @@ int main(int argc, char** argv){
     build_cell_genealogy(cells);
     print_related_cells(cells);
 
-    apply_down_tree_recr(&cells[0], set_generation);
+    std::cout << cells[0].is_root() << std::endl;
+
+
+    apply_down_tree(cells[0], set_generation);
 
     // get the "tree" starting from cell[0]
-    std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy(&cells[0]);
+    std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy_paths(cells[0]);
 
     std::cout << std::endl;
     for (std::vector<MOMAdata *> path : cell_paths){
@@ -51,6 +56,7 @@ int main(int argc, char** argv){
     pvector(cells[0].time);
     pvector(cells[0].length);
     pvector(cells[0].fp);
+
 
 
     std::cout << "Done." << std::endl;

@@ -1,4 +1,6 @@
 #include <fstream>
+#include <iostream>
+
 #include <boost/algorithm/string.hpp>
 
 class Config {
