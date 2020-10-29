@@ -4,7 +4,9 @@
 #include <iterator>
 #include <string>
 #include <algorithm>
+#include <map> 
 
+#include "parameter_class.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -39,8 +41,35 @@ public:
     // member functions
     bool is_leaf() const;
     bool is_root() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
+
 };
 
+
+std::ostream& operator<<(std::ostream& os, const MOMAdata& cell){
+    /*
+    example output:
+    ---------------
+    20150624.0.1.0
+        -> daughter 1: 20150624.0.1.2
+        -> daughter 2: 20150624.0.1.4
+    20150624.0.1.2 	 <- parent: 20150624.0.1.0
+        -> daughter 1: 20150624.0.1.6
+    20150624.0.1.3 	 <- parent: 20150624.0.1.1
+    */
+    if (cell.parent == nullptr)
+        os << cell.cell_id;
+    else
+        os << " \t <- parent: " << cell.parent->cell_id;
+    os << "\n";
+
+    if (cell.daughter1 !=nullptr)
+        os << "\t \\_ daughter 1: " << cell.daughter1->cell_id << "\n";     
+    if (cell.daughter2 !=nullptr)
+        os << "\t \\_ daughter 2: " << cell.daughter2->cell_id << "\n";   
+    return os;
+}
 
 bool MOMAdata :: is_leaf() const{
     return daughter1 == nullptr && daughter2 == nullptr;
@@ -77,34 +106,9 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     }
 }
 
-void print_related_cells(std::vector<MOMAdata> const &cell_vector){
-/*
-OUTPUT:
-
-20150624.0.1.0
-	 -> daughter 1: 20150624.0.1.2
-	 -> daughter 2: 20150624.0.1.4
-20150624.0.1.1
-	 -> daughter 1: 20150624.0.1.3
-	 -> daughter 2: 20150624.0.1.5
-20150624.0.1.2 	 <- parent: 20150624.0.1.0
-	 -> daughter 1: 20150624.0.1.6
-20150624.0.1.3 	 <- parent: 20150624.0.1.1
-20150624.0.1.4 	 <- parent: 20150624.0.1.0
-20150624.0.1.5 	 <- parent: 20150624.0.1.1
-20150624.0.1.6 	 <- parent: 20150624.0.1.2
-
-*/
+void print_cells(std::vector<MOMAdata> const &cell_vector){
     for (MOMAdata cell: cell_vector){
-        if (cell.parent !=nullptr)
-            std::cout << cell.cell_id << " \t <- parent: " << cell.parent->cell_id << std::endl;
-        else
-            std::cout << cell.cell_id << std::endl;
-
-        if (cell.daughter1 !=nullptr)
-            std::cout << "\t -> daughter 1: " << cell.daughter1->cell_id << std::endl;     
-        if (cell.daughter2 !=nullptr)
-            std::cout << "\t -> daughter 2: " << cell.daughter2->cell_id << std::endl;     
+        std::cout << cell;
     }
 }
 
@@ -143,46 +147,29 @@ std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > &cells){
 
 
 // ----------------------------------------------------------------------------- //
-// recursive "looping"  
+// recursive path finding 
 // ----------------------------------------------------------------------------- //
 
-namespace recursive_genealogy {
+void get_genealogy_paths_recr(MOMAdata *cell, 
+                                std::vector<MOMAdata *> &current_path, 
+                                std::vector<std::vector<MOMAdata *> > &paths){
     /*
-    * recursive functions not meant to be called directly, see wrapper below
+    * recursive function called by get_genealogy_paths which wrappes this one
+    * not meant to be called directly, see wrapper below
     */
-    void get_genealogy_paths_recr(MOMAdata *cell, 
-                                    std::vector<MOMAdata *> &current_path, 
-                                    std::vector<std::vector<MOMAdata *> > &paths){
-        /*
-        * recursive function called by get_genealogy_paths which wrappes this one
-        */
-        if (cell == nullptr)
-            return;
+    if (cell == nullptr)
+        return;
 
-        current_path.push_back(cell);
-    
-        if (cell->is_leaf()){
-            paths.push_back(current_path);
-        } else{  
-            get_genealogy_paths_recr(cell->daughter1, current_path, paths);
-            get_genealogy_paths_recr(cell->daughter2, current_path, paths);
-        }
+    current_path.push_back(cell);
 
-        current_path.pop_back();
+    if (cell->is_leaf()){
+        paths.push_back(current_path);
+    } else{  
+        get_genealogy_paths_recr(cell->daughter1, current_path, paths);
+        get_genealogy_paths_recr(cell->daughter2, current_path, paths);
     }
 
-    void apply_down_tree_recr(MOMAdata *cell, void func(MOMAdata &)){
-        /*  
-        * Recursive implementation that applies the function func to every cell in the genealogy
-        * starting from the parent cell and then moving "down" the tree
-        */
-        if (cell == nullptr)
-            return;
-        func(*cell);
-
-        apply_down_tree_recr(cell->daughter1, func);
-        apply_down_tree_recr(cell->daughter2, func);
-    }
+    current_path.pop_back();
 }
 
 std::vector<std::vector<MOMAdata *> > get_genealogy_paths(MOMAdata &cell){
@@ -193,29 +180,55 @@ std::vector<std::vector<MOMAdata *> > get_genealogy_paths(MOMAdata &cell){
     std::vector<MOMAdata *> current_path;
     std::vector<std::vector<MOMAdata *> > paths;
 
-    recursive_genealogy::get_genealogy_paths_recr(&cell, current_path, paths);
+    get_genealogy_paths_recr(&cell, current_path, paths);
     return paths;
 }
 
-void apply_down_tree(MOMAdata &cell, void func(MOMAdata &)){
-    recursive_genealogy::apply_down_tree_recr( &cell, func);
+// ----------------------------------------------------------------------------- //
+// recursive "looping"
+// ----------------------------------------------------------------------------- //
+
+void apply_down_tree_recr(MOMAdata *cell, 
+                        void (*func)(MOMAdata &, Parameter_set &), 
+                        Parameter_set &params){
+    /*  
+    * Recursive implementation that applies the function func to every cell in the genealogy
+    * not meant to be called directly, see wrapper below
+    */
+    if (cell == nullptr)
+        return;
+    func(*cell, params);
+
+    apply_down_tree_recr(cell->daughter1, func, params);
+    apply_down_tree_recr(cell->daughter2, func, params);
+}
+
+void apply_down_tree(MOMAdata &cell, 
+                    void (*func)(MOMAdata &, Parameter_set &), 
+                    Parameter_set &params){
+    /* applies the function func to the cell cell and the other cells in the genealogy
+    * such that the parent cell has already been accessed when the function is applied 
+    * to the cell.
+    * 
+    * Example (number implies the order in which)
+    * _________________________________________________ 
+
+	       1
+	     /   \
+	    2     5
+	  /   \     \
+	 3     4     6
+
+    * _________________________________________________ 
+    */
+    apply_down_tree_recr( &cell, func, params);
 }
 
 
-// example function to illustrate how this works
-void set_generation(MOMAdata &cell){
-    if (cell.parent != nullptr){
-        cell.generation = cell.parent->generation + 1;
-    } else{
-        cell.generation = 0;
-    }
-}
-
 
 // ============================================================================= //
-// READING
+// READING CSV
 // ============================================================================= //
-
 std::string get_parent_id(std::vector<std::string> &str_vec, 
                             std::map<std::string, int> &header_indices){
     /*  

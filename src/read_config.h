@@ -23,7 +23,6 @@ public:
         std::vector<std::string> vec;
 
         if(fin) {
-            std::cout<<"Config file found" << std::endl; 
             // Overwrite defaults if in config file
             while (getline(fin, line)) {
                 if (line[0] != '#' && line.size()){
@@ -52,13 +51,13 @@ public:
             std::cout<<"Config file NOT found, use defaults" << std::endl; 
         }
 
-        std::cout << "=== Configuration used for reading the input file: ===" << std::endl; 
-
+        std::cout << "--- Configuration used for reading the input file: ---" << std::endl; 
         std::cout   << "# time_col: "  << time_col << "\n" \
                     << "# length_col: " <<  length_col << "\n" \
                     << "# fp_col: " << fp_col << "\n" \
-                    << "# delm: " << delm << "\n" \
-                    << std::endl; 
+                    << "# delm: " << delm << "\n" ;
+        std::cout << "------------------------------------------------------" << std::endl; 
+        
     }
 };
 

@@ -1,14 +1,9 @@
 #include "read_config.h"
-#include "moma_input.h"
-#include "utils.h"
 #include "likelihood.h"
-
-
+#include "utils.h"
 
 #include <iostream> 
 #include <iterator> 
-#include <map> 
-
 
 int main(int argc, char** argv){
 
@@ -27,28 +22,17 @@ int main(int argc, char** argv){
                                         config.delm);
     build_cell_genealogy(cells);
 
-    // get the "tree" starting from all root cells
+    std::cout << cells[0];
+
+    Parameter_set random_params ;
+    random_params.var_x = 1;
+
+    // get the "trees" starting from all root cells
     std::vector<MOMAdata *> root_cells = get_roots(cells);
 
     for(long j=0; j<root_cells.size(); ++j){
-        std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy_paths(*root_cells[j]);
-
-        // apply the set_generation function to root cell followed by the first generation etc...
-        apply_down_tree(*root_cells[j], set_generation);
-
-
-        /* output the genealogy with generation
-         -> 20150630.5.4.124 generation: 0 -> 20150630.5.4.133 generation: 1 
-            -> 20150630.5.4.140 generation: 2 -> 20150630.5.4.148 generation: 3
-        */
-        std::cout << std::endl;
-        for (std::vector<MOMAdata *> path : cell_paths){
-            for (MOMAdata * cell : path){
-                std::cout << " -> " << cell->cell_id << " generation: " << cell->generation ;
-            }
-            std::cout << "\n\n";
-        }
-
+        print_generation_tree(*root_cells[j], random_params);
+        // double tl = total_likelihood(*root_cells[j], random_params);
     }
     
     std::cout << "Done." << std::endl;
