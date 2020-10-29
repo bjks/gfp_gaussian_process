@@ -12,15 +12,13 @@
 
 int main(int argc, char** argv){
 
+    Config config("config.txt");
     std::string infile = argv[1];
     
     if(! std::__fs::filesystem::exists(infile)){
         std::cout << "File " << infile << " not found! \nQuit" << std::endl;
         return 0;
     }
-
-    Config config("config.txt");
-
     // Read data
     std::vector<MOMAdata> cells =  getData(infile, 
                                         config.time_col,
@@ -28,37 +26,31 @@ int main(int argc, char** argv){
                                         config.fp_col,
                                         config.delm);
     build_cell_genealogy(cells);
-    print_related_cells(cells);
 
-    std::cout << cells[0].is_root() << std::endl;
+    // get the "tree" starting from all root cells
+    std::vector<MOMAdata *> root_cells = get_roots(cells);
+
+    for(long j=0; j<root_cells.size(); ++j){
+        std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy_paths(*root_cells[j]);
+
+        // apply the set_generation function to root cell followed by the first generation etc...
+        apply_down_tree(*root_cells[j], set_generation);
 
 
-    apply_down_tree(cells[0], set_generation);
-
-    // get the "tree" starting from cell[0]
-    std::vector<std::vector<MOMAdata *> > cell_paths = get_genealogy_paths(cells[0]);
-
-    std::cout << std::endl;
-    for (std::vector<MOMAdata *> path : cell_paths){
-        for (MOMAdata * cell : path){
-            std::cout << " -> " << cell->cell_id << " generation: " << cell->generation  ;
-        }
+        /* output the genealogy with generation
+         -> 20150630.5.4.124 generation: 0 -> 20150630.5.4.133 generation: 1 
+            -> 20150630.5.4.140 generation: 2 -> 20150630.5.4.148 generation: 3
+        */
         std::cout << std::endl;
+        for (std::vector<MOMAdata *> path : cell_paths){
+            for (MOMAdata * cell : path){
+                std::cout << " -> " << cell->cell_id << " generation: " << cell->generation ;
+            }
+            std::cout << "\n\n";
+        }
+
     }
     
-    /*
-    -> 20150624.0.1.0 generation: 0 -> 20150624.0.1.2 generation: 1 -> 20150624.0.1.6 generation: 2
-    -> 20150624.0.1.0 generation: 0 -> 20150624.0.1.4 generation: 1
-    */
-
-
-    // print the data of the first cell
-    pvector(cells[0].time);
-    pvector(cells[0].length);
-    pvector(cells[0].fp);
-
-
-
     std::cout << "Done." << std::endl;
     return 0;
 }

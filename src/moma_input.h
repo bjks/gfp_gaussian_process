@@ -9,7 +9,6 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
-
 // ============================================================================= //
 // MOMAdata CLASS
 // ============================================================================= //
@@ -35,19 +34,19 @@ public:
     boost::numeric::ublas::vector<double> length;
     boost::numeric::ublas::vector<double> fp;
 
-    double generation; // to be deleted later 
+    int generation; // to be deleted later 
 
     // member functions
-    bool is_leaf();
-    bool is_root();
+    bool is_leaf() const;
+    bool is_root() const;
 };
 
 
-bool MOMAdata :: is_leaf(){
+bool MOMAdata :: is_leaf() const{
     return daughter1 == nullptr && daughter2 == nullptr;
 }
 
-bool MOMAdata :: is_root(){
+bool MOMAdata :: is_root() const {
     return parent==nullptr;
 }
 
@@ -71,8 +70,9 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                     cell_vector[j].daughter1 = &cell_vector[k];
                 else if (cell_vector[j].daughter2 == nullptr)
                     cell_vector[j].daughter2 = &cell_vector[k];
+                else
+                    std::cout << "(build_cell_genealogy) Warning: both daughter pointers are set!" << std::endl;
             }
-
         }
     }
 }
@@ -111,29 +111,30 @@ OUTPUT:
 // ----------------------------------------------------------------------------- //
 // genealogy operations
 // ----------------------------------------------------------------------------- //
-std::vector<MOMAdata *> get_leafs(std::vector<MOMAdata > const &cells){
+std::vector<MOMAdata *> get_leafs(std::vector<MOMAdata > &cells){
     /*
     * returns vector pointers to MOMAdata cells 
     * each pointer points to a leaf of the cell tree
     */
     std::vector<MOMAdata *> leafs;
-    for (MOMAdata cell : cells){
-        if (cell.is_leaf()){
-            leafs.push_back(&cell);
+    for(int i=0; i < cells.size(); ++i){
+        if (cells[i].is_leaf()){
+            leafs.push_back(&cells[i]);
         }
     }
     return leafs;
 }
 
-std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > const &cells){
+std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > &cells){
     /*
     * returns vector pointers to MOMAdata cells 
     * each pointer points to a root of the cell trees
     */
+   
     std::vector<MOMAdata *> roots;
-    for (MOMAdata cell : cells){
-        if (cell.is_root()){
-              roots.push_back(&cell);
+    for(int i=0; i < cells.size(); ++i){
+        if (cells[i].is_root()){
+            roots.push_back(&cells[i]);
         }
     }
     return roots;
@@ -216,8 +217,7 @@ void set_generation(MOMAdata &cell){
 // ============================================================================= //
 
 std::string get_parent_id(std::vector<std::string> &str_vec, 
-                            std::map<std::string, 
-                            int> &header_indices){
+                            std::map<std::string, int> &header_indices){
     /*  
     * Compose parent_id of the cell
     */

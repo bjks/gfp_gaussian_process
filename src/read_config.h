@@ -3,6 +3,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+
 class Config {
     /*  
     * Class for handling the configuration file passed on to the constructor 
