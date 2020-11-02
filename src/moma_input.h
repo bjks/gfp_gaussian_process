@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <map> 
 
-#include "parameter_class.h"
+#include "Parameters.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>

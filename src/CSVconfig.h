@@ -4,7 +4,7 @@
 #include <boost/algorithm/string.hpp>
 
 
-class Config {
+class CSVconfig {
     /*  
     * Class for handling the configuration file passed on to the constructor 
     * that specifies the columns of the csv file read into MOMAdata instances as well as the delimiter
@@ -16,7 +16,7 @@ public:
     std::string fp_col = "gfp_nb";
     std::string delm = ",";
 
-    Config(std::string filename) {
+    CSVconfig(std::string filename) {
         std::ifstream fin(filename);
         // fin.open(filename);
         std::string line;

@@ -3,17 +3,14 @@
 void sc_likelihood(MOMAdata &cell, Parameter_set& params){
     double likelihood = 0;
     if (cell.is_root()){
-        /* code */
-        ;
-    }
-    else if (cell.is_leaf()){
-        /* code */
+        /* use initial conditions for nm, nC */
         ;
     }
     else{
+        /* update nm and nC that depend on mother cell */
         ;
     }
-    
+
     for(long t=0; t<cell.time.size(); ++t){
         ;
     }
@@ -29,7 +26,7 @@ double total_likelihood(MOMAdata &cell, Parameter_set& params){
 
     double total_likelihood=0;
     /*
-    * Add likelihoods
+    * Add likelihoods of all cells
     */
    return total_likelihood;
 }
@@ -42,7 +39,7 @@ double total_likelihood(MOMAdata &cell, Parameter_set& params){
 // example function to illustrate how this works
 void set_generation(MOMAdata &cell, Parameter_set &params){
     if (cell.parent != nullptr){
-        cell.generation = cell.parent->generation + 1 * params.var_x;
+        cell.generation = cell.parent->generation + 1;
     } else{
         cell.generation = 0;
     }
