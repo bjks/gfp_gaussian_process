@@ -11,8 +11,9 @@ int main(int argc, char** argv){
     CSVconfig config("csv_config.txt");
     Parameter_set params("parameter_bounds.txt");
 
-    numerical_minimization(params);
+    std::cout << params << "\n";
 
+    numerical_minimization(params);
 
     // Read data
     std::string infile = argv[1];    
@@ -21,10 +22,10 @@ int main(int argc, char** argv){
         return 0;
     }
     std::vector<MOMAdata> cells =  getData(infile, 
-                                        config.time_col,
-                                        config.length_col,
-                                        config.fp_col,
-                                        config.delm);
+                                            config.time_col,
+                                            config.length_col,
+                                            config.fp_col,
+                                            config.delm);
     build_cell_genealogy(cells);
 
 

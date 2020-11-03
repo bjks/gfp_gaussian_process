@@ -10,7 +10,7 @@
 #include <math.h> 
 
 double dummt_func(const double *xx ){
-    return pow(xx[0] + xx[1], 2);
+    return pow(xx[0] + 2*xx[1], 2);
 }
 
 void numerical_minimization(const Parameter_set &params,
@@ -24,34 +24,27 @@ void numerical_minimization(const Parameter_set &params,
     min->SetMaxFunctionCalls(1000000); // for Minuit/Minuit2
     min->SetMaxIterations(10000);  // for GSL
     min->SetTolerance(0.001);
-    min->SetPrintLevel(1);
+    min->SetPrintLevel(3);
 
     // create funciton wrapper for minmizer
     // a IMultiGenFunction type
-    ROOT::Math::Functor f(&dummt_func,2);
+    ROOT::Math::Functor f(&dummt_func,params.all.size());
     min->SetFunction(f);
 
 
-    if (params.mean_lambda.fixed){
-        min->SetFixedVariable(0, "mean_lambda", params.mean_lambda.value);
-    } else {
-        min->SetLimitedVariable(0,"mean_lambda",
-                                    params.mean_lambda.value,
-                                    params.mean_lambda.step,
-                                    params.mean_lambda.lower,
-                                    params.mean_lambda.upper);
+    for (int i=0; i<params.all.size(); ++i){
+        if (params.all[i].fixed){
+            min->SetFixedVariable(i, params.all[i].name, params.all[i].value);
+        } else {
+            min->SetLimitedVariable(i,  params.all[i].name,
+                                        params.all[i].value,
+                                        params.all[i].step,
+                                        params.all[i].lower,
+                                        params.all[i].upper);
+        }
     }
 
-    if (params.gamma_lambda.fixed){
-        min->SetFixedVariable(1, "gamma_lambda",params.gamma_lambda.value);
-    } else {
-        min->SetLimitedVariable(1,"gamma_lambda",
-                                    params.mean_lambda.value,
-                                    params.mean_lambda.step,
-                                    params.mean_lambda.lower,
-                                    params.mean_lambda.upper);
-    }
-
+ 
 
     // do the minimization
     min->Minimize();

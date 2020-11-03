@@ -4,7 +4,7 @@
 #    parameter = value, step, lower, upper
 
     mean_lambda = 2, 0.01, -10, 10 
-    gamma_lambda = 4 
+    gamma_lambda = 4, 0.01, -10, 10 
     var_lambda = 4 
 
     mean_q = 4 
