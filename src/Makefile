@@ -1,6 +1,6 @@
-CFLAGS= -Wall -I /Applications/boost/boost_1_73_0 -std=c++17 -ffast-math -O3
-ROOTFLAG = `root-config --libs --cflags`
-
+# ROOTFLAG = `root-config --libs --cflags`
+CFLAGS = -Wall -std=c++17 -ffast-math -O3
+LIBFLAGS =  -I $(HOME)/nlopt/include -L$(HOME)/nlopt/lib -lnlopt -lm  -I /Applications/boost/boost_1_73_0 
 all: 
-	g++ $(CFLAGS) $(ROOTFLAG) -o ../bin/gfp_gaussian main.cpp
+	g++ $(CFLAGS) $(LIBFLAGS) -o ../bin/gfp_gaussian main.cpp
 

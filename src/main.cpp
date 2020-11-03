@@ -1,7 +1,7 @@
 #include "CSVconfig.h"
 #include "likelihood.h"
 #include "utils.h"
-#include "maximize_likelihood.h"
+#include "minimizer_nlopt.h"
 
 #include <iostream> 
 #include <iterator> 
@@ -12,8 +12,6 @@ int main(int argc, char** argv){
     Parameter_set params("parameter_bounds.txt");
 
     std::cout << params << "\n";
-
-    numerical_minimization(params);
 
     // Read data
     std::string infile = argv[1];    
@@ -27,13 +25,15 @@ int main(int argc, char** argv){
                                             config.fp_col,
                                             config.delm);
     build_cell_genealogy(cells);
+    minimize_wrapper(&total_likelihood, cells[0], params);
 
+    print_cells(cells);
 
     // get the "trees" starting from all root cells
     std::vector<MOMAdata *> root_cells = get_roots(cells);
-
+    std::vector<double> dummy_params;
     for(long j=0; j<root_cells.size(); ++j){
-        print_generation_tree(*root_cells[j], params);
+        print_generation_tree(dummy_params, *root_cells[j]);
     }
     
     std::cout << "Done." << std::endl;

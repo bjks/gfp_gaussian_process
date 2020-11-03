@@ -42,6 +42,9 @@ public:
     bool is_leaf() const;
     bool is_root() const;
 
+    // 
+    double likelihood;
+
     friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
 
 };
@@ -58,9 +61,9 @@ std::ostream& operator<<(std::ostream& os, const MOMAdata& cell){
         -> daughter 1: 20150624.0.1.6
     20150624.0.1.3 	 <- parent: 20150624.0.1.1
     */
-    if (cell.parent == nullptr)
-        os << cell.cell_id;
-    else
+    
+    os << cell.cell_id;
+    if (cell.parent != nullptr)
         os << " \t <- parent: " << cell.parent->cell_id;
     os << "\n";
 
@@ -188,24 +191,26 @@ std::vector<std::vector<MOMAdata *> > get_genealogy_paths(MOMAdata &cell){
 // recursive "looping"
 // ----------------------------------------------------------------------------- //
 
-void apply_down_tree_recr(MOMAdata *cell, 
-                        void (*func)(MOMAdata &, Parameter_set &), 
-                        Parameter_set &params){
+void apply_down_tree_recr(const std::vector<double> &params_vec, 
+                        MOMAdata *cell, 
+                        void (*func)(const std::vector<double> &, MOMAdata &))
+                        {
     /*  
     * Recursive implementation that applies the function func to every cell in the genealogy
     * not meant to be called directly, see wrapper below
     */
     if (cell == nullptr)
         return;
-    func(*cell, params);
+    func(params_vec, *cell);
 
-    apply_down_tree_recr(cell->daughter1, func, params);
-    apply_down_tree_recr(cell->daughter2, func, params);
+    apply_down_tree_recr(params_vec, cell->daughter1, func);
+    apply_down_tree_recr(params_vec, cell->daughter2, func);
 }
 
-void apply_down_tree(MOMAdata &cell, 
-                    void (*func)(MOMAdata &, Parameter_set &), 
-                    Parameter_set &params){
+void apply_down_tree(const std::vector<double> &params_vec, 
+                    MOMAdata &cell, 
+                    void (*func)(const std::vector<double> &, MOMAdata &))
+                    {
     /* applies the function func to the cell cell and the other cells in the genealogy
     * such that the parent cell has already been accessed when the function is applied 
     * to the cell.
@@ -221,7 +226,7 @@ void apply_down_tree(MOMAdata &cell,
 
     * _________________________________________________ 
     */
-    apply_down_tree_recr( &cell, func, params);
+    apply_down_tree_recr(params_vec, &cell, func);
 }
 
 
