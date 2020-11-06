@@ -1,9 +1,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/numeric/ublas/vector.hpp>
-
 class Parameter{
 /* 
 * Single parameter
@@ -28,10 +25,9 @@ public:
         name = parts[0];
         
         std::vector<std::string> val_split;
-        boost::algorithm::split(val_split, parts[1], boost::is_any_of(","));
-
+        val_split = split_string_at(parts[1], ",");
         for (int i=0; i<val_split.size(); ++i){
-            boost::algorithm::trim(val_split[i]);
+            val_split[i] = trim(val_split[i]);
         }
 
         if (val_split.size() == 4){
@@ -99,6 +95,7 @@ protected:
     Parameter var_dx;
     Parameter var_dg;
 
+
 public:
     std::vector<Parameter> all;
 
@@ -111,10 +108,10 @@ public:
             // Overwrite defaults if in config file
             while (getline(fin, line)) {
                 if (line[0] != '#' && line.size()){
-                    boost::algorithm::split(parts, line, boost::is_any_of("="));
+                    parts = split_string_at(line, "=");
 
                     // remove whitespaces from the ends
-                    boost::algorithm::trim(parts[0]);
+                    parts[0] = trim(parts[0]);
 
                     if (parts[0] == "mean_lambda"){
                         mean_lambda.set_paramter(parts);

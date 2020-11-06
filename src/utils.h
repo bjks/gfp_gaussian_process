@@ -1,8 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <boost/numeric/ublas/io.hpp>
 
+#ifndef UTILS_H
+#define UTILS_H
 
 void pvector(std::vector <std::string> const &a) {
     for(int i=0; i < a.size(); i++){
@@ -18,18 +19,25 @@ void pvector(std::vector <double> const &a) {
     std::cout << std::endl;
 }
 
-void pvector(boost::numeric::ublas::vector<double> const &a) {
-    for(int i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
+std::vector<std::string>  split_string_at(std::string s, std::string delimiter=","){
+    int pos = 0;
+    std::vector<std::string> splitted;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        splitted.push_back(s.substr(0, pos));
+        s.erase(0, pos + delimiter.length());
     }
-    std::cout << std::endl;
+    splitted.push_back(s);
+    return splitted;
 }
 
-void pvector(boost::numeric::ublas::vector<std::string> const &a) {
-    for(int i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
+std::string trim(const std::string& str, char trim_char =' '){
+    int first = str.find_first_not_of(trim_char);
+    if (std::string::npos == first){
+        return str;
     }
-    std::cout << std::endl;
+    int last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
 }
 
 
+#endif 

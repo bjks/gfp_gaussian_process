@@ -1,13 +1,35 @@
 #include "CSVconfig.h"
 #include "likelihood.h"
-#include "utils.h"
 #include "minimizer_nlopt.h"
 
 #include <iostream> 
 #include <iterator> 
 
-int main(int argc, char** argv){
 
+
+int main(int argc, char** argv){
+    // Eigen::VectorXd v(3);
+    // Eigen::VectorXd w(3);
+
+    // v << -1, -2,  -3;
+    // w << 10,  20, 30;
+
+    // Eigen::VectorXd x(2);
+    // x << 2, 4;
+    // std::cout << x  << std::endl;
+
+    // Eigen::MatrixXd m(2, 3);
+
+    // m << v.transpose(), w.transpose();
+
+
+    // std::cout << m  << std::endl;
+    // std::cout << v  << std::endl;
+    // std::cout << rowwise_add(m, x)  << std::endl;
+
+    // return 0;
+
+    
     CSVconfig config("csv_config.txt");
     Parameter_set params("parameter_bounds.txt");
 
@@ -24,11 +46,16 @@ int main(int argc, char** argv){
                                             config.length_col,
                                             config.fp_col,
                                             config.delm);
+
+    // genealogy
     build_cell_genealogy(cells);
+    // print_cells(cells);
+    std::cout << cells[0].time << std::endl;
+
+    // minimization for tree starting from cells[0]
     minimize_wrapper(&total_likelihood, cells[0], params);
 
-    print_cells(cells);
-
+    // DEMO on how this works for all trees
     // get the "trees" starting from all root cells
     std::vector<MOMAdata *> root_cells = get_roots(cells);
     std::vector<double> dummy_params;

@@ -3,13 +3,12 @@
 #include <vector>
 #include <iterator>
 #include <string>
-#include <algorithm>
 #include <map> 
 
 #include "Parameters.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/io.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/LU> 
 
 // ============================================================================= //
 // MOMAdata CLASS
@@ -30,11 +29,10 @@ public:
     MOMAdata *daughter2 = nullptr;
 
     // Time dependent quantities (and time) of the cell
-    // stores in ublas vectors to enable lin algebra functions
-    // https://www.boost.org/doc/libs/1_61_0/libs/numeric/ublas/doc/overview.html#functionality
-    boost::numeric::ublas::vector<double> time;
-    boost::numeric::ublas::vector<double> length;
-    boost::numeric::ublas::vector<double> fp;
+    // stores in eigen vectors to enable lin algebra functions
+    Eigen::VectorXd time;
+    Eigen::VectorXd length;
+    Eigen::VectorXd fp;
 
     int generation; // to be deleted later 
 
@@ -42,11 +40,12 @@ public:
     bool is_leaf() const;
     bool is_root() const;
 
-    // 
+    // variables to be calculated
     double likelihood;
+    Eigen::VectorXd mean {4};
+    Eigen::MatrixXd cov {4, 4};
 
     friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
-
 };
 
 
@@ -260,9 +259,9 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
 }
 
 
-void append_vec(boost::numeric::ublas::vector<double> &v, double elem){
+void append_vec(Eigen::VectorXd &v, double elem){
     /*  
-    * push_back alternative for ublas vector, probaly slow and should only be used to read the csv 
+    * push_back alternative for non std vector (with resize() and size()), probaly slow and should only be used to read the csv 
     * and create vector with data with unknow length
     */
     v.resize(v.size()+1);
@@ -285,7 +284,7 @@ std::vector<MOMAdata> getData(std::string filename,
 
     // read the header and assign an index to every entry, such that we can 'index' with a string
     getline(file, line);
-    boost::algorithm::split(vec, line, boost::is_any_of(delm));
+    vec = split_string_at(line, delm);
     std::map<std::string, int> header_indices = get_header_indices(vec);
 
     // Iterate through each line and split the content using the delimeter then assign the 
@@ -295,7 +294,7 @@ std::vector<MOMAdata> getData(std::string filename,
     std::vector<MOMAdata> data;
     int last_idx = -1;
     while (getline(file, line)) {
-        boost::algorithm::split(vec, line, boost::is_any_of(delm));
+        vec = split_string_at(line, delm);
         curr_cell = vec[header_indices["cell"]];
 
         if (last_cell != curr_cell){
@@ -319,3 +318,39 @@ std::vector<MOMAdata> getData(std::string filename,
     return data;
 }
 
+// ============================================================================= //
+// MEAN/COV
+// ============================================================================= //
+
+Eigen::MatrixXd cov(Eigen::MatrixXd m){
+    /*
+    takes a matrix with rowise data, ie
+        m = x1, x2, ...
+            y1, y2, ...
+            ...
+    and calc covariance matrix between x,y,...
+    */
+    Eigen::MatrixXd cov;
+    cov = m;
+    Eigen::MatrixXd ones = Eigen::MatrixXd::Constant(1,m.cols(), 1);
+
+    for(int i=0; i < m.rows(); ++i ){
+        cov.row(i) -= ones * m.row(i).mean();
+    } 
+    return (cov * cov.transpose()) / (m.cols() - 1 );
+}
+
+Eigen::VectorXd row_mean(Eigen::MatrixXd m){
+    /*
+    takes a matrix with rowise data, ie
+        m = x1, x2, ...
+            y1, y2, ...
+            ...
+    and calc mean for x,y,...
+    */
+    Eigen::VectorXd mean(m.rows());
+    for(int i=0; i < m.rows(); ++i ){
+        mean(i) = m.row(i).mean();
+    } 
+    return mean;
+}

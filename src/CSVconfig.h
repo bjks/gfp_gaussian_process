@@ -1,7 +1,6 @@
 #include <fstream>
 #include <iostream>
-
-#include <boost/algorithm/string.hpp>
+#include "utils.h"
 
 
 class CSVconfig {
@@ -26,11 +25,11 @@ public:
             // Overwrite defaults if in config file
             while (getline(fin, line)) {
                 if (line[0] != '#' && line.size()){
-                    boost::algorithm::split(vec, line, boost::is_any_of("="));
+                    vec = split_string_at(line, "=");
 
                     // remove whitespaces from the ends
-                    boost::algorithm::trim(vec[0]);
-                    boost::algorithm::trim(vec[1]);
+                    vec[0] = trim(vec[0]);
+                    vec[1] = trim(vec[1]);
 
                     if (vec[0] == "time_col"){
                         time_col = vec[1];
