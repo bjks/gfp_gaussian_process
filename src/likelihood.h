@@ -4,8 +4,8 @@
 
 #define _USE_MATH_DEFINES
 
+/* -------------------------------------------------------------------------- */
 void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
-
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
@@ -17,16 +17,8 @@ void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
     cell.cov = D + F*cell.parent->cov*F.transpose();
 }
 
-// def log_likelihood(y,m,C,sx2,sg2):
-//     """Given y_t=(x_t,g_t), p(z_t) and errors find p(y_t). Return log lik """
-//     D = np.zeros((2,2))
-//     D[0,0]=sx2;D[1,1]=sg2
-//     Si = np.linalg.inv(C[:2,:2]+D)
-//     S = C[:2,:2]+D
-//     y = y-m[:2,:]
-//     log_lik = -1/2*y.T@Si@y-1/2*np.log(np.linalg.det(S))-2*np.log(2*Pi)
-//     return log_lik
 
+/* -------------------------------------------------------------------------- */
 Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
     Eigen::MatrixXd ones = Eigen::MatrixXd::Constant(1,m.cols(), 1);
     Eigen::MatrixXd m_new = m;
@@ -37,7 +29,7 @@ Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
     return m_new;
 }
 
-void log_likelihood(MOMAdata &cell, double var_dx, double var_dg){
+double  log_likelihood(MOMAdata &cell, double var_dx, double var_dg){
     Eigen::Matrix2d D;
     D << var_dx, 0, 
               0, var_dg;
@@ -49,57 +41,54 @@ void log_likelihood(MOMAdata &cell, double var_dx, double var_dg){
     y = rowwise_add(y, cell.mean.head(2));
     Eigen::MatrixXd a = -0.5 * y.transpose() * Si * y;
 
-    double log_likelihood = a(0) -0.5 * log(S.determinant());
-    // std::cout << "-> "<<  -0.5 * y.transpose() * Si * y -0.5 * log(S.determinant()) - 2* log(2*M_PI) << std::endl;
+    return log_likelihood = a(0) -0.5 * log(S.determinant()) - 2* log(2*M_PI);
 }
+/* -------------------------------------------------------------------------- */
 
 
 void posterior(MOMAdata &cell, double var_dx, double var_dg){
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    D(0,0) = var_dx;
-    D(1,1) = var_dg;
+    Eigen::Matrix2d D;
+    D << var_dx, 0, 
+              0, var_dg;
 
     Eigen::MatrixXd S = cell.cov.block(0,0,2,2) + D;
     Eigen::MatrixXd Si = S.inverse();
 
-    Eigen::MatrixXd K = cell.cov.block(0,0,2,2);
+    Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
 
     Eigen::MatrixXd y(2, cell.fp.size());
     y << cell.length.transpose() , cell.fp.transpose();
     y = rowwise_add(y, -cell.mean.head(2));
+
     cell.mean = cell.mean + K.transpose() * Si * y;
     cell.cov = cell.cov - K.transpose() * Si * K;
 }
 
-
+/* -------------------------------------------------------------------------- */
 void sc_likelihood(const std::vector<double> &params_vec, 
                     MOMAdata &cell, 
                     double &total_likelihood){
     double likelihood = 0;
     if (cell.is_root()){
         /* use initial conditions for nm, nC */
-        ;
     }
     else{
         /* update nm and nC that depend on mother cell */
         mean_cov_after_division(cell, 1, 1);
-        ;
     }
-    log_likelihood(cell, 1, 1);
-
+    
     for (int i=0; i<params_vec.size();++i){
-        likelihood += (i+1)*params_vec[i];
-    } 
-    likelihood = pow(likelihood,2) + 1;
+        total_likelihood += log_likelihood(cell, 1, 1);
+        posterior(cell, 1, 1);
 
-    cell.likelihood = likelihood;
-    total_likelihood += likelihood;
-    /* save likelihood, nm, nC in cell */
+    // mean_cov_model
+    }
 }
 
-/*
---------------------------------------------------------------------------------------------------------
-*/
+
+/* --------------------------------------------------------------------------
+* liklihood wrapping
+* -------------------------------------------------------------------------- */
 
 void likelihood_recr(const std::vector<double> &params_vec, 
                     MOMAdata *cell, 
