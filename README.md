@@ -123,14 +123,26 @@ mean_q = 4
    -  h4 connects x3 and x5
 
 ## Parameters 
-- Initial guess for mean values -> 4
-- Initial guess for variances in cov matrix, cross terms are set to 0 -> 4
-- measurement noise sigma_x, sigma_g -> 2
-- Asymmetric cell division parameters, sigma_dx, sigma_dg -> 2  
+- Growth rate fluctualtions params:
+    - mean_lambda;  
+    - gamma_lambda;  
+    - var_lambda;     
 
-#### Lambda 
-- mean
-- gamma ("drift" of growth rate)
-- var
+- gfp fluctuation params
+    - mean_q;    
+    - gamma_q;    
+    - var_q;  
 
-####
+    - beta;      
+
+- variance guess for length and gfp
+    - var_x;      
+    - var_g;      
+
+- cell division:
+    - var_dx;  
+    - var_dg;      
+
+- mean guess for length and gfp
+    - mean_x;  
+    - mean_g; 
