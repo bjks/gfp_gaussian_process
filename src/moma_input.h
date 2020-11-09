@@ -42,8 +42,9 @@ public:
 
     // variables to be calculated
     double likelihood;
-    Eigen::VectorXd mean {4};
-    Eigen::MatrixXd cov {4, 4};
+    Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
+    Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(4, 4);
+
 
     friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
 };

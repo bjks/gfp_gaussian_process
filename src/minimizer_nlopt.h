@@ -54,7 +54,6 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     opt.set_min_objective(target_func, &cell);
 
     double minf;
-
     // actual minimization
     try{
         opt.optimize(parameter_state, minf);

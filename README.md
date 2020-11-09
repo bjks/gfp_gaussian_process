@@ -99,7 +99,6 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
                         Parameter_set &params, 
                         double relative_tol = 1e-10)
 ```
-
 with connfig file containing :
 - bound variable: gamma_lambda
 - free variable: var_lambda
@@ -110,3 +109,28 @@ gamma_lambda = 4, 0.01, -100, 100
 var_lambda = 4, 0.001
 mean_q = 4 
 ```
+
+### Current minimizer: COBYLA
+-  Constrained Optimization By Linear Approximation (COBYLA)
+-  Implementation of Powell's method:
+   -  pick initial x0 and two directions h1, h2
+   -  starting from x0 1D optimization along first direction h1 -> find x1
+   -  starting from x1 1D optimization along first direction h2 -> find x2
+   -  h3 connects x0 and x2
+   -  starting from x2 1D optimization along first direction h3 -> find x3
+   -  starting from x3 1D optimization along first direction h2 -> find x4
+   -  starting from x4 1D optimization along first direction h3 -> find x5
+   -  h4 connects x3 and x5
+
+## Parameters 
+- Initial guess for mean values -> 4
+- Initial guess for variances in cov matrix, cross terms are set to 0 -> 4
+- measurement noise sigma_x, sigma_g -> 2
+- Asymmetric cell division parameters, sigma_dx, sigma_dg -> 2  
+
+#### Lambda 
+- mean
+- gamma ("drift" of growth rate)
+- var
+
+####

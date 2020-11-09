@@ -3,7 +3,16 @@
 
 class Parameter{
 /* 
-* Single parameter
+* Single parameter, that can be 
+    free (fixed=false, bound=false) 
+    bound (bound=true, fixed=false) 
+    fixed (fixed=true)
+
+All of which contain an initial value (double) and a name (string).
+
+Non-fixed parameters have a step.
+
+Bound parameters have upper/lower (double) which are the respective bounds
 */
 public:
     bool fixed;
@@ -42,7 +51,6 @@ public:
         } else if (val_split.size() == 1){
             init =  std::stod(val_split[0]);
             fixed = true;
-            bound = true;
             set = true;
 
         }  else if (val_split.size() == 2){
@@ -62,21 +70,29 @@ public:
 class Parameter_set{
 /*  Notation in Athos thesis:
     ---------------------------
+Growth rate fluctualtions params:
     mean_lambda;     = \bar \lambda
     gamma_lambda;    = \gamma_\lambda
     var_lambda;      = \sigma_\lambda^2
 
+gfp fluctuation params
     mean_q;          = \bar q
     gamma_q;         = \gamma_q
     var_q;           = \sigma_q^2
 
     beta;            = \beta
 
+variance guess for length and gfp
     var_x;           = \sigma_x^2
     var_g;           = \sigma_g^2
 
+cell division:
     var_dx;          = \sigma_{dx}^2
     var_dg;          = \sigma_{dg}^2
+
+mean guess for length and gfp
+    mean_x          = \bar x
+    mean_g          = \bar g
 */
 protected:
     Parameter mean_lambda;
@@ -95,7 +111,8 @@ protected:
     Parameter var_dx;
     Parameter var_dg;
 
-
+    Parameter mean_x;
+    Parameter mean_g;
 public:
     std::vector<Parameter> all;
 
@@ -135,12 +152,17 @@ public:
                         var_dx.set_paramter(parts);
                     } else if (parts[0] == "var_dg"){
                         var_dg.set_paramter(parts);
+                    } else if (parts[0] == "mean_x"){
+                        mean_x.set_paramter(parts);
+                    } else if (parts[0] == "mean_g"){
+                        mean_g.set_paramter(parts);
                     } 
+
                 }
             }
         }
         // create vector containing all paramters in well-defined order
-        all = {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg};
+        all = {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg, mean_x, mean_g};
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
@@ -164,12 +186,13 @@ std::string pad_str(std::string s, const size_t num, const char paddingChar = ' 
 std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
     for (int i=0; i<params.all.size(); ++i){
         if (params.all[i].set){
+            os <<  pad_str(std::to_string(i), 2) << ": ";
             if (params.all[i].fixed){
                 os <<  pad_str(params.all[i].name, 15) << " (fixed) = " << params.all[i].init;
             } else if (params.all[i].bound){
                 os << pad_str(params.all[i].name, 15) << " (bound) = " 
-                    << params.all[i].init << ", bounds: (" << params.all[i].lower << ", " << params.all[i].upper << "), step: "
-                    << params.all[i].step;
+                    << params.all[i].init << ", step: " << params.all[i].step 
+                    << ", bounds: (" << params.all[i].lower << ", " << params.all[i].upper << ")";
             } else {
                 os << pad_str(params.all[i].name, 15) << " (free)  = " 
                     << params.all[i].init << ", step: " << params.all[i].step;
@@ -177,8 +200,12 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
             if (params.all[i].miminized && !params.all[i].fixed){
                 os << " -> "<< params.all[i].value;
             }
-            os << "\n";
         }
+        else{
+            os <<  pad_str(std::to_string(i), 2) << ": WARNING parameter not found, please see Parameters.h for info" << params.all[i].name;
+        }
+        os << "\n";
+
     }
     return os;
 }

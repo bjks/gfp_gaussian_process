@@ -36,6 +36,7 @@ int main(int argc, char** argv){
     std::cout << params << "\n";
 
     // Read data
+    std::cout << "-> Reading" << "\n";
     std::string infile = argv[1];    
     if(! std::__fs::filesystem::exists(infile)){
         std::cout << "File " << infile << " not found! \nQuit" << std::endl;
@@ -50,8 +51,8 @@ int main(int argc, char** argv){
     // genealogy
     build_cell_genealogy(cells);
     // print_cells(cells);
-    std::cout << cells[0].time << std::endl;
 
+    std::cout << "-> Minimizaton" << "\n";
     // minimization for tree starting from cells[0]
     minimize_wrapper(&total_likelihood, cells[0], params);
 
