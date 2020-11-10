@@ -52,17 +52,22 @@ int main(int argc, char** argv){
     build_cell_genealogy(cells);
     // print_cells(cells);
 
+    init_cells(cells);
+    return 0;
+
+
     std::cout << "-> Minimizaton" << "\n";
     // minimization for tree starting from cells[0]
     minimize_wrapper(&total_likelihood, cells[0], params);
 
-    // DEMO on how this works for all trees
-    // get the "trees" starting from all root cells
-    std::vector<MOMAdata *> root_cells = get_roots(cells);
-    std::vector<double> dummy_params;
-    for(long j=0; j<root_cells.size(); ++j){
-        print_generation_tree(dummy_params, *root_cells[j]);
-    }
+
+    // // DEMO on how this works for all trees
+    // // get the "trees" starting from all root cells
+    // std::vector<MOMAdata *> root_cells = get_roots(cells);
+    // std::vector<double> dummy_params;
+    // for(long j=0; j<root_cells.size(); ++j){
+    //     print_generation_tree(dummy_params, *root_cells[j]);
+    // }
     
     std::cout << "Done." << std::endl;
     return 0;

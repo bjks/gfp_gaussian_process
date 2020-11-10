@@ -1,7 +1,6 @@
 # ROOTFLAG = `root-config --libs --cflags`
 CFLAGS = -Wall -std=c++17 -ffast-math -O3
 NLOPTLAGS = -I $(HOME)/nlopt/include -L$(HOME)/nlopt/lib -lnlopt -lm  
-BOOSTFLAG = -I /Applications/boost/boost_1_73_0/
 EIGENFLAG = -I /Applications/Eigen/eigen  
 
 all: 

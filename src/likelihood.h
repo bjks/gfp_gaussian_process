@@ -66,40 +66,40 @@ void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, double var_x, double var_g){
 }
 
 /* -------------------------------------------------------------------------- */
+
+void mean_cov_model(MOMAdata &cell, double t, double ml, double gl, 
+                    double sl2, double mq, double gq, double sq2, double b){
+    /* update mean cov of cell */
+    cell.mean;
+    cell.cov;
+}
+
+/* -------------------------------------------------------------------------- */
 void sc_likelihood(const std::vector<double> &params_vec, 
                     MOMAdata &cell, 
                     double &total_likelihood){
 /* Calculates the likelihood of a single cell (can be a root cell)
-the params_vec contains paramters in the following (well defined) order:
-{mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg, mean_x, mean_g}
+* the params_vec contains paramters in the following (well defined) order:
+* {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
-    if (cell.is_root()){
-        // use initial conditions for mean and cov matrix
-
-        cell.mean(0) = params_vec[11];
-        cell.mean(1) = params_vec[12];
-        cell.mean(2) = params_vec[0];
-        cell.mean(3) = params_vec[3];
-
-        cell.cov(0,0) = params_vec[7];
-        cell.cov(1,1) = params_vec[8];
-        cell.cov(2,2) = params_vec[2];
-        cell.cov(3,3) = params_vec[5];
-    }
-    else{
+    if (!cell.is_root()){
         // update nm and nC that depend on mother cell 
         mean_cov_after_division(cell, params_vec[9], params_vec[10]);
     }
 
     Eigen::MatrixXd xg(2, cell.fp.size());
-    xg << cell.length.transpose() , cell.fp.transpose();
+    xg << cell.log_length.transpose() , cell.fp.transpose();
 
-    // substract mean
     xg = rowwise_add(xg, -cell.mean.head(2)); // substract mean
     
     for (long t=0; t<cell.time.size(); ++t ){
+        // add to total_likelihood of entire tree
         total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]);
+
+        // update mean/cov
         posterior(xg.col(t), cell, params_vec[7], params_vec[8]);
+        mean_cov_model(cell, cell.time(t), params_vec[0], params_vec[1], params_vec[2], params_vec[3], 
+                        params_vec[4], params_vec[5], params_vec[6]);
     }
 }
 
@@ -129,9 +129,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     * total_likelihood of cell tree, to be maximized
     */
 
-    // MOMAdata cell = *(MOMAdata *) c;
     double total_likelihood = 0;
-
     likelihood_recr(params_vec,  (MOMAdata *) c, total_likelihood);
     return total_likelihood;
 }

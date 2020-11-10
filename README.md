@@ -7,7 +7,21 @@
 `cd bin`
 `./gfp_gaussian <csv file created by moma>`
 
+## Dependencies
+- nlopt
+  - can be installed via cmake
+  - can be statically compiled easily
+- Eigen
+  - available via modules
+
 # Notes gfp_gaussian_process 
+
+## TODO
+- set initial guess for mean and covariance matrix
+- implement mean and covariance matrix 
+- testing of entire likelihood implementation
+- decide on output
+
 ## Structure
 
 ```cpp
@@ -118,9 +132,7 @@ mean_q = 4
    -  starting from x1 1D optimization along first direction h2 -> find x2
    -  h3 connects x0 and x2
    -  starting from x2 1D optimization along first direction h3 -> find x3
-   -  starting from x3 1D optimization along first direction h2 -> find x4
-   -  starting from x4 1D optimization along first direction h3 -> find x5
-   -  h4 connects x3 and x5
+   -  ...
 
 ## Parameters 
 - Growth rate fluctualtions params:
@@ -142,7 +154,3 @@ mean_q = 4
 - cell division:
     - var_dx;  
     - var_dg;      
-
-- mean guess for length and gfp
-    - mean_x;  
-    - mean_g; 

@@ -4,6 +4,9 @@
 #include <iterator>
 #include <string>
 #include <map> 
+#include <math.h> 
+#include <cmath>
+#include <numeric>
 
 #include "Parameters.h"
 
@@ -31,7 +34,7 @@ public:
     // Time dependent quantities (and time) of the cell
     // stores in eigen vectors to enable lin algebra functions
     Eigen::VectorXd time;
-    Eigen::VectorXd length;
+    Eigen::VectorXd log_length;
     Eigen::VectorXd fp;
 
     int generation; // to be deleted later 
@@ -265,7 +268,7 @@ void append_vec(Eigen::VectorXd &v, double elem){
     * push_back alternative for non std vector (with resize() and size()), probaly slow and should only be used to read the csv 
     * and create vector with data with unknow length
     */
-    v.resize(v.size()+1);
+    v.conservativeResize(v.size()+1);
     v[v.size()-1] = elem;
 }
 
@@ -280,13 +283,13 @@ std::vector<MOMAdata> getData(std::string filename,
     */
     std::ifstream file(filename);
     
-    std::vector<std::string> vec;
+    std::vector<std::string> line_parts;
     std::string line;
 
     // read the header and assign an index to every entry, such that we can 'index' with a string
     getline(file, line);
-    vec = split_string_at(line, delm);
-    std::map<std::string, int> header_indices = get_header_indices(vec);
+    line_parts = split_string_at(line, delm);
+    std::map<std::string, int> header_indices = get_header_indices(line_parts);
 
     // Iterate through each line and split the content using the delimeter then assign the 
     std::string last_cell = "";
@@ -295,24 +298,25 @@ std::vector<MOMAdata> getData(std::string filename,
     std::vector<MOMAdata> data;
     int last_idx = -1;
     while (getline(file, line)) {
-        vec = split_string_at(line, delm);
-        curr_cell = vec[header_indices["cell"]];
+        line_parts = split_string_at(line, delm);
+        if (line_parts[header_indices["end_type"]] == "div"){
+            curr_cell = line_parts[header_indices["cell"]];
 
-        if (last_cell != curr_cell){
-            last_idx++;
-            MOMAdata next_cell;
-            // add new MOMAdata instance to vector 
-            data.push_back(next_cell); 
+            if (last_cell != curr_cell){
+                last_idx++;
+                MOMAdata next_cell;
+                // add new MOMAdata instance to vector 
+                data.push_back(next_cell); 
 
-            data[last_idx].cell_id = curr_cell;
-            data[last_idx].parent_id = get_parent_id(vec, header_indices);
+                data[last_idx].cell_id = curr_cell;
+                data[last_idx].parent_id = get_parent_id(line_parts, header_indices);
+            }
+
+            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]]) );
+            append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[length_col]]) ));
+            append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[fp_col]]) );
+            last_cell = curr_cell;
         }
-
-        append_vec(data[last_idx].time,  std::stod(vec[header_indices[time_col]]) );
-        append_vec(data[last_idx].length,  std::stod(vec[header_indices[length_col]]) );
-        append_vec(data[last_idx].fp,  std::stod(vec[header_indices[fp_col]]) );
-
-        last_cell = curr_cell;
     }
     file.close();
     std::cout << last_idx + 1 << " cells found in file " << filename << std::endl; 
@@ -355,3 +359,54 @@ Eigen::VectorXd row_mean(Eigen::MatrixXd m){
     } 
     return mean;
 }
+
+// ============================================================================= //
+// MEAN/COV INIT 
+// ============================================================================= //
+
+double lin_fit_slope(Eigen::VectorXd x, Eigen::VectorXd y) {
+    /* returns slope of linear regression */
+    double s_x  = x.sum();
+    double s_y  = y.sum();
+    return (x.size() * x.dot(y) - s_x * s_y) / (x.size() * x.dot(x) - s_x * s_x);
+}
+
+double vec_mean(std::vector<double> v){
+    /* returns mean of std::vector */
+    return std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+
+}
+double vec_var(std::vector<double> v){
+    /* returns variance of std::vector */
+    double sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
+    return sq_sum / v.size() - pow(vec_mean(v), 2);
+}
+
+void init_cells(std::vector<MOMAdata> &cells){
+    /* 
+    * Inititalizes the mean vector and the covariance matrix of the root cells 
+    */
+    std::vector<double> x0;
+    std::vector<double> g0;
+    std::vector<double> l0;
+    std::vector<double> q0;
+
+    for(int i=0; i<cells.size(); ++i){
+        if(cells[i].time.size()>2){
+            x0.push_back(cells[i].log_length(0));
+            g0.push_back(cells[i].fp(0));
+            l0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].log_length.head(3)));
+            q0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].fp.head(3)));
+        }
+    }
+
+    std::vector<MOMAdata *> roots = get_roots(cells);
+    for(int i=0; i<roots.size(); ++i){
+        roots[i]->mean << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
+        roots[i]->cov(0,0) = vec_var(x0);
+        roots[i]->cov(1,1) = vec_var(g0);
+        roots[i]->cov(2,2) = vec_var(l0);
+        roots[i]->cov(3,3) = vec_var(q0);
+    }
+}
+

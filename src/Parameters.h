@@ -90,9 +90,6 @@ cell division:
     var_dx;          = \sigma_{dx}^2
     var_dg;          = \sigma_{dg}^2
 
-mean guess for length and gfp
-    mean_x          = \bar x
-    mean_g          = \bar g
 */
 protected:
     Parameter mean_lambda;
@@ -111,8 +108,6 @@ protected:
     Parameter var_dx;
     Parameter var_dg;
 
-    Parameter mean_x;
-    Parameter mean_g;
 public:
     std::vector<Parameter> all;
 
@@ -152,17 +147,13 @@ public:
                         var_dx.set_paramter(parts);
                     } else if (parts[0] == "var_dg"){
                         var_dg.set_paramter(parts);
-                    } else if (parts[0] == "mean_x"){
-                        mean_x.set_paramter(parts);
-                    } else if (parts[0] == "mean_g"){
-                        mean_g.set_paramter(parts);
-                    } 
+                    }
 
                 }
             }
         }
         // create vector containing all paramters in well-defined order
-        all = {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg, mean_x, mean_g};
+        all = {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg};
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
