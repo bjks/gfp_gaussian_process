@@ -2,6 +2,8 @@
 #include <vector>
 
 #include <nlopt.hpp>
+#include "Parameters.h"
+
 
 
 double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad, void *p){

@@ -1,5 +1,7 @@
 #include "moma_input.h"
-#include <math.h> 
+#include "mean_cov_model.h"
+
+#include <math.h>
 #include <cmath>
 
 #define _USE_MATH_DEFINES
@@ -66,14 +68,6 @@ void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, double var_x, double var_g){
 }
 
 /* -------------------------------------------------------------------------- */
-
-void mean_cov_model(MOMAdata &cell, double t, double ml, double gl, 
-                    double sl2, double mq, double gq, double sq2, double b){
-    /* update mean cov of cell */
-    cell.mean;
-    cell.cov;
-}
-
 /* -------------------------------------------------------------------------- */
 void sc_likelihood(const std::vector<double> &params_vec, 
                     MOMAdata &cell, 
@@ -89,18 +83,25 @@ void sc_likelihood(const std::vector<double> &params_vec,
 
     Eigen::MatrixXd xg(2, cell.fp.size());
     xg << cell.log_length.transpose() , cell.fp.transpose();
-
     xg = rowwise_add(xg, -cell.mean.head(2)); // substract mean
-    
-    for (long t=0; t<cell.time.size(); ++t ){
-        // add to total_likelihood of entire tree
-        total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]);
 
-        // update mean/cov
-        posterior(xg.col(t), cell, params_vec[7], params_vec[8]);
-        mean_cov_model(cell, cell.time(t), params_vec[0], params_vec[1], params_vec[2], params_vec[3], 
-                        params_vec[4], params_vec[5], params_vec[6]);
+    long t=0;
+    for (; t<cell.time.size()-1; ++t ){
+        total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]); // add to total_likelihood of entire tree                
+        posterior(xg.col(t), cell, params_vec[7], params_vec[8]); // updates mean/cov        
+        std::cout << cell.cov << "\n" << cell.mean << "\n"<< "  " << total_likelihood << "\n";
+
+        mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
+                        params_vec[1], params_vec[2], params_vec[3], 
+                        params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+        std::cout << cell.cov << "\n" << cell.mean << "\n"<< "  " << total_likelihood << "\n";
+        if (std::isnan(total_likelihood)){
+            break;
+        }
+        
     }
+    total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]); // add to total_likelihood of entire tree        
+    posterior(xg.col(t), cell, params_vec[7], params_vec[8]); // updates mean/cov
 }
 
 
@@ -131,7 +132,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
 
     double total_likelihood = 0;
     likelihood_recr(params_vec,  (MOMAdata *) c, total_likelihood);
-    return total_likelihood;
+    return -total_likelihood;
 }
 
 

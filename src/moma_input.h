@@ -1,14 +1,12 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <iterator>
 #include <string>
-#include <map> 
-#include <math.h> 
-#include <cmath>
-#include <numeric>
 
-#include "Parameters.h"
+#include <vector>
+#include <map> 
+#include <cmath>
+#include <numeric> // for accumulate and inner_product
 
 #include <Eigen/Core>
 #include <Eigen/LU> 
@@ -46,7 +44,7 @@ public:
     // variables to be calculated
     double likelihood;
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
-    Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(4, 4);
+    Eigen::MatrixXd cov = Eigen::MatrixXd::Constant(4, 4, 1e-10);
 
 
     friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
@@ -312,7 +310,7 @@ std::vector<MOMAdata> getData(std::string filename,
                 data[last_idx].parent_id = get_parent_id(line_parts, header_indices);
             }
 
-            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]]) );
+            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/60. );
             append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[length_col]]) ));
             append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[fp_col]]) );
             last_cell = curr_cell;
@@ -382,7 +380,7 @@ double vec_var(std::vector<double> v){
     return sq_sum / v.size() - pow(vec_mean(v), 2);
 }
 
-void init_cells(std::vector<MOMAdata> &cells){
+void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the root cells 
     */
@@ -395,8 +393,8 @@ void init_cells(std::vector<MOMAdata> &cells){
         if(cells[i].time.size()>2){
             x0.push_back(cells[i].log_length(0));
             g0.push_back(cells[i].fp(0));
-            l0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].log_length.head(3)));
-            q0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].fp.head(3)));
+            l0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].log_length.head(n_cells)));
+            q0.push_back(lin_fit_slope(cells[i].time.head(3), cells[i].fp.head(n_cells)));
         }
     }
 

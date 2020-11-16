@@ -158,7 +158,9 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
     void set_value(std::vector<double> vals);
+    std::vector<double> get_values();
 };
+
 
 void Parameter_set::set_value(std::vector<double> vals){
     for (int i=0; i<all.size(); ++i){
@@ -166,6 +168,14 @@ void Parameter_set::set_value(std::vector<double> vals){
         all[i].miminized = true;
     }
     
+}
+
+std::vector<double>  Parameter_set::get_values(){
+    std::vector<double> vals;
+    for (int i=0; i<all.size(); ++i){
+        vals.push_back(all[i].value);
+    }
+    return vals;
 }
 
 std::string pad_str(std::string s, const size_t num, const char paddingChar = ' '){

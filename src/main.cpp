@@ -2,34 +2,27 @@
 #include "likelihood.h"
 #include "minimizer_nlopt.h"
 
+
 #include <iostream> 
 #include <iterator> 
 
 
 
 int main(int argc, char** argv){
-    // Eigen::VectorXd v(3);
-    // Eigen::VectorXd w(3);
-
-    // v << -1, -2,  -3;
-    // w << 10,  20, 30;
-
-    // Eigen::VectorXd x(2);
-    // x << 2, 4;
-    // std::cout << x  << std::endl;
-
-    // Eigen::MatrixXd m(2, 3);
-
-    // m << v.transpose(), w.transpose();
+    // double x = zerotauint(0.1, 0.1, 0.1, 180, 0);
+    // double y = onetauint(0.1, 0.1, 0.1, 20, 0);
+    // double z = twotauint(0.1, 0.1, 0.1, 20, 0);
+    // double a = treetauint(0.1, 0.1, 0.1, 1e10, 0);
 
 
-    // std::cout << m  << std::endl;
-    // std::cout << v  << std::endl;
-    // std::cout << rowwise_add(m, x)  << std::endl;
+
+    // std::cout << x << "\n";
+    // std::cout << y << "\n";
+    // std::cout << z << "\n";
+    // std::cout << a << "\n";
 
     // return 0;
 
-    
     CSVconfig config("csv_config.txt");
     Parameter_set params("parameter_bounds.txt");
 
@@ -53,12 +46,19 @@ int main(int argc, char** argv){
     // print_cells(cells);
 
     init_cells(cells);
-    return 0;
+    
+    MOMAdata cell = cells[0];
+    std::cout << cell.cov << "\n" << cell.mean << "\n";
+    
+    std::vector<double> params_vec = params.get_values();
+    double total_likelihood = 0;
+    sc_likelihood(params_vec,cell, total_likelihood);
+    std::cout << cell.cov << "\n" << cell.mean << "\n";
 
-
+    return 0 ;
     std::cout << "-> Minimizaton" << "\n";
     // minimization for tree starting from cells[0]
-    minimize_wrapper(&total_likelihood, cells[0], params);
+    // minimize_wrapper(&total_likelihood, cells[0], params);
 
 
     // // DEMO on how this works for all trees

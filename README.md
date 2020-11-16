@@ -6,21 +6,31 @@
 ## Run
 `cd bin`
 `./gfp_gaussian <csv file created by moma>`
-
-## Dependencies
-- nlopt
-  - can be installed via cmake
-  - can be statically compiled easily
-- Eigen
-  - available via modules
+The columns that are taken from the csv file can be set by modifying `csv_config.txt`, although defaults are set.
+The parameter space is defined in `parameter_bound.txt`. 
 
 # Notes gfp_gaussian_process 
 
-## TODO
-- set initial guess for mean and covariance matrix
-- implement mean and covariance matrix 
-- testing of entire likelihood implementation
-- decide on output
+## Libraries
+- Minimization: nlopt
+  - can be installed via cmake
+  - can be statically compiled easily
+- Linear algebra: Eigen
+  - available via modules
+  
+## TODO: Likelihood calculation
+- [x] mean and covariance matrix at cell division, log_likelihood, posterior 
+- [x] set initial guess for mean and covariance matrix, (not really tested yet)
+- [ ] prior distribution for the next cell state: calculation of mean and covariance matrix
+    ```cpp
+    void mean_cov_model(MOMAdata &cell, 
+                        double t, double ml, 
+                        double gl, double sl2, 
+                        double mq, double gq, 
+                        double sq2, double b);
+    ```
+- [ ] get a simulated data set as reference and test everything
+- [ ] decide on output
 
 ## Structure
 
