@@ -9,19 +9,6 @@
 
 
 int main(int argc, char** argv){
-    // double x = zerotauint(0.1, 0.1, 0.1, 180, 0);
-    // double y = onetauint(0.1, 0.1, 0.1, 20, 0);
-    // double z = twotauint(0.1, 0.1, 0.1, 20, 0);
-    // double a = treetauint(0.1, 0.1, 0.1, 1e10, 0);
-
-
-
-    // std::cout << x << "\n";
-    // std::cout << y << "\n";
-    // std::cout << z << "\n";
-    // std::cout << a << "\n";
-
-    // return 0;
 
     CSVconfig config("csv_config.txt");
     Parameter_set params("parameter_bounds.txt");
@@ -39,12 +26,13 @@ int main(int argc, char** argv){
                                             config.time_col,
                                             config.length_col,
                                             config.fp_col,
-                                            config.delm);
+                                            config.delm,
+                                            config.cell_tags,
+                                            config.parent_tags);
 
     // genealogy
     build_cell_genealogy(cells);
     // print_cells(cells);
-
     init_cells(cells);
     
     MOMAdata cell = cells[0];

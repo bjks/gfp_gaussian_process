@@ -235,17 +235,20 @@ void apply_down_tree(const std::vector<double> &params_vec,
 // ============================================================================= //
 // READING CSV
 // ============================================================================= //
-std::string get_parent_id(std::vector<std::string> &str_vec, 
-                            std::map<std::string, int> &header_indices){
+std::string get_cell_id(std::vector<std::string> &str_vec, 
+                            std::map<std::string, int> &header_indices,
+                            std::vector<std::string> tags){
     /*  
-    * Compose parent_id of the cell
+    * Compose id of the cell by adding all elements in tags seperated by "."
     */
-    std::string parent_id = str_vec[header_indices["date"]] + "." + 
-                            str_vec[header_indices["pos"]]+ "." + 
-                            str_vec[header_indices["gl"]] + "." + 
-                            std::to_string(std::stoi(str_vec[header_indices["parent_id"]])); 
-                            // need to get rid of decimals in "parent_id", hence the double type cast
-    return parent_id;
+    std::string id =""; 
+    for (int i=0; i<tags.size(); ++i){
+        if (i>0)
+            id += ".";
+        id += std::to_string(std::stoi(str_vec[header_indices[tags[i]]]));
+        // need to get rid of decimal points, hence the double type cast
+    }
+    return id;
 }
 
 
@@ -275,7 +278,9 @@ std::vector<MOMAdata> getData(std::string filename,
                             std::string time_col, 
                             std::string length_col, 
                             std::string fp_col, 
-                            std::string delm){
+                            std::string delm,
+                            std::vector<std::string> cell_tags,
+                            std::vector<std::string> parent_tags){
     /*  
     * Parses through csv file line by line and returns the data as a vector of MOMAdata instances
     */
@@ -297,8 +302,9 @@ std::vector<MOMAdata> getData(std::string filename,
     int last_idx = -1;
     while (getline(file, line)) {
         line_parts = split_string_at(line, delm);
-        if (line_parts[header_indices["end_type"]] == "div"){
-            curr_cell = line_parts[header_indices["cell"]];
+        // take lines only if end_type==div or header_indices "end_type" is not in header_indices
+        if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
+            curr_cell = get_cell_id(line_parts, header_indices, cell_tags);
 
             if (last_cell != curr_cell){
                 last_idx++;
@@ -307,7 +313,7 @@ std::vector<MOMAdata> getData(std::string filename,
                 data.push_back(next_cell); 
 
                 data[last_idx].cell_id = curr_cell;
-                data[last_idx].parent_id = get_parent_id(line_parts, header_indices);
+                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, parent_tags);
             }
 
             append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/60. );

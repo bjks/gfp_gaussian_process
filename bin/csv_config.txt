@@ -2,14 +2,23 @@
 # lines staring with '#' are ignored
 # Everything behind the '=' sign (excluding l/r whitespaces) is taken
 
-# Defaults:
+# Defaults (based on a Moma output):
 #   time_col = "time_sec";
 #   length_col = "length_um";
 #   fp_col = "gfp_nb";
 #   delm = ",";
+#   parent_tags = {"date", "pos", "gl", "parent_id"};
+#   cell_tag = {"date", "pos", "gl", "id"};
 
 # ========================== #
 
-time_col = time_sec
-length_col = length_um
-# fp_col = WILL BE IGNORED 
+
+length_col = leng
+fp_col = gfp
+parent_tags = lane_ID, parent_id
+cell_tags = lane_ID, id
+
+# parent_tags = date, pos, gl, parent_id
+# cell_tags = date, pos, gl, id
+
+
