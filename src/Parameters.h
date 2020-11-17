@@ -159,6 +159,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
     void set_value(std::vector<double> vals);
     std::vector<double> get_values();
+    std::vector<double> get_init();
 };
 
 
@@ -174,6 +175,14 @@ std::vector<double>  Parameter_set::get_values(){
     std::vector<double> vals;
     for (int i=0; i<all.size(); ++i){
         vals.push_back(all[i].value);
+    }
+    return vals;
+}
+
+std::vector<double>  Parameter_set::get_init(){
+    std::vector<double> vals;
+    for (int i=0; i<all.size(); ++i){
+        vals.push_back(all[i].init);
     }
     return vals;
 }

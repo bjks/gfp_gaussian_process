@@ -1,4 +1,5 @@
 # gfp_gaussian_process
+Re-implementaion of the python code: https://github.com/fioriathos/new_protein_project
 
 ## Compile
 `cd src; make`

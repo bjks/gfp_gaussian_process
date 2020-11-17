@@ -38,31 +38,18 @@ Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
     return m_new;
 }
 
-double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, double var_x, double var_g){
+double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::MatrixXd S, Eigen::MatrixXd Si){
+    // tested (i.e. same output as python functions)
     /*
     * log likelihood
     */
-    Eigen::Matrix2d D;
-    D << var_x, 0, 
-              0, var_g;
-    Eigen::MatrixXd S = cell.cov.block(0,0,2,2) + D;
-    Eigen::MatrixXd Si = S.inverse();
-
     Eigen::MatrixXd a = -0.5 * xgt.transpose() * Si * xgt;
-
     return a(0) -0.5 * log(S.determinant()) - 2* log(2*M_PI);
 }
 
-void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, double var_x, double var_g){
-    Eigen::Matrix2d D;
-    D << var_x, 0, 
-              0, var_g;
-
-    Eigen::MatrixXd S = cell.cov.block(0,0,2,2) + D;
-    Eigen::MatrixXd Si = S.inverse();
-
+void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
+    // tested (i.e. same output as python functions)
     Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
-
     cell.mean = cell.mean + K.transpose() * Si * xgt;
     cell.cov = cell.cov - K.transpose() * Si * K;
 }
@@ -81,27 +68,34 @@ void sc_likelihood(const std::vector<double> &params_vec,
         mean_cov_after_division(cell, params_vec[9], params_vec[10]);
     }
 
-    Eigen::MatrixXd xg(2, cell.fp.size());
-    xg << cell.log_length.transpose() , cell.fp.transpose();
-    xg = rowwise_add(xg, -cell.mean.head(2)); // substract mean
+    Eigen::VectorXd xg(2);
 
-    long t=0;
-    for (; t<cell.time.size()-1; ++t ){
-        total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]); // add to total_likelihood of entire tree                
-        posterior(xg.col(t), cell, params_vec[7], params_vec[8]); // updates mean/cov        
-        std::cout << cell.cov << "\n" << cell.mean << "\n"<< "  " << total_likelihood << "\n";
+    Eigen::MatrixXd D(2,2);
+    D <<  params_vec[7], 0, 0,  params_vec[8];
 
-        mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
+    Eigen::Matrix2d S;
+    Eigen::Matrix2d Si;
+
+    for (long t=0; t<cell.time.size(); ++t ){
+        xg(0) = cell.log_length(t) - cell.mean(0);
+        xg(1) = cell.fp(t) - cell.mean(1);
+
+        S = cell.cov.block(0,0,2,2) + D;
+        Si = S.inverse();
+
+        total_likelihood += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree     
+        std::cout <<  total_likelihood << "\n";
+        posterior(xg, cell, S, Si); // updates mean/cov        
+
+        if (t<cell.time.size()-1) {
+            mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
-        std::cout << cell.cov << "\n" << cell.mean << "\n"<< "  " << total_likelihood << "\n";
+        }
         if (std::isnan(total_likelihood)){
             break;
         }
-        
     }
-    total_likelihood += log_likelihood(xg.col(t), cell, params_vec[7], params_vec[8]); // add to total_likelihood of entire tree        
-    posterior(xg.col(t), cell, params_vec[7], params_vec[8]); // updates mean/cov
 }
 
 

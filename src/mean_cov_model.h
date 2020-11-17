@@ -1,3 +1,4 @@
+// tested (i.e. same output as python functions)
 #include <cmath>
 #include "Faddeeva.hh"
 
@@ -7,7 +8,11 @@ double zerotauint(double a, double b, double c, double t1, double t0=0){
     //int_t0^t1 exp[a*s**2+b*s+c]ds//
     double x = (exp(-pow(b,2)/(4.*a) + c)*sqrt(M_PI)*(-Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(2.*sqrt(a));
     if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << "INF-WARING: zerotauint";
+        std::cout << a << " "<< b << " "<< c << " " << t1 << " " << t0 << " " << " INF-WARING: zerotauint ";
+        std::cout   << exp(-pow(b,2)/(4.*a) + c) << " " 
+                    << -Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) << " " 
+                    <<  Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))  << " "
+                    << (2.*sqrt(a)) << "\n";
     }
     return x;
 }
@@ -17,7 +22,7 @@ double onetauint(double a, double b, double c, double t1, double t0=0){
     double x= (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
            b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) - b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(4.*pow(a,1.5));
     if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " <<"INF-WARING: onetauint";
+        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " <<" INF-WARING: onetauint\n";
     }
     return x;
 }
@@ -28,7 +33,7 @@ double twotauint(double a, double b, double c, double t1, double t0=0){
            (-(b*exp(t0*(b + a*t0))) + b*exp(t1*(b + a*t1)) + 2*a*exp(t0*(b + a*t0))*t0 - 2*a*exp(t1*(b + a*t1))*t1) +\
            (2*a - pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + (-2*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(8.*pow(a,2.5));
     if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " "<<  t1 << " " << "INF-WARING: twotauint";
+        std::cout<< a << " "<< b << " "<< c << " "<<  t1 << " " << " INF-WARING: twotauint\n";
     }
     return x;
 }
@@ -41,12 +46,14 @@ double treetauint(double a, double b, double c, double t1, double t0=0){
             4*pow(a,2)*(exp(t0*(b + a*t0))*pow(t0,2) - exp(t1*(b + a*t1))*pow(t1,2))) + b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) -\
            b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(16.*pow(a,3.5));
     if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << "INF-WARING: treetauint";
+        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << " INF-WARING: treetauint\n";
     }
     return x;
 }
 
-           
+// ======================================================================================================== //
+// ======================================================================================================== //
+// ======================================================================================================== //       
 
 double mean_x(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
     return bx+ml*t+(bl-ml)*(1-exp(-gl*t))/gl;
@@ -65,15 +72,14 @@ double mean_q(double t,double bx,double bg,double bl,double bq,double Cxx,double
     return mq+(bq-mq)*exp(-gq*t);
 }
 
+// ======================================================================================================== //
+// ======================================================================================================== //
+// ======================================================================================================== //
+
 double cov_xx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
     return Cll*pow((1-exp(-gl*t)),2)/pow(gl,2)+2*Cxl*(1-exp(-gl*t))/gl+Cxx+ sl2/(2*pow(gl,3))*(2*gl*t-3+4*exp(-gl*t)-pow(exp(-gl*t),2) ) ;
 }
 
-
-
-// ======================================================================================================== //
-// ======================================================================================================== //
-// ======================================================================================================== //
 
 double cov_xg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b, Eigen::VectorXd nm){
 	return (bg*bx)/exp(b*t) + Cxg/exp(b*t) + (bg*bl)/(exp(b*t)*gl) + Cgl/(exp(b*t)*gl) - (bg*bl)/(exp((b + gl)*t)*gl) - \
