@@ -35,17 +35,16 @@ public:
     Eigen::VectorXd log_length;
     Eigen::VectorXd fp;
 
-    int generation; // to be deleted later 
-
-    // member functions
-    bool is_leaf() const;
-    bool is_root() const;
+    int generation;
 
     // variables to be calculated
     double likelihood;
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
-    Eigen::MatrixXd cov = Eigen::MatrixXd::Constant(4, 4, 1e-10);
+    Eigen::MatrixXd cov = Eigen::MatrixXd::Constant(4, 4, 0);
 
+    // member functions
+    bool is_leaf() const;
+    bool is_root() const;
 
     friend std::ostream& operator<<(std::ostream& os, const MOMAdata& cell);
 };
@@ -72,6 +71,9 @@ std::ostream& operator<<(std::ostream& os, const MOMAdata& cell){
         os << "\t \\_ daughter 1: " << cell.daughter1->cell_id << "\n";     
     if (cell.daughter2 !=nullptr)
         os << "\t \\_ daughter 2: " << cell.daughter2->cell_id << "\n";   
+    os << cell.mean << "\n";
+    os << cell.cov << "\n";
+
     return os;
 }
 
@@ -317,7 +319,7 @@ std::vector<MOMAdata> getData(std::string filename,
             }
 
             append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/60. );
-            append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[length_col]]) ));
+            append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[length_col]]) );
             append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[fp_col]]) );
             last_cell = curr_cell;
         }
@@ -388,7 +390,8 @@ double vec_var(std::vector<double> v){
 
 void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     /* 
-    * Inititalizes the mean vector and the covariance matrix of the root cells 
+    * Inititalizes the mean vector and the covariance matrix of the root cells estimated from 
+    * the data
     */
     std::vector<double> x0;
     std::vector<double> g0;
@@ -396,7 +399,7 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     std::vector<double> q0;
 
     for(int i=0; i<cells.size(); ++i){
-        if(cells[i].time.size()>2){
+        if(cells[i].time.size()>=n_cells){
             x0.push_back(cells[i].log_length(0));
             g0.push_back(cells[i].fp(0));
             l0.push_back(lin_fit_slope(cells[i].time.head(n_cells), cells[i].log_length.head(n_cells)));
@@ -414,3 +417,14 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     }
 }
 
+void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
+    /* 
+    * Inititalizes the mean vector and the covariance matrix of the root cells with
+    * pre-defined values
+    */
+    std::vector<MOMAdata *> roots = get_roots(cells);
+    for(int i=0; i<roots.size(); ++i){
+        roots[i]->mean = mean;
+        roots[i]->cov = cov;
+    }
+}

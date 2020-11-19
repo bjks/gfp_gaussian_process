@@ -68,19 +68,22 @@ public:
         else {
             std::cout<<"Config file NOT found, use defaults" << std::endl; 
         }
-
-        std::cout << "--- Configuration used for reading the input file: ---" << std::endl; 
-        std::cout   << "# time_col: "  << time_col << "\n" \
-                    << "# length_col: " <<  length_col << "\n" \
-                    << "# fp_col: " << fp_col << "\n" \
-                    << "# delm: " << delm << "\n" \
-                    << "# cell_tags: " ;
-        pvector(cell_tags);
-        std::cout << "# parent_tags: " ;
-        pvector(parent_tags);
-        std::cout << "------------------------------------------------------" << std::endl; 
         
     }
+    friend std::ostream& operator<<(std::ostream& os, const CSVconfig& config);
+
 };
 
-
+std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
+    std::cout << "--- Configuration used for reading the input file: ---\n"; 
+    std::cout   << "\ttime_col: "  << config.time_col << "\n" \
+                << "\tlength_col: " <<  config.length_col << "\n" \
+                << "\tfp_col: " << config.fp_col << "\n" \
+                << "\tdelm: " << config.delm << "\n" \
+                << "\tcell_tags: " ;
+    pvector(config.cell_tags);
+    std::cout << "\tparent_tags: " ;
+    pvector(config.parent_tags);
+    std::cout << "------------------------------------------------------\n\n"; 
+    return os;
+}

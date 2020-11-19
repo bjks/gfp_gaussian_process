@@ -1,11 +1,12 @@
 
-void test_cases(){
+void test_mean_cov_model(){
     double a = 0.1;
     double b = 0.2;
     double c = 0.3;
     double t1 = 1;
     double t0 = 2;
 
+    std::cout << "---------- ***tauint -----------"<< "\n";
     std::cout << zerotauint(a, b, c, t1, t0) << "\n";
     std::cout << onetauint(a, b, c, t1, t0) << "\n";
     std::cout << twotauint(a, b, c, t1, t0) << "\n";
@@ -41,6 +42,7 @@ void test_cases(){
     nm(2) = 3;
     nm(3) = 4;
 
+    std::cout << "---------- mean-cov terms -----------"<< "\n";
     std::cout << mean_x(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,beta)<< "\n" ;
     std::cout << mean_g(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,beta) << "\n" ;  
     std::cout << mean_l(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,beta) << "\n" ;  
@@ -87,19 +89,51 @@ void test_cases(){
     S = cell.cov.block(0,0,2,2) + D;
     Si = S.inverse();
 
-
-    std::cout << cell.cov << "\n";
-    std::cout << cell.mean << "\n";
+    std::cout << "---------- MEAN COV before -----------"<< "\n";
+    std::cout << cell << "\n";
     std::cout << xg << "\n";
-
 
     mean_cov_model(cell, 1 , 1, 
                         2, 3, 4, 
                         5, 6, 7);
-    std::cout << cell.cov << "\n";
-    std::cout << cell.mean << "\n";               
+
+    std::cout << "---------- MEAN COV after mean_cov_model -----------"<< "\n";
+    std::cout << cell << "\n";
+
+
 
 }
+void test_division(){
+    MOMAdata cell;
+    MOMAdata daugther_cell;
+
+    daugther_cell.parent = &cell;
+    
+    Eigen::VectorXd nm(4); 
+
+    nm(0) = 1;
+    nm(1) = 2;
+    nm(2) = 3;
+    nm(3) = 4;
+
+    cell.mean = nm;
+
+    cell.cov(0,0) = 1;
+    cell.cov(1,1) = 2;
+    cell.cov(2,2) = 3;
+    cell.cov(3,3) = 4;
+
+    cell.cov(1,0) = 2;
+    cell.cov(0,1) = 2;
+    cell.cov(3,1) = 3;
+    cell.cov(1,3) = 3;
+
+    mean_cov_after_division(daugther_cell, 0.5, 0.5);
+
+    std::cout << "---------- MEAN COV after division -----------"<< "\n";
+    std::cout << daugther_cell << "\n";
+}
+
 
 void test_likelihood(){
     // Y,m,C
@@ -152,10 +186,11 @@ void test_likelihood(){
         cell.time.resize(3);
         cell.time << 0, 15, 30;
 
+        std::cout << "---------- LIKELIHOOD -----------"<< "\n";
 
-        std::cout << "time " << cell.time<< "\nlog_length " << cell.log_length << "\nfp" << cell.fp<< "\n";
+        std::cout << "time:\n" << cell.time<< "\nlog_length:\n" << cell.log_length << "\nfp:\n" << cell.fp<< "\n";
 
-        std::cout << cell.mean<< "\n" << cell.cov<< "\n";
+        std::cout << cell << "\n";
 
         std::vector<double> params_vec = {0.01,
                                             0.01,

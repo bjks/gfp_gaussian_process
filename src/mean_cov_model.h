@@ -7,13 +7,13 @@
 double zerotauint(double a, double b, double c, double t1, double t0=0){
     //int_t0^t1 exp[a*s**2+b*s+c]ds//
     double x = (exp(-pow(b,2)/(4.*a) + c)*sqrt(M_PI)*(-Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(2.*sqrt(a));
-    if (std::isnan(x)){
-        std::cout << a << " "<< b << " "<< c << " " << t1 << " " << t0 << " " << " INF-WARING: zerotauint ";
-        std::cout   << exp(-pow(b,2)/(4.*a) + c) << " " 
-                    << -Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) << " " 
-                    <<  Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))  << " "
-                    << (2.*sqrt(a)) << "\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout << a << " "<< b << " "<< c << " " << t1 << " " << t0 << " " << " INF-WARING: zerotauint ";
+    //     std::cout   << exp(-pow(b,2)/(4.*a) + c) << " " 
+    //                 << -Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) << " " 
+    //                 <<  Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))  << " "
+    //                 << (2.*sqrt(a)) << "\n";
+    // }
     return x;
 }
 
@@ -21,9 +21,9 @@ double onetauint(double a, double b, double c, double t1, double t0=0){
     //int_t0^t1 s*exp[a*s**2+b*s+c]ds//
     double x= (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
            b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) - b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(4.*pow(a,1.5));
-    if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " <<" INF-WARING: onetauint\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout<< a << " "<< b << " "<< c << " " << t1 << " " <<" INF-WARING: onetauint\n";
+    // }
     return x;
 }
 
@@ -32,9 +32,9 @@ double twotauint(double a, double b, double c, double t1, double t0=0){
     double x = (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*\
            (-(b*exp(t0*(b + a*t0))) + b*exp(t1*(b + a*t1)) + 2*a*exp(t0*(b + a*t0))*t0 - 2*a*exp(t1*(b + a*t1))*t1) +\
            (2*a - pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + (-2*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(8.*pow(a,2.5));
-    if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " "<<  t1 << " " << " INF-WARING: twotauint\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout<< a << " "<< b << " "<< c << " "<<  t1 << " " << " INF-WARING: twotauint\n";
+    // }
     return x;
 }
 
@@ -45,9 +45,9 @@ double treetauint(double a, double b, double c, double t1, double t0=0){
            (pow(b,2)*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) - 2*a*exp(t0*(b + a*t0))*(2 + b*t0) + 2*a*exp(t1*(b + a*t1))*(2 + b*t1) +\
             4*pow(a,2)*(exp(t0*(b + a*t0))*pow(t0,2) - exp(t1*(b + a*t1))*pow(t1,2))) + b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) -\
            b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(16.*pow(a,3.5));
-    if (std::isnan(x)){
-        std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << " INF-WARING: treetauint\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << " INF-WARING: treetauint\n";
+    // }
     return x;
 }
 

@@ -6,18 +6,18 @@
 # -------------------------------------------------------- #
 # empty lines and lines staring with '#' are ignored
 
-    mean_lambda = 0.014, 0.001, 0, 1
-    gamma_lambda = 0.02, 0.001, 0, 1 
-    var_lambda = 0.0000001, 0.00000001, 0, 0.001
+    mean_lambda = 0.01, 1e-4, 0, 0.05
+    gamma_lambda = 0.01
+    var_lambda = 1e-07
 
-    mean_q = 10, 0.01
-    gamma_q = 0.02, 0.001
-    var_q = 0.01, 0.001
+    mean_q = 10
+    gamma_q = 0.02
+    var_q = 0.1
 
-    beta = 0.01, 0.001
+    beta = 0.001
 
-    var_x = 0.00042, 0.001
-    var_g = 0.01
+    var_x = 1e-3
+    var_g = 5e3
 
-    var_dx = 0.01, 0.001
-    var_dg = 0.01, 0.001
+    var_dx = 1e-3
+    var_dg = 5e3

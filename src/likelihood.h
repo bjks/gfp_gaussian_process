@@ -8,6 +8,7 @@
 
 /* -------------------------------------------------------------------------- */
 void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
+    // tested (i.e. same output as python functions)
     /*
     * mean and covariance matrix are updated as cell division occurs, thus 
     * this function is applied to cells that do have parent cells
@@ -20,7 +21,7 @@ void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
     D(1,1) = var_dg;
 
     cell.mean = F*cell.parent->mean + f;
-    cell.cov = D + F*cell.parent->cov*F.transpose();
+    cell.cov = D + F * cell.parent->cov * F.transpose();
 }
 
 
@@ -78,13 +79,12 @@ void sc_likelihood(const std::vector<double> &params_vec,
 
     for (long t=0; t<cell.time.size(); ++t ){
         xg(0) = cell.log_length(t) - cell.mean(0);
-        xg(1) = cell.fp(t) - cell.mean(1);
+        xg(1) = cell.fp(t)         - cell.mean(1);
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 
         total_likelihood += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree     
-        std::cout <<  total_likelihood << "\n";
         posterior(xg, cell, S, Si); // updates mean/cov        
 
         if (t<cell.time.size()-1) {
@@ -123,10 +123,16 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     /*
     * total_likelihood of cell tree, to be maximized
     */
-
+    std::cout << "L(";
+    for(double x: params_vec){
+        std::cout << std::setprecision(5)  << x  << ",";
+    } 
     double total_likelihood = 0;
     likelihood_recr(params_vec,  (MOMAdata *) c, total_likelihood);
-    return -total_likelihood;
+
+    std::cout << ") = " << std::setprecision(20) << total_likelihood  << "\n";
+
+    return total_likelihood;
 }
 
 
