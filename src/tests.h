@@ -208,3 +208,38 @@ void test_likelihood(){
 
         std::cout << tl;
 }
+
+
+void run_likelihood(CSVconfig config, Parameter_set params, std::string infile){
+
+    std::cout << "-> Reading" << "\n";
+    std::vector<MOMAdata> cells =  getData(infile, 
+                                            config.time_col,
+                                            config.length_col,
+                                            config.fp_col,
+                                            config.delm,
+                                            config.cell_tags,
+                                            config.parent_tags);
+
+    /* genealogy */
+    build_cell_genealogy(cells);
+
+    Eigen::VectorXd mean(4);
+    mean << 6.93147181e-01,
+            6.02556189e+03,
+            1.03989065e-02,
+            1.02454986e+01;
+
+    Eigen::MatrixXd cov(4,4);
+    cov <<  1.22158419e-04, -3.38642002e-01,  3.42444314e-06, -4.90827026e-04,
+            -3.38642002e-01,  1.25286734e+05, -3.88680250e-01,  1.42591667e+02,
+            3.42444314e-06, -3.88680250e-01,  4.47368172e-06,  5.05127089e-05,
+            -4.90827026e-04,  1.42591667e+02,  5.05127089e-05,  2.38674307e+00;
+
+    init_cells(cells, mean, cov);
+
+    double tl = 0;
+    pvector(params.get_init());
+    sc_likelihood(params.get_init(), cells[0], tl);
+    std::cout << "tl: " << tl << "\n";
+}

@@ -7,7 +7,7 @@
 # empty lines and lines staring with '#' are ignored
 
     mean_lambda = 0.01, 1e-4, 0, 0.05
-    gamma_lambda = 0.01
+    gamma_lambda = 0.01, 0.001
     var_lambda = 1e-07
 
     mean_q = 10

@@ -39,5 +39,4 @@ std::string trim(const std::string& str, char trim_char =' '){
     return str.substr(first, (last - first + 1));
 }
 
-
 #endif 

@@ -1,10 +1,12 @@
 #include "moma_input.h"
 #include "mean_cov_model.h"
+#include "output.h"
 
 #include <math.h>
 #include <cmath>
 
 #define _USE_MATH_DEFINES
+
 
 /* -------------------------------------------------------------------------- */
 void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
@@ -113,7 +115,6 @@ void likelihood_recr(const std::vector<double> &params_vec,
     if (cell == nullptr)
         return;
     sc_likelihood(params_vec, *cell, total_likelihood);
-
     likelihood_recr(params_vec, cell->daughter1, total_likelihood);
     likelihood_recr(params_vec, cell->daughter2, total_likelihood);
 }
@@ -123,14 +124,20 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     /*
     * total_likelihood of cell tree, to be maximized
     */
-    std::cout << "L(";
-    for(double x: params_vec){
-        std::cout << std::setprecision(5)  << x  << ",";
-    } 
+
     double total_likelihood = 0;
     likelihood_recr(params_vec,  (MOMAdata *) c, total_likelihood);
+    ++ _iteration;
 
-    std::cout << ") = " << std::setprecision(20) << total_likelihood  << "\n";
+    /* Save state of iteration in outfile */
+    std::ofstream file(_outfile,std::ios_base::app);
+
+    file << _iteration << ",";
+    for (int i=0; i<params_vec.size(); ++i){
+        file << params_vec[i]  << ",";
+    }
+    file << total_likelihood  << "\n";
+    file.close();
 
     return total_likelihood;
 }

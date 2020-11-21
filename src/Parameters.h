@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <sstream>  
 
 class Parameter{
 /* 
@@ -15,8 +16,9 @@ Non-fixed parameters have a step.
 Bound parameters have upper/lower (double) which are the respective bounds
 */
 public:
-    bool fixed;
-    bool bound;
+    bool fixed = false;
+    bool bound = false;
+    bool free = false;
 
     double init;
     bool set = false;
@@ -44,7 +46,6 @@ public:
             step =  std::stod(val_split[1]);
             lower =  std::stod(val_split[2]);
             upper =  std::stod(val_split[3]);
-            fixed = false;
             bound = true;
             set = true;
 
@@ -56,8 +57,7 @@ public:
         }  else if (val_split.size() == 2){
             init =  std::stod(val_split[0]);
             step =  std::stod(val_split[1]);
-            fixed = false;
-            bound = false;
+            free = true;
             set = true;
 
         } else{
@@ -160,7 +160,36 @@ public:
     void set_value(std::vector<double> vals);
     std::vector<double> get_values();
     std::vector<double> get_init();
+    void to_csv(std::string outfile);
 };
+
+void Parameter_set::to_csv(std::string outfile){
+    std::ofstream file(outfile);
+    file << "no,name,type,init,step,lower_bound,upper_bound\n";
+    for (int i=0; i<all.size(); ++i){
+        if (all[i].set){
+            file <<  i << "," << all[i].name;
+            if (all[i].fixed){
+                file  << all[i].name << ","
+                    << "fixed"<< ","
+                    << all[i].init << "\n";
+            } else if (all[i].bound){
+                file <<  all[i].name << ","
+                    << "bound" << ","
+                    << all[i].init << ","
+                    << all[i].step << ","
+                    << all[i].lower << ","
+                    << all[i].upper << "\n";
+            } else {
+                file <<  all[i].name << ","
+                    << "free" << ","
+                    << all[i].init << ","
+                    << all[i].step << "\n";
+            }
+        }
+    }
+    file.close();
+}
 
 
 void Parameter_set::set_value(std::vector<double> vals){
@@ -193,19 +222,45 @@ std::string pad_str(std::string s, const size_t num, const char paddingChar = ' 
     return s;
 }
 
+std::string pad_str(double d, const size_t num, const char paddingChar = ' ', const char first_char = ','){
+    std::stringstream buffer;
+    buffer << d;
+    std::string s = buffer.str();
+    if(num > s.size())
+        s.insert(s.end(), num - s.size(), paddingChar);
+    return s;
+}
+
 std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
+    std::vector<int> column_widths {4, 15, 8, 10, 10, 10, 10};
+
+    os  << pad_str("No", column_widths[0]) << pad_str("Name", column_widths[1])<< pad_str("Type", column_widths[2])
+        << pad_str("Init", column_widths[3]) << pad_str("Step", column_widths[4]) << pad_str("Bounds", column_widths[5]) << "\n";
+
+    for(int i=0; i<accumulate(column_widths.begin(), column_widths.end(), 0); ++i){
+        os << "_";
+    }
+        os << "\n";
+
     for (int i=0; i<params.all.size(); ++i){
         if (params.all[i].set){
-            os <<  pad_str(std::to_string(i), 2) << ": ";
+            os <<  pad_str(std::to_string(i) +":", column_widths[0]);
             if (params.all[i].fixed){
-                os <<  pad_str(params.all[i].name, 15) << " (fixed) = " << params.all[i].init;
+                os  << pad_str(params.all[i].name, column_widths[1]) 
+                    << pad_str("(fixed)", column_widths[2]) 
+                    << pad_str(params.all[i].init, column_widths[3]) ;
             } else if (params.all[i].bound){
-                os << pad_str(params.all[i].name, 15) << " (bound) = " 
-                    << params.all[i].init << ", step: " << params.all[i].step 
-                    << ", bounds: (" << params.all[i].lower << ", " << params.all[i].upper << ")";
+                os <<  pad_str(params.all[i].name, column_widths[1]) 
+                    << pad_str("(bound)", column_widths[2]) 
+                    << pad_str(params.all[i].init, column_widths[3])
+                    << pad_str(params.all[i].step , column_widths[4]) 
+                    << pad_str(params.all[i].lower , column_widths[5])
+                    << pad_str(params.all[i].upper , column_widths[6]);
             } else {
-                os << pad_str(params.all[i].name, 15) << " (free)  = " 
-                    << params.all[i].init << ", step: " << params.all[i].step;
+                os <<  pad_str(params.all[i].name, column_widths[1]) 
+                    << pad_str("(free)", column_widths[2]) 
+                    << pad_str(params.all[i].init, column_widths[3])
+                    << pad_str(params.all[i].step , column_widths[4]);
             }
             if (params.all[i].miminized && !params.all[i].fixed){
                 os << " -> "<< params.all[i].value;

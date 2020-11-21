@@ -2,7 +2,6 @@
 #include <vector>
 
 #include <nlopt.hpp>
-#include "Parameters.h"
 
 
 
