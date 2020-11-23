@@ -18,7 +18,7 @@ double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad,
 void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
                         MOMAdata &cell,
                         Parameter_set &params, 
-                        double relative_tol = 1e-20){
+                        double relative_tol){
 
     // set parameter space 
     std::vector<double> lower_bounds(params.all.size());
@@ -45,7 +45,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     }
 
     // set up optimizer
-    nlopt::opt opt(nlopt::LN_NELDERMEAD, params.all.size());
+    nlopt::opt opt(nlopt::LN_COBYLA, params.all.size());
 
     opt.set_lower_bounds(lower_bounds);
     opt.set_upper_bounds(upper_bounds);

@@ -3,21 +3,24 @@
 #    parameter = value, step
 #    parameter = value, step, lower, upper
 #    parameter = value
+# 
+# Note: Free paramters will be treated as fixed in 1d scan mode
 # -------------------------------------------------------- #
 # empty lines and lines staring with '#' are ignored
 
-    mean_lambda = 0.01, 1e-4, 0, 0.05
-    gamma_lambda = 0.01, 0.001
-    var_lambda = 1e-07
+    mean_lambda = 0.01, 1e-4, 1e-4, 0.05
+    gamma_lambda = 0.01, 1e-4, 1e-4, 0.05
+    var_lambda = 1e-07, 1e-9, 1e-9, 5e-07
 
-    mean_q = 10
-    gamma_q = 0.02
-    var_q = 0.1
+    mean_q = 10, 1e-1, 1e-1, 50
+    gamma_q = 0.02, 1e-4, 1e-4, 0.1
+    var_q = 0.1, 1e-3, 1e-3, 0.2
 
-    beta = 0.001
+    beta = 0.001, 1e-5, 1e-5, 0.003
 
-    var_x = 1e-3
-    var_g = 5e3
+    var_x = 1e-3, 1e-5, 1e-5, 5e-3
+    var_g = 5000, 10, 1000, 10000
 
-    var_dx = 1e-3
-    var_dg = 5e3
+    var_dx = 1e-3, 1e-5, 1e-5, 5e-3
+    var_dg = 5e3, 50, 1000, 10000
+

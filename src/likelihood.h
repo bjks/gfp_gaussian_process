@@ -1,6 +1,6 @@
 #include "moma_input.h"
 #include "mean_cov_model.h"
-#include "output.h"
+#include "in_output.h"
 
 #include <math.h>
 #include <cmath>
@@ -66,7 +66,11 @@ void sc_likelihood(const std::vector<double> &params_vec,
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
-    if (!cell.is_root()){
+    if (cell.is_root()){
+        cell.mean = cell.mean_init;
+        cell.cov = cell.cov_init;
+    }
+    else{
         // update nm and nC that depend on mother cell 
         mean_cov_after_division(cell, params_vec[9], params_vec[10]);
     }
@@ -136,12 +140,17 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     for (int i=0; i<params_vec.size(); ++i){
         file << params_vec[i]  << ",";
     }
-    file << total_likelihood  << "\n";
+    file << std::setprecision(10) << total_likelihood  << "\n";
     file.close();
-
-    return total_likelihood;
+    if (_print_level>0)
+        std::cout << _iteration << ": " << total_likelihood << "\n";
+    return -total_likelihood;
 }
 
+double total_likelihood(const std::vector<double> &params_vec, void *c){
+    std::vector<double> g;
+    return total_likelihood(params_vec, g,c);
+}
 
 
 /* ==========================================================================

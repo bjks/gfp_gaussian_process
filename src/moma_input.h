@@ -38,9 +38,11 @@ public:
     int generation;
 
     // variables to be calculated
-    double likelihood;
+    Eigen::VectorXd mean_init = Eigen::VectorXd::Zero(4);
+    Eigen::MatrixXd cov_init = Eigen::MatrixXd::Zero(4, 4);
+
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
-    Eigen::MatrixXd cov = Eigen::MatrixXd::Constant(4, 4, 0);
+    Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(4, 4);
 
     // member functions
     bool is_leaf() const;
@@ -393,6 +395,11 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     * Inititalizes the mean vector and the covariance matrix of the root cells estimated from 
     * the data
     */
+    for(int i=0; i<cells.size(); ++i){
+        cells[i].mean_init = Eigen::VectorXd::Zero(4);
+        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
+    }
+
     std::vector<double> x0;
     std::vector<double> g0;
     std::vector<double> l0;
@@ -409,11 +416,11 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
 
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(int i=0; i<roots.size(); ++i){
-        roots[i]->mean << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
-        roots[i]->cov(0,0) = vec_var(x0);
-        roots[i]->cov(1,1) = vec_var(g0);
-        roots[i]->cov(2,2) = vec_var(l0);
-        roots[i]->cov(3,3) = vec_var(q0);
+        roots[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
+        roots[i]->cov_init(0,0) = vec_var(x0);
+        roots[i]->cov_init(1,1) = vec_var(g0);
+        roots[i]->cov_init(2,2) = vec_var(l0);
+        roots[i]->cov_init(3,3) = vec_var(q0);
     }
 }
 
@@ -422,9 +429,14 @@ void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::Matri
     * Inititalizes the mean vector and the covariance matrix of the root cells with
     * pre-defined values
     */
+    for(int i=0; i<cells.size(); ++i){
+        cells[i].mean_init = Eigen::VectorXd::Zero(4);
+        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
+    }
+
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(int i=0; i<roots.size(); ++i){
-        roots[i]->mean = mean;
-        roots[i]->cov = cov;
+        roots[i]->mean_init = mean;
+        roots[i]->cov_init = cov;
     }
 }

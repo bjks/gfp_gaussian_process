@@ -168,7 +168,7 @@ void Parameter_set::to_csv(std::string outfile){
     file << "no,name,type,init,step,lower_bound,upper_bound\n";
     for (int i=0; i<all.size(); ++i){
         if (all[i].set){
-            file <<  i << "," << all[i].name;
+            file <<  i << "," ;
             if (all[i].fixed){
                 file  << all[i].name << ","
                     << "fixed"<< ","

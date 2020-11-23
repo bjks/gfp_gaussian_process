@@ -4,12 +4,13 @@
 
 #include "Parameters.h"
 
-
+std::string _infile;
 std::string _outfile;
 int _iteration = 0;
+int _print_level = 0;
 
 
-std::string outfile_name(std::string infile, Parameter_set params){
+std::string outfile_name_minimization(std::string infile, Parameter_set params){
     std::vector<std::string> infile_split, base_split;
     infile_split = split_string_at(infile, "/");
     base_split = split_string_at(infile_split[infile_split.size()-1], ".");
@@ -37,11 +38,26 @@ std::string outfile_name(std::string infile, Parameter_set params){
     return outfile + ".csv";
 }
 
+std::string outfile_name_scan(std::string infile, std::string var){
+    std::vector<std::string> infile_split, base_split;
+    infile_split = split_string_at(infile, "/");
+    base_split = split_string_at(infile_split[infile_split.size()-1], ".");
+
+    std::string outfile = "";
+    for(int i=0; i<infile_split.size()-1; ++i){
+        outfile += infile_split[i] + "/";
+    }
+    outfile += "out/";
+    std::__fs::filesystem::create_directory(outfile);
+    outfile += base_split[0]+ "_scan_" + var;
+    return outfile + ".csv";
+}
+
 void setup_outfile(std::string outfile, Parameter_set params){
     params.to_csv(outfile);
     std::ofstream file(outfile,std::ios_base::app);
 
-    file << "\nminimization:\niteration,";
+    file << "\nlikelihoods:\niteration,";
     for (int i=0; i<params.all.size(); ++i){
         file << params.all[i].name << ",";
     }
