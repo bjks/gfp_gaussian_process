@@ -304,7 +304,9 @@ std::vector<MOMAdata> getData(std::string filename,
 
     std::vector<MOMAdata> data;
     int last_idx = -1;
+    long line_count = 0;
     while (getline(file, line)) {
+        ++line_count;
         line_parts = split_string_at(line, delm);
         // take lines only if end_type==div or header_indices "end_type" is not in header_indices
         if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
@@ -327,7 +329,7 @@ std::vector<MOMAdata> getData(std::string filename,
         }
     }
     file.close();
-    std::cout << last_idx + 1 << " cells found in file " << filename << std::endl; 
+    std::cout << last_idx + 1 << " cells and " << line_count << " data points found in file " << filename << std::endl; 
     return data;
 }
 

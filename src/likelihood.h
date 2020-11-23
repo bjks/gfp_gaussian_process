@@ -71,7 +71,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
         cell.cov = cell.cov_init;
     }
     else{
-        // update nm and nC that depend on mother cell 
+        // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
         mean_cov_after_division(cell, params_vec[9], params_vec[10]);
     }
 

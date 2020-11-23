@@ -58,11 +58,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     // actual minimization
     try{
         opt.optimize(parameter_state, minf);
-        std::cout << "Found minimum at f(";
-        for(double x: parameter_state){
-            std::cout  << x << ",";
-        } 
-        std::cout << ") = " << std::setprecision(10) << minf << std::endl;
+        std::cout << "Found minimum: log likelihood " << std::setprecision(10) << minf << std::endl;
 
         // save final value for each parameter
         params.set_value(parameter_state);
