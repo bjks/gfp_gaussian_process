@@ -72,14 +72,13 @@ public:
 std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
     std::cout << "Configuration used for reading the input file\n"; 
     std::cout << "_____________________________________________\n"; 
-    std::cout   << "\ttime_col: "  << config.time_col << "\n" \
-                << "\tlength_col: " <<  config.length_col << "\n" \
-                << "\tfp_col: " << config.fp_col << "\n" \
-                << "\tdelm: " << config.delm << "\n" \
-                << "\tcell_tags: " ;
+    std::cout   << "\ttime_col:\t"  << config.time_col << "\n" \
+                << "\tlength_col:\t" <<  config.length_col << "\n" \
+                << "\tfp_col:\t\t" << config.fp_col << "\n" \
+                << "\tdelm:\t\t" << config.delm << "\n" \
+                << "\tcell_tags:\t" ;
     pvector(config.cell_tags);
-    std::cout << "\tparent_tags: " ;
+    std::cout << "\tparent_tags:\t" ;
     pvector(config.parent_tags);
-    std::cout << "\n\n"; 
     return os;
 }

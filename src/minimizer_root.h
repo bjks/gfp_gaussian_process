@@ -44,8 +44,6 @@ void numerical_minimization(const Parameter_set &params,
         }
     }
 
- 
-
     // do the minimization
     min->Minimize();
     const double *xs = min->X();

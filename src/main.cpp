@@ -1,6 +1,8 @@
 #include "CSVconfig.h"
-#include "likelihood.h"
+
+#include "predictions.h"
 #include "minimizer_nlopt.h"
+
 #include "tests.h"
 
 #include <iostream> 
@@ -9,19 +11,21 @@
 
 void run_minimization(std::vector<MOMAdata> &cells, Parameter_set params, double relative_tol){
     std::cout << "-> Minimizaton" << "\n";
+    init_cells(cells, 5);
 
     /* set and setup (global) output file */
     _outfile = outfile_name_minimization(_infile, params);
     std::cout << "Outfile: " << _outfile << "\n";
-    setup_outfile(_outfile, params);
+    setup_outfile_params(_outfile, params);
 
     /* minimization for tree starting from cells[0] */
     minimize_wrapper(&total_likelihood, cells[0], params, relative_tol);
 }
 
 
-void bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
+void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
     std::cout << "-> 1d Scan" << "\n";
+    init_cells(cells, 5);
     
     for(int i=0; i<params.all.size(); ++i){
         /* reset params */
@@ -34,7 +38,7 @@ void bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
             */
 
             _outfile = outfile_name_scan(_infile, params.all[i].name);
-            setup_outfile(_outfile, params);
+            setup_outfile_params(_outfile, params);
             std::cout << "Outfile: " << _outfile << "\n";
 
             /* set sampling vector np.arange style*/
@@ -44,12 +48,42 @@ void bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
             for(int j=0; j<sampling.size(); ++j){
                 /* reset mean, cov */
                 params_vec[i] = sampling[j];
-                total_likelihood(params_vec, &cells[0]);
+                total_likelihood(params_vec, cells[0]);
             }
         }
     }
 }
 
+
+void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params){
+    std::cout << "-> prediction" << "\n";
+    
+    _outfile = outfile_name_prediction(_infile);
+    std::cout << "Outfile: " << _outfile << "\n";
+    setup_outfile_mean(_outfile, params);
+
+    std::vector<double> params_vec = params.get_init();
+
+    /* forward...*/
+    init_cells(cells, 5);
+    prediction_forward(params_vec, cells[0]);
+
+    /* backward...*/
+    init_cells_r(cells, 5);
+
+
+    /* save */
+    std::ofstream file(_outfile, std::ios_base::app);
+
+    for(int i=0; i<cells.size();++i){
+        for (int j=0; j<cells[i].mean_forward.size();++j )
+            file    << cells[i].mean_forward[j][0] <<','
+                    << cells[i].mean_forward[j][1] <<','
+                    << cells[i].mean_forward[j][2] <<','
+                    << cells[i].mean_forward[j][3] << "\n";  
+    }
+    file.close();
+}
 
 
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
@@ -62,7 +96,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     std::map<std::string, std::string> arguments;
     /* defaults: */
-    arguments["parameter_config"] = "parameter_bounds.txt";
+    arguments["parameter_config"] = "parameters.txt";
     arguments["csv_config"] = "csv_config.txt";
     arguments["mode"] = "minimize";
     arguments["rel_tol"] = "1e-2";
@@ -113,14 +147,14 @@ int main(int argc, char** argv){
         return 0;
     }
     Parameter_set params(arguments["parameter_config"]);
-    std::cout << params;
+    std::cout << params << "\n";
 
     /* get csv config file */
     if(! std::__fs::filesystem::exists(arguments["csv_config"])){   
         std::cout << "File " << arguments["parameter_config"] << " not found! \nUse defaults" << std::endl;
     }
     CSVconfig config(arguments["csv_config"]);
-    std::cout << config;
+    std::cout << config << "\n";
 
 
     /* Read data from input file */
@@ -135,14 +169,16 @@ int main(int argc, char** argv){
 
     /* genealogy built via the parent_id (string) given in data file */
     build_cell_genealogy(cells);
-    init_cells(cells, 5);
 
-    /* bound_1dscan, run_minimization... */
+    /* bound_1dscan, minimization... */
     if (arguments["mode"].at(0) == 'm')
         run_minimization(cells, params, std::stod(arguments["rel_tol"]));
 
     else if (arguments["mode"].at(0) == 's')
-        bound_1dscan(cells, params);
+        run_bound_1dscan(cells, params);
+
+    else if (arguments["mode"].at(0) == 'p')
+        run_prediction(cells, params);
 
     std::cout << "Done." << std::endl;
     return 0;

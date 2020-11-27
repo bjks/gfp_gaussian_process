@@ -44,6 +44,13 @@ public:
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
     Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(4, 4);
 
+    // predictions
+    std::vector<Eigen::Vector4d> mean_forward;
+    std::vector<Eigen::Matrix4d> cov_forward;
+
+    std::vector<Eigen::Vector4d> mean_backward;
+    std::vector<Eigen::Matrix4d> cov_backward;
+
     // member functions
     bool is_leaf() const;
     bool is_root() const;
@@ -196,6 +203,7 @@ std::vector<std::vector<MOMAdata *> > get_genealogy_paths(MOMAdata &cell){
 // recursive "looping"
 // ----------------------------------------------------------------------------- //
 
+// DOWN ------------------------------------------------------------------------ //
 void apply_down_tree_recr(const std::vector<double> &params_vec, 
                         MOMAdata *cell, 
                         void (*func)(const std::vector<double> &, MOMAdata &))
@@ -220,7 +228,7 @@ void apply_down_tree(const std::vector<double> &params_vec,
     * such that the parent cell has already been accessed when the function is applied 
     * to the cell.
     * 
-    * Example (number implies the order in which)
+    * Example (number implies the order in which cell is accessed)
     * _________________________________________________ 
 
 	       1
@@ -232,6 +240,48 @@ void apply_down_tree(const std::vector<double> &params_vec,
     * _________________________________________________ 
     */
     apply_down_tree_recr(params_vec, &cell, func);
+}
+
+
+// UP ------------------------------------------------------------------------ //
+void apply_up_tree_recr(const std::vector<double> &params_vec, 
+                        MOMAdata *cell, 
+                        void (*func)(const std::vector<double> &, MOMAdata &))
+                        {
+    /*  
+    * Recursive implementation that applies the function func to every cell in the genealogy
+    * not meant to be called directly, see wrapper below
+    */
+    if (cell == nullptr)
+        return;
+
+    apply_down_tree_recr(params_vec, cell->daughter1, func);
+    apply_down_tree_recr(params_vec, cell->daughter2, func);
+
+    func(params_vec, *cell);
+
+}
+
+void apply_up_tree(const std::vector<double> &params_vec, 
+                    MOMAdata &cell, 
+                    void (*func)(const std::vector<double> &, MOMAdata &))
+                    {
+    /* applies the function func to the cell cell and the other cells in the genealogy
+    * such that the daughter cells has already been accessed when the function is applied 
+    * to the cell.
+    * 
+    * Example (number implies the order in which cell is accessed)
+    * _________________________________________________ 
+
+	       6
+	     /   \
+	    3     5
+	  /   \     \
+	 1     2     4
+
+    * _________________________________________________ 
+    */
+    apply_up_tree_recr(params_vec, &cell, func);
 }
 
 
@@ -425,6 +475,43 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
         roots[i]->cov_init(3,3) = vec_var(q0);
     }
 }
+
+
+
+void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
+    /* 
+    * Inititalizes the mean vector and the covariance matrix of the leafs cells estimated from 
+    * the data
+    */
+    for(int i=0; i<cells.size(); ++i){
+        cells[i].mean_init = Eigen::VectorXd::Zero(4);
+        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
+    }
+
+    std::vector<double> x0;
+    std::vector<double> g0;
+    std::vector<double> l0;
+    std::vector<double> q0;
+
+    for(int i=0; i<cells.size(); ++i){
+        if(cells[i].time.size()>=n_cells){
+            x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
+            g0.push_back(cells[i].fp(cells[i].log_length.size()-1));
+            l0.push_back(lin_fit_slope(cells[i].time.tail(n_cells), cells[i].log_length.tail(n_cells)));
+            q0.push_back(lin_fit_slope(cells[i].time.tail(n_cells), cells[i].fp.tail(n_cells)));
+        }
+    }
+
+    std::vector<MOMAdata *> leafs = get_leafs(cells);
+    for(int i=0; i<leafs.size(); ++i){
+        leafs[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
+        leafs[i]->cov_init(0,0) = vec_var(x0);
+        leafs[i]->cov_init(1,1) = vec_var(g0);
+        leafs[i]->cov_init(2,2) = vec_var(l0);
+        leafs[i]->cov_init(3,3) = vec_var(q0);
+    }
+}
+
 
 void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
     /* 

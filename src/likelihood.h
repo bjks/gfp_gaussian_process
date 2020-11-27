@@ -26,6 +26,12 @@ void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
     cell.cov = D + F * cell.parent->cov * F.transpose();
 }
 
+void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
+    // tested (i.e. same output as python functions)
+    Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
+    cell.mean = cell.mean + K.transpose() * Si * xgt;
+    cell.cov = cell.cov - K.transpose() * Si * K;
+}
 
 /* -------------------------------------------------------------------------- */
 Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
@@ -48,13 +54,6 @@ double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::MatrixXd S, Ei
     */
     Eigen::MatrixXd a = -0.5 * xgt.transpose() * Si * xgt;
     return a(0) -0.5 * log(S.determinant()) - 2* log(2*M_PI);
-}
-
-void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
-    // tested (i.e. same output as python functions)
-    Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
-    cell.mean = cell.mean + K.transpose() * Si * xgt;
-    cell.cov = cell.cov - K.transpose() * Si * K;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -134,7 +133,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     ++ _iteration;
 
     /* Save state of iteration in outfile */
-    std::ofstream file(_outfile,std::ios_base::app);
+    std::ofstream file(_outfile, std::ios_base::app);
 
     file << _iteration << ",";
     for (int i=0; i<params_vec.size(); ++i){
@@ -142,14 +141,28 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     }
     file << std::setprecision(10) << total_likelihood  << "\n";
     file.close();
-    if (_print_level>0)
-        std::cout << _iteration << ": " << total_likelihood << "\n";
+
+    /* Print output dependend on set _print_level */
+    if (_print_level>0){
+        if (_print_level==0)
+            std::cout << _iteration << ": " << total_likelihood << "\n";
+        if (_print_level>0){
+            std::cout << _iteration << ": ";
+                for (int i=0; i<params_vec.size(); ++i){
+                    std::cout << params_vec[i]  << ", ";
+                }
+                std::cout << "ll=" << total_likelihood  << "\n";
+                if (_print_level>1)
+                    std::cout << "final mean and cov:\n" << *(MOMAdata *) c << "\n";
+        }
+    }
+
     return -total_likelihood;
 }
 
-double total_likelihood(const std::vector<double> &params_vec, void *c){
+double total_likelihood(const std::vector<double> &params_vec, MOMAdata &cell){
     std::vector<double> g;
-    return total_likelihood(params_vec, g,c);
+    return total_likelihood(params_vec, g, &cell);
 }
 
 
@@ -166,11 +179,23 @@ void set_generation(const std::vector<double> &params_vec, MOMAdata &cell){
     }
 }
 
+void set_generation_r(const std::vector<double> &params_vec, MOMAdata &cell){
+    if (cell.daughter1 != nullptr){
+        cell.generation = cell.daughter1->generation + 1;
+    } else{
+        cell.generation = 0;
+    }
+}
 
-void print_generation_tree(const std::vector<double> &params_vec, MOMAdata &cell){
+
+void print_generation_tree(const std::vector<double> &params_vec, MOMAdata &cell, std::string direction = "down"){
 
     // apply the set_generation function to root cell followed by the first generation etc...
-    apply_down_tree(params_vec, cell, set_generation);                    
+    if (direction == "up" )
+        apply_up_tree(params_vec, cell, set_generation_r);   
+    else
+        apply_down_tree(params_vec, cell, set_generation);   
+    
 
     /* output the genealogy with generation
         -> 20150630.5.4.124 generation: 0 -> 20150630.5.4.133 generation: 1 

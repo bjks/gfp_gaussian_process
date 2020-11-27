@@ -2,6 +2,9 @@
 #include <iostream>
 #include <sstream>  
 
+#ifndef PARAMETERS_H
+#define PARAMETERS_H
+
 class Parameter{
 /* 
 * Single parameter, that can be 
@@ -275,3 +278,4 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
     return os;
 }
 
+#endif 
