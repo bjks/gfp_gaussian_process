@@ -9,18 +9,18 @@ Re-implementaion of the python code: https://github.com/fioriathos/new_protein_p
 `./gfp_gaussian <infile> [-options]` with following options:
 
 ```
--p, --parameter_config  file defining the type, step, bounds of the parameters
--c, --csv_config        file that sets the colums that will be used from the input file
--m, --mode              mode keyword can start with 'm'->minimization or 's'->scan
--l, --print_level       print level >=0 
--r, --rel_tol           relative tolerance of minimization
 -h, --help              help message
+-i, --infile(required) input/data file
+-b, --parameter_bounds  (required) file defining the type, step, bounds of the parameters
+-c, --csv_config        file that sets the colums that will be used from the input file
+-l, --print_level       print level >=0, default=0 
+-r, --rel_tol           relative tolerance of minimization, default=1e-2
+-m, --minimize          run minimization
+-s, --scan              run 1d parameter scan
+-p, --predict           run prediction
 ```
 The columns that are taken from the csv file can be set by modifying `csv_config.txt`, although defaults are set.
 The parameter space is defined in `parameter_bound.txt`.
-
-## Approx. time
-- calculation of likelihood for 1125 cells and 26552 data points in total takes around 0.014 seconds
 
 # Notes 
 

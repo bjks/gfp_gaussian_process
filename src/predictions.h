@@ -1,12 +1,44 @@
-#include "likelihood.h"
+#include "moma_input.h"
+#include "mean_cov_model.h"
+#include "in_output.h"
+
+#include <math.h>
+#include <cmath>
+
 /* 
-* heavily re-uses functions from likelihood calculation,
 * functions corresponding to backward part end with '_r'
 */
 
 /* --------------------------------------------------------------------------
 * FORWARD PREDICTION
 * -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
+    // tested (i.e. same output as python functions)
+    /*
+    * mean and covariance matrix are updated as cell division occurs, thus 
+    * this function is applied to cells that do have parent cells
+    */
+    Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
+    F(1,1) = 0.5;
+    Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
+    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
+    D(0,0) = var_dx;
+    D(1,1) = var_dg;
+
+    cell.mean = F*cell.parent->mean + f;
+    cell.cov = D + F * cell.parent->cov * F.transpose();
+}
+
+void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
+    // tested (i.e. same output as python functions)
+    Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
+    cell.mean = cell.mean + K.transpose() * Si * xgt;
+    cell.cov = cell.cov - K.transpose() * Si * K;
+}
+
+/* -------------------------------------------------------------------------- */
 
 void sc_prediction_forward(const std::vector<double> &params_vec, 
                     MOMAdata &cell){
@@ -72,7 +104,7 @@ void prediction_forward(const std::vector<double> &params_vec, MOMAdata &cell){
 
 
 /* --------------------------------------------------------------------------
-* backward PREDICTION
+* BACKWARD PREDICTION
 * -------------------------------------------------------------------------- */
 
 
@@ -135,6 +167,7 @@ void mean_cov_model_r(MOMAdata &cell,
     mean_cov_model(cell,t,-ml,-gl,sl2,-mq,-gq,sq2,-b);
 }
 
+/* -------------------------------------------------------------------------- */
 
 void sc_prediction_backward(const std::vector<double> &params_vec, 
                     MOMAdata &cell){

@@ -1,6 +1,6 @@
 #include "CSVconfig.h"
 
-#include "predictions.h"
+#include "likelihood.h"
 #include "minimizer_nlopt.h"
 
 #include "tests.h"
@@ -92,8 +92,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-i", "--infile", "(required) input/data file"},
         {"-b", "--parameter_bounds", "\t(required) file defining the type, step, bounds of the parameters"},
         {"-c", "--csv_config", "\tfile that sets the colums that will be used from the input file"},
-        {"-l","--print_level", "\tprint level >=0 "},
-        {"-r","--rel_tol", "\t\trelative tolerance of minimization"},
+        {"-l","--print_level", "\tprint level >=0, default=0 "},
+        {"-r","--rel_tol", "\t\trelative tolerance of minimization, default=1e-2"},
         {"-m","--minimize", "\t\trun minimization"},
         {"-s","--scan", "\t\trun 1d parameter scan"},
         {"-p","--predict", "\t\trun prediction"}
