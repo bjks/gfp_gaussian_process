@@ -80,7 +80,6 @@ void multiply_gaussian(Eigen::VectorXd &m1, Eigen::MatrixXd &c1, Eigen::VectorXd
     /* Multiply first gaussian with second one - inplace multiplication */
 
     Eigen::MatrixXd new_c1 = (c1.inverse() + c2.inverse()).inverse();
-
     m1 = new_c1 * c1.inverse() * m1  +  new_c1 * c2.inverse() * m2;
     c1 = new_c1;
 }
@@ -160,7 +159,7 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
     Eigen::Matrix2d S;
     Eigen::Matrix2d Si;
 
-    for (long t=0; t<cell.time.size(); ++t ){
+    for (long t=cell.time.size()-1; t>-1; --t ){
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
 
@@ -169,11 +168,11 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
         posterior(xg, cell, S, Si); // updates mean/cov
 
         // save current mean/cov before (!) those are set for the next time point
-        cell.mean_forward.push_back(cell.mean);
-        cell.cov_forward.push_back(cell.cov);
+        cell.mean_backward.push_back(cell.mean);
+        cell.cov_backward.push_back(cell.cov);
 
         // next time point:
-        if (t<cell.time.size()-1) {
+        if (t>0) {
             mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov

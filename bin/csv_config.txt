@@ -1,6 +1,6 @@
 # Config file for reading input file
 # lines staring with '#' are ignored
-# Everything behind the '=' sign (excluding l/r whitespaces) is taken
+# Note: Everything behind the '=' sign (excluding l/r whitespaces) is taken
 
 # Defaults (based on a Moma output):
 #   time_col = "time_sec";

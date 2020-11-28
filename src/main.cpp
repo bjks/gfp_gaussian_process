@@ -87,41 +87,81 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params){
 
 
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
-    std::vector<std::vector<std::string>> keys = {{"-p", "--parameter_config", "\tfile defining the type, step, bounds of the parameters"},
-                                                {"-c", "--csv_config", "\tfile that sets the colums that will be used from the input file"},
-                                                {"-m","--mode", "\t\tmode keyword can start with 'm'->minimization or 's'->scan"},
-                                                {"-l","--print_level", "\tprint level >=0 "},
-                                                {"-r","--rel_tol", "\t\trelative tolerance of minimization"},
-                                                {"-h","--help", "\t\thelp message"}};
+    std::vector<std::vector<std::string>> keys = {
+        {"-h","--help", "\t\thelp message"},
+        {"-i", "--infile", "(required) input/data file"},
+        {"-b", "--parameter_bounds", "\t(required) file defining the type, step, bounds of the parameters"},
+        {"-c", "--csv_config", "\tfile that sets the colums that will be used from the input file"},
+        {"-l","--print_level", "\tprint level >=0 "},
+        {"-r","--rel_tol", "\t\trelative tolerance of minimization"},
+        {"-m","--minimize", "\t\trun minimization"},
+        {"-s","--scan", "\t\trun 1d parameter scan"},
+        {"-p","--predict", "\t\trun prediction"}
+        };
+
+    std::map<std::string, int> key_indices; 
+    for (int i = 0; i < keys.size(); ++i){
+        key_indices.insert(std::pair<std::string, int>(keys[i][0], i)); 
+    }
 
     std::map<std::string, std::string> arguments;
     /* defaults: */
-    arguments["parameter_config"] = "parameters.txt";
     arguments["csv_config"] = "csv_config.txt";
-    arguments["mode"] = "minimize";
+    arguments["print_level"] = "0";
+
     arguments["rel_tol"] = "1e-2";
 
     for(int k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
             if (argv[i] == keys[k][0] || argv[i] == keys[k][1]){
-                if(k==0) 
-                    arguments["parameter_config"] = argv[i+1];
-                else if(k==1) 
+                 if(k==key_indices["-i"]) 
+                    arguments["infile"] = argv[i+1];
+                else if(k==key_indices["-b"]) 
+                    arguments["parameter_bounds"] = argv[i+1];
+                else if(k==key_indices["-c"]) 
                     arguments["csv_config"] = argv[i+1];
-				else if(k==2) 
-                    arguments["mode"] = argv[i+1];
-				else if(k==3)
-                    _print_level = std::stoi(argv[i+1]);
-				else if(k==4)
+				else if(k==key_indices["-l"])
+                    arguments["print_level"] = argv[i+1];
+				else if(k==key_indices["-r"])
                     arguments["rel_tol"] = argv[i+1];
-                else if (k==5){
-                    arguments["mode"] = "quit";
+                else if(k==key_indices["-m"])
+                    arguments["minimize"] = "1";
+                else if(k==key_indices["-s"])
+                    arguments["scan"] = "1";
+                else if(k==key_indices["-p"])
+                    arguments["predict"] = "1";
+                else if (k==key_indices["-h"]){
+                    arguments["quit"] = "1";
                     std::cout << "Usage: ./gfp_gaussian <infile> [-options]\n";
                     for(int j=0; j<keys.size(); ++j)
                         std::cout << keys[j][0] <<", "<< keys[j][1] << keys[j][2] <<"\n";
                 }
             }
         }
+    }
+    /* Check is required filenames are parsed and files exist */
+    if (!arguments.count("infile")){
+        std::cout << "Required infile flag not set!\n";
+        arguments["quit"] = "1";
+    }
+    else if(! std::__fs::filesystem::exists(arguments["infile"])){
+        std::cout << "Infile " << _infile << " not found (use '-h' for help)!" << std::endl;
+        arguments["quit"] = "1";
+    }
+
+    if (!arguments.count("parameter_bounds")){
+        std::cout << "Required parameter_bounds flag not set!\n";
+        arguments["quit"] = "1";
+    }
+    else if(! std::__fs::filesystem::exists(arguments["parameter_bounds"])){   
+        std::cout << "Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
+        arguments["quit"] = "1";
+    }
+
+    /* Check if csv file (if parsed) exists, to avoid confusion */
+    if(arguments.count("csv_config") && !std::__fs::filesystem::exists(arguments["csv_config"])){   
+        std::cout << "csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
+        arguments["quit"] = "1";
     }
     return arguments;
 }
@@ -130,34 +170,22 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 int main(int argc, char** argv){
     /* read configuration files */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
+    _print_level = std::stoi(arguments["print_level"]);
 
-    if (arguments["mode"] == "quit")
+    if (arguments.count("quit")){
+        std::cout << "Quit\n";
         return 0;    
-
-    /* get input file */
-    _infile = argv[1];    
-    if(! std::__fs::filesystem::exists(_infile)){
-        std::cout << "File " << _infile << " not found (use '-h' for help)! \nQuit" << std::endl;
-        return 0;
     }
 
-    /* get parameter file */
-    if(! std::__fs::filesystem::exists(arguments["parameter_config"])){   
-        std::cout << "File " << arguments["parameter_config"] << " not found (use '-h' for help)! \nQuit" << std::endl;
-        return 0;
-    }
-    Parameter_set params(arguments["parameter_config"]);
+    /* get parameter and csv config file */
+    Parameter_set params(arguments["parameter_bounds"]);
     std::cout << params << "\n";
 
-    /* get csv config file */
-    if(! std::__fs::filesystem::exists(arguments["csv_config"])){   
-        std::cout << "File " << arguments["parameter_config"] << " not found! \nUse defaults" << std::endl;
-    }
     CSVconfig config(arguments["csv_config"]);
     std::cout << config << "\n";
 
-
     /* Read data from input file */
+    _infile = arguments["infile"];    
     std::cout << "-> Reading" << "\n";
     std::vector<MOMAdata> cells =  getData(_infile, 
                                             config.time_col,
@@ -171,13 +199,13 @@ int main(int argc, char** argv){
     build_cell_genealogy(cells);
 
     /* bound_1dscan, minimization... */
-    if (arguments["mode"].at(0) == 'm')
+    if (arguments.count("minimize"))
         run_minimization(cells, params, std::stod(arguments["rel_tol"]));
 
-    else if (arguments["mode"].at(0) == 's')
+    else if (arguments.count("scan"))
         run_bound_1dscan(cells, params);
 
-    else if (arguments["mode"].at(0) == 'p')
+    else if (arguments.count("predict"))
         run_prediction(cells, params);
 
     std::cout << "Done." << std::endl;

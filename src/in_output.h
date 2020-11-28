@@ -7,7 +7,7 @@
 std::string _infile;
 std::string _outfile;
 int _iteration = 0;
-int _print_level = 0;
+int _print_level;
 
 
 std::string outfile_name_minimization(std::string infile, Parameter_set params){
