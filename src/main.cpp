@@ -19,7 +19,7 @@ void run_minimization(std::vector<MOMAdata> &cells, Parameter_set params, double
     setup_outfile_params(_outfile, params);
 
     /* minimization for tree starting from cells[0] */
-    minimize_wrapper(&total_likelihood, cells[0], params, relative_tol);
+    minimize_wrapper(&total_likelihood, cells, params, relative_tol);
 }
 
 
@@ -48,7 +48,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
             for(int j=0; j<sampling.size(); ++j){
                 /* reset mean, cov */
                 params_vec[i] = sampling[j];
-                total_likelihood(params_vec, cells[0]);
+                total_likelihood(params_vec, cells);
             }
         }
     }
@@ -197,6 +197,7 @@ int main(int argc, char** argv){
 
     /* genealogy built via the parent_id (string) given in data file */
     build_cell_genealogy(cells);
+
 
     /* bound_1dscan, minimization... */
     if (arguments.count("minimize"))

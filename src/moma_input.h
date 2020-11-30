@@ -25,6 +25,7 @@ public:
     std::string parent_id;
 
     // Pointer to other instances of the class representing the genealogy
+    MOMAdata *p_self;
     MOMAdata *parent = nullptr;
     MOMAdata *daughter1 = nullptr;
     MOMAdata *daughter2 = nullptr;
@@ -104,6 +105,7 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     * Assign respective pointers to parent, daughter1 and daughter2 for each cell
     */
     for(long k = 0; k < cell_vector.size(); ++k) {
+        cell_vector[k].p_self = &cell_vector[k];
         for(long j = 0; j < cell_vector.size(); ++j) {
 
             if( cell_vector[j].cell_id == cell_vector[k].parent_id ){

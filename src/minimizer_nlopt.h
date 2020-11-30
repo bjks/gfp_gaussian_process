@@ -18,7 +18,7 @@ double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad,
 }
 
 void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
-                        MOMAdata &cell,
+                        std::vector<MOMAdata> &cells,
                         Parameter_set &params, 
                         double relative_tol){
 
@@ -54,7 +54,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     opt.set_initial_step(steps);
     opt.set_xtol_rel(relative_tol);
 
-    opt.set_min_objective(target_func, &cell);
+    opt.set_min_objective(target_func, &cells); // is type casted to void pointer
 
     double minf;
     // actual minimization

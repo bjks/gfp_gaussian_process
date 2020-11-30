@@ -29,7 +29,7 @@ double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::MatrixXd S, Ei
 /* -------------------------------------------------------------------------- */
 void sc_likelihood(const std::vector<double> &params_vec, 
                     MOMAdata &cell, 
-                    double &total_likelihood){
+                    double &tl){
 /* Calculates the likelihood of a single cell (can be a root cell)
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
@@ -58,7 +58,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 
-        total_likelihood += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree     
+        tl += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree     
         posterior(xg, cell, S, Si); // updates mean/cov        
 
         if (t<cell.time.size()-1) {
@@ -66,7 +66,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
-        if (std::isnan(total_likelihood)){
+        if (std::isnan(tl)){
             break;
         }
     }
@@ -79,16 +79,16 @@ void sc_likelihood(const std::vector<double> &params_vec,
 
 void likelihood_recr(const std::vector<double> &params_vec, 
                     MOMAdata *cell, 
-                    double &total_likelihood){
+                    double &tl){
     /*  
     * Recursive implementation that applies the function func to every cell in the genealogy
     * not meant to be called directly, see wrapper below
     */
     if (cell == nullptr)
         return;
-    sc_likelihood(params_vec, *cell, total_likelihood);
-    likelihood_recr(params_vec, cell->daughter1, total_likelihood);
-    likelihood_recr(params_vec, cell->daughter2, total_likelihood);
+    sc_likelihood(params_vec, *cell, tl);
+    likelihood_recr(params_vec, cell->daughter1, tl);
+    likelihood_recr(params_vec, cell->daughter2, tl);
 }
 
 
@@ -97,8 +97,15 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     * total_likelihood of cell tree, to be maximized
     */
 
-    double total_likelihood = 0;
-    likelihood_recr(params_vec,  (MOMAdata *) c, total_likelihood);
+    // type cast the void vector back to vector of MOMAdata
+    std::vector<MOMAdata>* cells = (std::vector<MOMAdata>*) c;
+    double tl = 0;
+
+    for(int i=0; i < (*cells).size(); ++i){
+        if ((*cells)[i].is_root() ){
+            likelihood_recr(params_vec,  (*cells)[i].p_self , tl);
+        }
+    }
     ++ _iteration;
 
     /* Save state of iteration in outfile */
@@ -108,30 +115,28 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     for (int i=0; i<params_vec.size(); ++i){
         file << params_vec[i]  << ",";
     }
-    file << std::setprecision(10) << total_likelihood  << "\n";
+    file << std::setprecision(10) << tl  << "\n";
     file.close();
 
     /* Print output dependend on set _print_level */
     if (_print_level>0){
         if (_print_level==0)
-            std::cout << _iteration << ": " << total_likelihood << "\n";
+            std::cout << _iteration << ": " << tl << "\n";
         if (_print_level>0){
             std::cout << _iteration << ": ";
                 for (int i=0; i<params_vec.size(); ++i){
                     std::cout << params_vec[i]  << ", ";
                 }
-                std::cout << "ll=" << total_likelihood  << "\n";
-                if (_print_level>1)
-                    std::cout << "final mean and cov:\n" << *(MOMAdata *) c << "\n";
+                std::cout << "ll=" << tl  << "\n";
         }
     }
 
-    return -total_likelihood;
+    return -tl;
 }
 
-double total_likelihood(const std::vector<double> &params_vec, MOMAdata &cell){
+double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata>  cells){
     std::vector<double> g;
-    return total_likelihood(params_vec, g, &cell);
+    return total_likelihood(params_vec, g, &cells);
 }
 
 

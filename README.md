@@ -31,9 +31,10 @@ The parameter space is defined in `parameter_bound.txt`.
 - Linear algebra: Eigen
   - available via modules
   
-## TODO: Likelihood calculation
-- [ ] check mean and covariance after divison
-
+## TODO: 
+- [ ] finish implementing backward prediction
+- [ ] compare forward prediction with python version
+- [ ] decide on covariance output of prediction
 
 ## Likelihhod Calculation
 - apply function recursively 

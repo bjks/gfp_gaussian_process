@@ -14,7 +14,7 @@
 
 
 length_col = log_leng_noise
-fp_col = gfp_gaussian_noise
+fp_col = gfp_noise
 parent_tags = lane_ID, parent_id
 cell_tags = lane_ID, id
 
