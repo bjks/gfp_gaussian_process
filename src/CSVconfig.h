@@ -70,15 +70,22 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
-    std::cout << "Configuration used for reading the input file\n"; 
-    std::cout << "_____________________________________________\n"; 
-    std::cout   << "\ttime_col:\t"  << config.time_col << "\n" \
-                << "\tlength_col:\t" <<  config.length_col << "\n" \
-                << "\tfp_col:\t\t" << config.fp_col << "\n" \
-                << "\tdelm:\t\t" << config.delm << "\n" \
-                << "\tcell_tags:\t" ;
-    pvector(config.cell_tags);
-    std::cout << "\tparent_tags:\t" ;
-    pvector(config.parent_tags);
+    int col = 15;
+    os << "Configuration used for reading the input file\n"; 
+    os << "_____________________________________________\n"; 
+    os          << pad_str("time_col:", col)  << config.time_col << "\n" 
+                << pad_str("length_col:", col) <<  config.length_col << "\n" 
+                << pad_str("fp_col:", col) << config.fp_col << "\n" 
+                << pad_str("delm:", col) << config.delm << "\n" 
+                << pad_str("cell_tags:", col) ;
+    for(int i=0; i < config.cell_tags.size(); i++){
+        os << config.cell_tags[i] << ' ';
+    }
+    os << "\n"; 
+    os << pad_str("parent_tags:", col);
+    for(int i=0; i < config.parent_tags.size(); i++){
+        os << config.parent_tags[i] << ' ';
+    }
+    os << "\n";
     return os;
 }

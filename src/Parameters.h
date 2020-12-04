@@ -12,7 +12,7 @@ class Parameter{
     bound (bound=true, fixed=false) 
     fixed (fixed=true)
 
-All of which contain an initial value (double) and a name (string).
+All of which contain an initial (double) and a name (string).
 
 Non-fixed parameters have a step.
 
@@ -26,7 +26,7 @@ public:
     double init;
     bool set = false;
 
-    double value;
+    double final;
     bool miminized = false;
 
     double step;
@@ -160,13 +160,15 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
-    void set_value(std::vector<double> vals);
-    std::vector<double> get_values();
+
+    void set_final(std::vector<double> vals);
+    std::vector<double> get_final();
     std::vector<double> get_init();
-    void to_csv(std::string outfile);
+    void const to_csv(std::string outfile);
 };
 
-void Parameter_set::to_csv(std::string outfile){
+
+void const Parameter_set::to_csv(const std::string outfile){
     std::ofstream file(outfile);
     file << "no,name,type,init,step,lower_bound,upper_bound\n";
     for (int i=0; i<all.size(); ++i){
@@ -195,23 +197,28 @@ void Parameter_set::to_csv(std::string outfile){
 }
 
 
-void Parameter_set::set_value(std::vector<double> vals){
+void Parameter_set::set_final(std::vector<double> vals){
     for (int i=0; i<all.size(); ++i){
-        all[i].value =vals[i];
+        all[i].final = vals[i];
         all[i].miminized = true;
     }
     
 }
 
-std::vector<double>  Parameter_set::get_values(){
+std::vector<double> Parameter_set::get_final(){
     std::vector<double> vals;
     for (int i=0; i<all.size(); ++i){
-        vals.push_back(all[i].value);
+        if (all[i].miminized){
+            vals.push_back(all[i].final);
+        }
+        else{
+            vals.push_back(all[i].init);
+        }
     }
     return vals;
 }
 
-std::vector<double>  Parameter_set::get_init(){
+std::vector<double> Parameter_set::get_init(){
     std::vector<double> vals;
     for (int i=0; i<all.size(); ++i){
         vals.push_back(all[i].init);
@@ -219,20 +226,6 @@ std::vector<double>  Parameter_set::get_init(){
     return vals;
 }
 
-std::string pad_str(std::string s, const size_t num, const char paddingChar = ' '){
-    if(num > s.size())
-        s.insert(s.end(), num - s.size(), paddingChar);
-    return s;
-}
-
-std::string pad_str(double d, const size_t num, const char paddingChar = ' ', const char first_char = ','){
-    std::stringstream buffer;
-    buffer << d;
-    std::string s = buffer.str();
-    if(num > s.size())
-        s.insert(s.end(), num - s.size(), paddingChar);
-    return s;
-}
 
 std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
     std::vector<int> column_widths {4, 15, 8, 10, 10, 10, 10};
@@ -266,7 +259,7 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
                     << pad_str(params.all[i].step , column_widths[4]);
             }
             if (params.all[i].miminized && !params.all[i].fixed){
-                os << " -> "<< params.all[i].value;
+                os << " -> "<< params.all[i].final;
             }
         }
         else{

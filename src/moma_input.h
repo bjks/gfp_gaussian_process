@@ -17,7 +17,8 @@
 
 class MOMAdata{
     /*  
-    * A class containing data from a MOMA-csv file for a single cell
+    * A class containing data from a MOMA-csv file (or similar) for a single cell 
+    * that stores all calculated quanitites and its realtions to other cells in the data set
     */
 public:
     // IDs (eg '20150624.0.1.5') of related cells saved as strings
@@ -25,7 +26,6 @@ public:
     std::string parent_id;
 
     // Pointer to other instances of the class representing the genealogy
-    MOMAdata *p_self;
     MOMAdata *parent = nullptr;
     MOMAdata *daughter1 = nullptr;
     MOMAdata *daughter2 = nullptr;
@@ -38,10 +38,11 @@ public:
 
     int generation;
 
-    // variables to be calculated
+    // initial guess for mean and cov, to avoid recalculation
     Eigen::VectorXd mean_init = Eigen::VectorXd::Zero(4);
     Eigen::MatrixXd cov_init = Eigen::MatrixXd::Zero(4, 4);
 
+    // variables to for updating the current state
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
     Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(4, 4);
 
@@ -51,6 +52,9 @@ public:
 
     std::vector<Eigen::Vector4d> mean_backward;
     std::vector<Eigen::Matrix4d> cov_backward;
+
+    std::vector<Eigen::Vector4d> mean_prediction;
+    std::vector<Eigen::Matrix4d> cov_prediction;
 
     // member functions
     bool is_leaf() const;
@@ -88,10 +92,12 @@ std::ostream& operator<<(std::ostream& os, const MOMAdata& cell){
 }
 
 bool MOMAdata :: is_leaf() const{
+    /* returns true if cell is leaf in tree */
     return daughter1 == nullptr && daughter2 == nullptr;
 }
 
 bool MOMAdata :: is_root() const {
+    /* returns true if cell is root in tree */
     return parent==nullptr;
 }
 
@@ -105,9 +111,7 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     * Assign respective pointers to parent, daughter1 and daughter2 for each cell
     */
     for(long k = 0; k < cell_vector.size(); ++k) {
-        cell_vector[k].p_self = &cell_vector[k];
         for(long j = 0; j < cell_vector.size(); ++j) {
-
             if( cell_vector[j].cell_id == cell_vector[k].parent_id ){
                 //  Assign pointers to PARENT variable of the cell
                 cell_vector[k].parent = &cell_vector[j];
@@ -124,6 +128,7 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
 }
 
 void print_cells(std::vector<MOMAdata> const &cell_vector){
+    /* prints all cells */
     for (MOMAdata cell: cell_vector){
         std::cout << cell;
     }
@@ -151,7 +156,6 @@ std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > &cells){
     * returns vector pointers to MOMAdata cells 
     * each pointer points to a root of the cell trees
     */
-   
     std::vector<MOMAdata *> roots;
     for(int i=0; i < cells.size(); ++i){
         if (cells[i].is_root()){
@@ -160,7 +164,6 @@ std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > &cells){
     }
     return roots;
 }
-
 
 
 // ----------------------------------------------------------------------------- //
@@ -230,14 +233,14 @@ void apply_down_tree(const std::vector<double> &params_vec,
     * such that the parent cell has already been accessed when the function is applied 
     * to the cell.
     * 
-    * Example (number implies the order in which cell is accessed)
+    * Example (number implies the order in which)
     * _________________________________________________ 
 
-	       1
-	     /   \
-	    2     5
-	  /   \     \
-	 3     4     6
+	       1            |
+	     /   \          |
+	    2     5         |
+	  /   \     \       |
+	 3     4     6      V
 
     * _________________________________________________ 
     */
@@ -268,18 +271,18 @@ void apply_up_tree(const std::vector<double> &params_vec,
                     MOMAdata &cell, 
                     void (*func)(const std::vector<double> &, MOMAdata &))
                     {
-    /* applies the function func to the cell cell and the other cells in the genealogy
+    /* applies the function func to the cell and the other cells in the genealogy
     * such that the daughter cells has already been accessed when the function is applied 
     * to the cell.
     * 
     * Example (number implies the order in which cell is accessed)
     * _________________________________________________ 
 
-	       6
-	     /   \
-	    3     5
-	  /   \     \
-	 1     2     4
+	       6            ^
+	     /   \          |
+	    3     5         |
+	  /   \     \       |
+	 1     2     4      |
 
     * _________________________________________________ 
     */
@@ -322,7 +325,8 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
 
 void append_vec(Eigen::VectorXd &v, double elem){
     /*  
-    * push_back alternative for non std vector (with resize() and size()), probaly slow and should only be used to read the csv 
+    * push_back alternative for non std vector (with resize() and size()), 
+    * probaly slow and should only be used to read the csv 
     * and create vector with data with unknow length
     */
     v.conservativeResize(v.size()+1);
@@ -344,17 +348,30 @@ std::vector<MOMAdata> getData(std::string filename,
     
     std::vector<std::string> line_parts;
     std::string line;
+    std::vector<MOMAdata> data;
 
     // read the header and assign an index to every entry, such that we can 'index' with a string
     getline(file, line);
     line_parts = split_string_at(line, delm);
     std::map<std::string, int> header_indices = get_header_indices(line_parts);
-
+    // check if the columns that are set actually exist in header 
+    if (!header_indices.count(time_col)){
+        std::cerr << time_col << " (time_col) is not an column in input file!\n";
+        return data;
+    }
+    if (!header_indices.count(length_col)){
+        std::cerr << length_col << " (length_col) is not an column in input file!\n";
+        return data;
+    }
+    if (!header_indices.count(fp_col)){
+        std::cerr << fp_col << " (fp_col) is not an column in input file!\n";
+        return data;
+    }
+    
     // Iterate through each line and split the content using the delimeter then assign the 
     std::string last_cell = "";
     std::string curr_cell;
 
-    std::vector<MOMAdata> data;
     int last_idx = -1;
     long line_count = 0;
     while (getline(file, line)) {
@@ -447,7 +464,7 @@ double vec_var(std::vector<double> v){
 void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the root cells estimated from 
-    * the data
+    * the data using the FIRST time point and the FIRST n time points of each cell 
     */
     for(int i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
@@ -483,7 +500,7 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
 void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the leafs cells estimated from 
-    * the data
+    * the data using the LAST time point and the LAST n time points of each cell 
     */
     for(int i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);

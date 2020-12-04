@@ -1,6 +1,6 @@
 #include "moma_input.h"
 #include "mean_cov_model.h"
-#include "in_output.h"
+#include "Parameters.h"
 
 #include <math.h>
 #include <cmath>
@@ -39,7 +39,6 @@ void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Ma
 }
 
 /* -------------------------------------------------------------------------- */
-
 void sc_prediction_forward(const std::vector<double> &params_vec, 
                     MOMAdata &cell){
 /* 
@@ -88,7 +87,7 @@ void sc_prediction_forward(const std::vector<double> &params_vec,
 void prediction_forward_recr(const std::vector<double> &params_vec, 
                     MOMAdata *cell){
     /*  
-    * Recursive implementation that applies the function func to every cell in the genealogy
+    * Recursive implementation that applies the function sc_prediction_forward to every cell in the genealogy
     * not meant to be called directly, see wrapper below
     */
     if (cell == nullptr)
@@ -98,19 +97,25 @@ void prediction_forward_recr(const std::vector<double> &params_vec,
     prediction_forward_recr(params_vec, cell->daughter2);
 }
 
-void prediction_forward(const std::vector<double> &params_vec, MOMAdata &cell){
-    prediction_forward_recr(params_vec,  &cell);
+void prediction_forward(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+    /* applies prediction to each cell going down the tree starting from all root cells */
+    std::vector<MOMAdata *> p_roots = get_roots(cells);
+
+    for(int i=0; i<p_roots.size(); ++i){
+        prediction_forward_recr(params_vec,  p_roots[i]);
+    }
 }
 
 
 /* --------------------------------------------------------------------------
+* --------------------------------------------------------------------------
 * BACKWARD PREDICTION
+* --------------------------------------------------------------------------
 * -------------------------------------------------------------------------- */
 
 
 void multiply_gaussian(Eigen::VectorXd &m1, Eigen::MatrixXd &c1, Eigen::VectorXd m2, Eigen::MatrixXd c2){
     /* Multiply first gaussian with second one - inplace multiplication */
-
     Eigen::MatrixXd new_c1 = (c1.inverse() + c2.inverse()).inverse();
     m1 = new_c1 * c1.inverse() * m1  +  new_c1 * c2.inverse() * m2;
     c1 = new_c1;
@@ -139,33 +144,50 @@ void mean_cov_after_division_r(MOMAdata &cell, double var_dx, double var_dg){
     }
 }
 
-void reverse_mean_cov(MOMAdata &cell, 
-                    double t, double ml, 
-                    double gl, double sl2, 
-                    double mq, double gq, 
-                    double sq2, double b){
-    mean_cov_model(cell, t, ml, 
-                    gl,  sl2, 
-                    mq,  gq, 
-                    sq2,  b); 
-
-    cell.mean(2) = - cell.mean(2);
-    cell.mean(3) = - cell.mean(3);
-
-    cell.cov(0,2) = - cell.cov(0,2); 
-    cell.cov(0,3) = - cell.cov(0,3);
-    cell.cov(1,2) = - cell.cov(1,2);
-    cell.cov(1,3) = - cell.cov(1,3);
-}
-
-
 void mean_cov_model_r(MOMAdata &cell, 
                     double t, double ml, 
                     double gl, double sl2, 
                     double mq, double gq, 
                     double sq2, double b){
+    /* reverses the mean_cov_model function by switching the sign OU process params and beta */
     mean_cov_model(cell,t,-ml,-gl,sl2,-mq,-gq,sq2,-b);
 }
+
+void append_reversed_mean(MOMAdata &cell){
+    /* append the "reverse" of the mean 
+    mean ->     + + - - 
+    in front of mean_backward variable in cell
+    */
+    Eigen::VectorXd temp_mean(4); 
+    temp_mean << cell.mean;
+
+    temp_mean(2) = - cell.mean(2);
+    temp_mean(3) = - cell.mean(3);
+    cell.mean_backward.insert(cell.mean_backward.begin(), temp_mean);
+}
+
+void append_reversed_cov(MOMAdata &cell){
+    /* append the "reverse" of the vov 
+    cov ->  + + - - 
+            + + - - 
+            - - + + 
+            - - + + 
+    in front of cov_backward variable in cell
+    */
+    Eigen::MatrixXd temp_cov(4,4);
+    temp_cov << cell.cov;
+    std::vector<std::vector<int>> entries   {{0,2},
+                                            {0,3},
+                                            {1,2},
+                                            {1,3}};
+
+    for(int k=0; k<entries.size(); ++k){
+        temp_cov(entries[k][0], entries[k][1]) = - cell.cov(entries[k][0], entries[k][1]);
+        temp_cov(entries[k][1], entries[k][0]) = - cell.cov(entries[k][1], entries[k][0]);
+    }
+    cell.cov_backward.insert(cell.cov_backward.begin(), temp_cov);
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -198,15 +220,16 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
+
         posterior(xg, cell, S, Si); // updates mean/cov
 
         // save current mean/cov before (!) those are set for the next time point
-        cell.mean_backward.push_back(cell.mean);
-        cell.cov_backward.push_back(cell.cov);
+        append_reversed_mean(cell);
+        append_reversed_cov(cell);
 
-        // next time point:
+        // previous time point:
         if (t>0) {
-            mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
+            mean_cov_model_r(cell, cell.time(t)-cell.time(t-1) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
@@ -217,7 +240,7 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
 void prediction_backward_recr(const std::vector<double> &params_vec, 
                     MOMAdata *cell){
     /*  
-    * Recursive implementation that applies the function func to every cell in the genealogy
+    * Recursive implementation that applies the function sc_prediction_backward to every cell in the genealogy
     * not meant to be called directly, see wrapper below
     */
     if (cell == nullptr)
@@ -225,9 +248,99 @@ void prediction_backward_recr(const std::vector<double> &params_vec,
     prediction_backward_recr(params_vec, cell->daughter1);
     prediction_backward_recr(params_vec, cell->daughter2);
     sc_prediction_backward(params_vec, *cell);
-
 }
 
-void prediction_backward(const std::vector<double> &params_vec, MOMAdata &cell){
-    prediction_backward_recr(params_vec,  &cell);
+void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+    std::vector<MOMAdata *> p_roots = get_roots(cells);
+
+    for(int i=0; i<p_roots.size(); ++i){
+        prediction_backward_recr(params_vec,  p_roots[i]);
+    }
+}
+
+
+void combine_predictions(std::vector<MOMAdata> &cells){
+    /* combines foward and backward predictions by multiplying the gaussians of those predictions */
+    Eigen::VectorXd temp_mean(4); 
+    Eigen::MatrixXd temp_cov(4,4); 
+
+    for(int i=0; i<cells.size();++i){
+        for (int j=0; j<cells[i].time.size();++j ){
+            temp_mean << cells[i].mean_forward[j];
+            temp_cov << cells[i].cov_forward[j];
+
+            multiply_gaussian(temp_mean, temp_cov, 
+                                cells[i].mean_backward[j], cells[i].cov_backward[j]);
+            cells[i].mean_prediction.push_back(temp_mean);
+            cells[i].cov_prediction.push_back(temp_cov);
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------
+* OUTPUT
+* -------------------------------------------------------------------------- */
+std::string outfile_name_prediction(std::map<std::string, std::string> arguments, std::string suffix=""){
+    std::string outfile = out_dir(arguments);
+    outfile += file_base(arguments["infile"]) + "_prediction" + suffix;
+    return outfile + ".csv";
+}
+
+
+void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd m){
+    /* Comma seperated output of upper triangle of 4x4 Eigen::matrix*/
+    std::vector<std::vector<int>> upper_triangle {{0,0}, {0,1}, {0,2}, {0,3},
+                                                         {1,1}, {1,2}, {1,3},
+                                                                {2,2}, {2,3},
+                                                                       {3,3}};
+                                                                       
+    for (int k=0; k<upper_triangle.size(); ++k){
+        if (k>0)
+            file << ",";
+        file << m(upper_triangle[k][0], upper_triangle[k][1]);
+    }
+}
+
+void output_vector(std::ofstream &file, Eigen::VectorXd v){
+    /* Comma seperated output of Eigen::vector */
+    for (int k=0; k<v.size(); ++k){
+        if (k>0)
+            file << ",";
+        file << v(k);
+    }
+}
+
+
+void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
+                                Parameter_set& params, std::string direction="n"){        
+    params.to_csv(outfile);
+
+    std::ofstream file(outfile, std::ios_base::app);
+    file << "\ncell_id,time,log_length,fp,";
+    file    << "mean_x,mean_g,mean_l,mean_q,"
+            <<   "cov_xx,cov_xg,cov_xl,cov_xq," 
+                     << "cov_gg,cov_gl,cov_gq,"
+                            << "cov_ll,cov_lq,"
+                                   << "cov_qq\n";
+    for(int i=0; i<cells.size();++i){
+        for (int j=0; j<cells[i].mean_forward.size();++j ){
+            file << cells[i].cell_id << "," << cells[i].time[j] << "," << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
+            if(direction=="f"){
+                output_vector(file, cells[i].mean_forward[j]);
+                file << ",";  
+                output_upper_triangle(file, cells[i].cov_forward[j]);
+            } else if (direction=="b"){
+                output_vector(file, cells[i].mean_backward[j]);
+                file << ",";  
+                output_upper_triangle(file, cells[i].cov_backward[j]);
+            } else{
+                output_vector(file, cells[i].mean_prediction[j]);
+                file << ",";  
+                output_upper_triangle(file, cells[i].cov_prediction[j]);
+            }
+            file << "\n"; 
+        }
+    }
+
+    file.close();
 }

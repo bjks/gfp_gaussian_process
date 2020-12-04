@@ -54,7 +54,9 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     opt.set_initial_step(steps);
     opt.set_xtol_rel(relative_tol);
 
-    opt.set_min_objective(target_func, &cells); // is type casted to void pointer
+    std::vector<MOMAdata *> p_roots = get_roots(cells);
+
+    opt.set_min_objective(target_func, &p_roots); // is type casted to void pointer
 
     double minf;
     // actual minimization
@@ -63,7 +65,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
         std::cout << "Found minimum: log likelihood " << std::setprecision(10) << minf << std::endl;
 
         // save final value for each parameter
-        params.set_value(parameter_state);
+        params.set_final(parameter_state);
         std::cout << params << std::endl;
 
     }

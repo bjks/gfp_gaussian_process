@@ -9,44 +9,47 @@
 #include <iterator> 
 
 
-void run_minimization(std::vector<MOMAdata> &cells, Parameter_set params, double relative_tol){
+void run_minimization(std::vector<MOMAdata> &cells, Parameter_set params, 
+                      std::map<std::string, std::string> arguments){
     std::cout << "-> Minimizaton" << "\n";
     init_cells(cells, 5);
 
     /* set and setup (global) output file */
-    _outfile = outfile_name_minimization(_infile, params);
-    std::cout << "Outfile: " << _outfile << "\n";
-    setup_outfile_params(_outfile, params);
+    _outfile_ll = outfile_name_minimization(arguments, params);
+    setup_outfile_likelihood(_outfile_ll, params);
+    std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    minimize_wrapper(&total_likelihood, cells, params, relative_tol);
+    minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
 }
 
 
-void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
+void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
+                      std::map<std::string, std::string> arguments){
     std::cout << "-> 1d Scan" << "\n";
     init_cells(cells, 5);
     
     for(int i=0; i<params.all.size(); ++i){
-        /* reset params */
-        std::vector<double> params_vec = params.get_init();
-
         if (params.all[i].bound){
             /* 
-            * set and setup new (global) output file, for each scan, 
-            * filename containing the parameter name that is varied 
+            reset params, if paramters have been minimized the final value will be taken
+            otherwise the init values are taken 
             */
-
-            _outfile = outfile_name_scan(_infile, params.all[i].name);
-            setup_outfile_params(_outfile, params);
-            std::cout << "Outfile: " << _outfile << "\n";
+            std::vector<double> params_vec = params.get_final();
+             
+            /* 
+            set and setup new (global) output file, for each scan, 
+            filename containing the parameter name that is varied
+            */
+            _outfile_ll = outfile_name_scan(arguments, params.all[i].name);
+            setup_outfile_likelihood(_outfile_ll, params);
+            std::cout << "Outfile: " << _outfile_ll << "\n";
 
             /* set sampling vector np.arange style*/
             std::vector<double> sampling = arange<double>(params.all[i].lower, 
                                                             params.all[i].upper, 
                                                             params.all[i].step);
             for(int j=0; j<sampling.size(); ++j){
-                /* reset mean, cov */
                 params_vec[i] = sampling[j];
                 total_likelihood(params_vec, cells);
             }
@@ -55,48 +58,53 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params){
 }
 
 
-void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params){
+void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params, 
+                    std::map<std::string, std::string> arguments){
     std::cout << "-> prediction" << "\n";
     
-    _outfile = outfile_name_prediction(_infile);
-    std::cout << "Outfile: " << _outfile << "\n";
-    setup_outfile_mean(_outfile, params);
+    std::string outfile = outfile_name_prediction(arguments);
+    std::string outfile_b = outfile_name_prediction(arguments, "_backward");
+    std::string outfile_f = outfile_name_prediction(arguments, "_forward");
+
+
+    std::cout << "Outfile: " << outfile << "\n";
+    std::cout << "Outfile backward: " << outfile_b << "\n";
+    std::cout << "Outfile forward: " << outfile_f << "\n";
+
 
     std::vector<double> params_vec = params.get_init();
 
     /* forward...*/
     init_cells(cells, 5);
-    prediction_forward(params_vec, cells[0]);
+    prediction_forward(params_vec, cells);
 
     /* backward...*/
     init_cells_r(cells, 5);
+    prediction_backward(params_vec, cells);
 
+    /* combine the two */
+    combine_predictions(cells);
 
     /* save */
-    std::ofstream file(_outfile, std::ios_base::app);
+    write_pretictions_to_file(cells, outfile_b, params, "b");
+    write_pretictions_to_file(cells, outfile_f, params, "f");
 
-    for(int i=0; i<cells.size();++i){
-        for (int j=0; j<cells[i].mean_forward.size();++j )
-            file    << cells[i].mean_forward[j][0] <<','
-                    << cells[i].mean_forward[j][1] <<','
-                    << cells[i].mean_forward[j][2] <<','
-                    << cells[i].mean_forward[j][3] << "\n";  
-    }
-    file.close();
+    write_pretictions_to_file(cells, outfile, params);
 }
 
 
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::vector<std::string>> keys = {
-        {"-h","--help", "\t\thelp message"},
+        {"-h","--help", "help message"},
         {"-i", "--infile", "(required) input/data file"},
-        {"-b", "--parameter_bounds", "\t(required) file defining the type, step, bounds of the parameters"},
-        {"-c", "--csv_config", "\tfile that sets the colums that will be used from the input file"},
-        {"-l","--print_level", "\tprint level >=0, default=0 "},
-        {"-r","--rel_tol", "\t\trelative tolerance of minimization, default=1e-2"},
-        {"-m","--minimize", "\t\trun minimization"},
-        {"-s","--scan", "\t\trun 1d parameter scan"},
-        {"-p","--predict", "\t\trun prediction"}
+        {"-b", "--parameter_bounds", "(required) file defining the type, step, bounds of the parameters"},
+        {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
+        {"-l","--print_level", "print level >=0, default=0"},
+        {"-o","--outdir", "specify output direction and do not use default"},
+        {"-r","--rel_tol", "relative tolerance of minimization, default=1e-2"},
+        {"-m","--minimize", "run minimization"},
+        {"-s","--scan", "run 1d parameter scan"},
+        {"-p","--predict", "run prediction"}
         };
 
     std::map<std::string, int> key_indices; 
@@ -106,9 +114,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     std::map<std::string, std::string> arguments;
     /* defaults: */
-    arguments["csv_config"] = "csv_config.txt";
     arguments["print_level"] = "0";
-
     arguments["rel_tol"] = "1e-2";
 
     for(int k=0; k<keys.size(); ++k){
@@ -122,6 +128,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["csv_config"] = argv[i+1];
 				else if(k==key_indices["-l"])
                     arguments["print_level"] = argv[i+1];
+				else if(k==key_indices["-o"])
+                    arguments["outdir"] = argv[i+1];
 				else if(k==key_indices["-r"])
                     arguments["rel_tol"] = argv[i+1];
                 else if(k==key_indices["-m"])
@@ -134,7 +142,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["quit"] = "1";
                     std::cout << "Usage: ./gfp_gaussian <infile> [-options]\n";
                     for(int j=0; j<keys.size(); ++j)
-                        std::cout << keys[j][0] <<", "<< keys[j][1] << keys[j][2] <<"\n";
+                        std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 27) << keys[j][2] <<"\n";
                 }
             }
         }
@@ -145,7 +153,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         arguments["quit"] = "1";
     }
     else if(! std::__fs::filesystem::exists(arguments["infile"])){
-        std::cout << "Infile " << _infile << " not found (use '-h' for help)!" << std::endl;
+        std::cout << "Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         arguments["quit"] = "1";
     }
 
@@ -168,7 +176,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
 
 int main(int argc, char** argv){
-    /* read configuration files */
+    /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
     _print_level = std::stoi(arguments["print_level"]);
 
@@ -185,29 +193,31 @@ int main(int argc, char** argv){
     std::cout << config << "\n";
 
     /* Read data from input file */
-    _infile = arguments["infile"];    
     std::cout << "-> Reading" << "\n";
-    std::vector<MOMAdata> cells =  getData(_infile, 
+    std::vector<MOMAdata> cells =  getData(arguments["infile"], 
                                             config.time_col,
                                             config.length_col,
                                             config.fp_col,
                                             config.delm,
                                             config.cell_tags,
                                             config.parent_tags);
+    if (!cells.size()){
+        std::cout << "Quit\n";
+        return 0;    
+    }
 
     /* genealogy built via the parent_id (string) given in data file */
     build_cell_genealogy(cells);
 
-
-    /* bound_1dscan, minimization... */
+    /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize"))
-        run_minimization(cells, params, std::stod(arguments["rel_tol"]));
+        run_minimization(cells, params, arguments);
 
-    else if (arguments.count("scan"))
-        run_bound_1dscan(cells, params);
+    if (arguments.count("scan"))
+        run_bound_1dscan(cells, params, arguments);
 
-    else if (arguments.count("predict"))
-        run_prediction(cells, params);
+    if (arguments.count("predict"))
+        run_prediction(cells, params, arguments);
 
     std::cout << "Done." << std::endl;
     return 0;
