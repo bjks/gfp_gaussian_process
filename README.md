@@ -29,8 +29,8 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 -c, --csv_config           file that sets the colums that will be used from the input file
 -l, --print_level          print level >=0, default=0
 -o, --outdir               specify output direction and do not use default
--r, --rel_tol              relative tolerance of minimization, default=1e-2
--m, --minimize             run minimization
+-r, --rel_tol              relative tolerance of maximization, default=1e-2
+-m, --maximize             run maximization
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
 ```
@@ -41,12 +41,12 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 
 ##### Optional arguments
 - `csv_config` sets the file that contains information on which columns will be used from the input file
-- `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the minimization/scan
-- `rel_tol` sets relative tolerance of minimization
+- `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the maximization/scan
+- `rel_tol` sets relative tolerance of maximization
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 
 ##### Run modes
-- `m (minimize), s(scan), p(predict` will run the respective task. In case `minimize` and `predict`is set, the estimated paramters after the minimization will be used for the prediction. Those paramters that are fixed are of course not effected.
+- `m (maximize), s(scan), p(predict` will run the respective task. In case `maximize` and `predict`is set, the estimated paramters after the maximization will be used for the prediction. Those paramters that are fixed are of course not effected.
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
 
 
@@ -63,7 +63,7 @@ mean_lambda = 0.01, 1e-4
 gamma_lambda = 0.01, 1e-4, 1e-4, 0.05
 var_lambda = 1e-07
 ```
-The step value is used for the 1d scan to discretize the interval set by lower and upper. During the minimization this will be the initial step size.
+The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size.
 
 ### Model parameters
 The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters:
@@ -89,8 +89,8 @@ Finally, asymmentric cell division is modelled via
 
 
 ### Output
-##### Minimization
-- Will create a file containing the parameter settings at the top 12 lines and all steps of the likelihood minimization
+##### Maximization
+- Will create a file containing the parameter settings at the top 12 lines and all steps of the likelihood maximization
 - The file (given the input file `example.csv`) is named as follows: `example_f<fixed>_b<bounds>.csv`, where `<fixed>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`
 - 
 ##### 1D scan
@@ -112,8 +112,12 @@ Finally, asymmentric cell division is modelled via
 - [ ] new simulation including asymmetric cell division?
 
 ## Technical Notes
+### Log-Likelihood maximization with multiple cell trees
+The log-likelihoods of all cell trees are added and the summed log-likelihood is then maximized. This of course implies that the parameters are the same for all cell trees. 
+
 ### Cell division in backwards direction
-![image](slides/slides.001.jpeg)
+In forward direction the first time point distributions of daughter cells are calculated from the mother cell (including asymmetric cell division. In backward direction, we might have two daughter cells that determine the distribution of the mother cell. In that case, two mother cells are calculated and the distribution of the two are multiplied to obtain a single distribution for the last time point of the mother cell.
+<img src="slides/slides.001.jpeg" alt="drawing" width="400"/>
 
 ### Likelihhod and prediction calculation along cell tree
 - function for likelihood and predictions for the single cells are applies recursively to go up/down the tree
@@ -171,6 +175,7 @@ void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMA
 
 ## Minimizer 
  - nlopt 
+ - Note, `total_likelihood` return -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
 
 ```cpp
 void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),

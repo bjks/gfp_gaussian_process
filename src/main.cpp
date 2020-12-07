@@ -101,8 +101,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
         {"-l","--print_level", "print level >=0, default=0"},
         {"-o","--outdir", "specify output direction and do not use default"},
-        {"-r","--rel_tol", "relative tolerance of minimization, default=1e-2"},
-        {"-m","--minimize", "run minimization"},
+        {"-r","--rel_tol", "relative tolerance of maximization, default=1e-2"},
+        {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"}
         };
