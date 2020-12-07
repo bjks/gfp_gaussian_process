@@ -34,28 +34,28 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
 ```
-#### Required arguments
+##### Required arguments
 - `infile` sets the input file that contains the data, eg as given by MOMA
 - `parameter_bounds` sets the file that defines the parameter space
 
 
-#### Optional arguments
+##### Optional arguments
 - `csv_config` sets the file that contains information on which columns will be used from the input file
 - `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the minimization/scan
 - `rel_tol` sets relative tolerance of minimization
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 
-#### Run modes
-- `m (minimize), s(scan), p(predict` will run the corresponding task. In case `minimize` is set, the estimated paramters after the minimization will be used for the minimization. Those paramters that are fixed are of course not effected.
+##### Run modes
+- `m (minimize), s(scan), p(predict` will run the respective task. In case `minimize` and `predict`is set, the estimated paramters after the minimization will be used for the prediction. Those paramters that are fixed are of course not effected.
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
 
 
 
 ### Parameter file
-Syntax for (in that order) free, bound, fixed parameters
-- parameter = value, step
-- parameter = value, step, lower, upper
-- parameter = value
+Syntax for free, bound, fixed (in that order) parameters
+- parameter = init, step
+- parameter = init, step, lower, upper
+- parameter = init
   
 Example:
 ```
@@ -63,34 +63,41 @@ mean_lambda = 0.01, 1e-4
 gamma_lambda = 0.01, 1e-4, 1e-4, 0.05
 var_lambda = 1e-07
 ```
-Full list of parameter:
+The step value is used for the 1d scan to discretize the interval set by lower and upper. During the minimization this will be the initial step size.
+
+### Model parameters
+The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters:
 - Growth rate fluctualtions params:
-    - mean_lambda;  
-    - gamma_lambda;  
-    - var_lambda;     
+    - mean_lambda
+    - gamma_lambda  
+    - var_lambda     
 - gfp fluctuation params
-    - mean_q;    
-    - gamma_q;    
-    - var_q;  
-    - beta;      
-- variance guess for length and gfp
-    - var_x;      
-    - var_g;      
+    - mean_q    
+    - gamma_q    
+    - var_q  
+    - beta      
+
+Additionally, the lenth of the cell and the gfp is effected by measurement noise
+- Measurement noise
+    - var_x     
+    - var_g     
+
+Finally, asymmentric cell division is modelled via
 - cell division:
-    - var_dx;  
-    - var_dg;      
+    - var_dx 
+    - var_dg      
 
 
 ### Output
-#### Minimization
+##### Minimization
 - Will create a file containing the parameter settings at the top 12 lines and all steps of the likelihood minimization
 - The file (given the input file `example.csv`) is named as follows: `example_f<fixed>_b<bounds>.csv`, where `<fixed>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`
 - 
-#### 1D scan
+##### 1D scan
 - Will create a file for each parameter containing the parameter settings at the top 12 lines and all calculated likelihoods of the scan
 - The file (given the input file `example.csv`) is named as follows: `example_<parameter>.csv`, where `<parameter>` is the paramter that is scaned
 
-#### Predictions
+##### Predictions
 - Will create a file for each parameter containing the parameter settings at the top 12 lines and ...
   - the 4 mean quanties of x, g, l/lambda, q 
   - the upper triangle of the covariance matrix 
@@ -106,7 +113,7 @@ Full list of parameter:
 
 ## Technical Notes
 ### Cell division in backwards direction
-![image](cell_division/cell_division.001.jpeg)
+![image](slides/slides.001.jpeg)
 
 ### Likelihhod and prediction calculation along cell tree
 - function for likelihood and predictions for the single cells are applies recursively to go up/down the tree
