@@ -1,5 +1,5 @@
 # gfp_gaussian_process
-Re-implementaion of the python code: https://github.com/fioriathos/new_protein_project
+Likelihood calculation and predictions of 1 dimensional genealogy is re-implementaion of the python code: https://github.com/fioriathos/new_protein_project.
 
 ### Compile
 `cd src; make`
@@ -54,18 +54,14 @@ Full list of parameter:
     - mean_lambda;  
     - gamma_lambda;  
     - var_lambda;     
-
 - gfp fluctuation params
     - mean_q;    
     - gamma_q;    
     - var_q;  
-
     - beta;      
-
 - variance guess for length and gfp
     - var_x;      
     - var_g;      
-
 - cell division:
     - var_dx;  
     - var_dg;      
@@ -96,10 +92,15 @@ Full list of parameter:
   - available via modules
   
 ### TODO: 
-- [ ] compare forward prediction with python version
+- [ ] compare forward/backward prediction with python version
+- [ ] check signs in backwards direction
+- [ ] new simulation including asymmetric cell division?
 
 ## Technical Notes
-### Likelihhod and prediction calculation
+### Cell division in backwards direction
+![image](cell_division/cell_division.001.jpeg)
+
+### Likelihhod and prediction calculation along cell tree
 - function for likelihood and predictions for the single cells are applies recursively to go up/down the tree
 - every cell is accessed once 
 - every cell is accessed after its parent(down direction)/daughter cells(up direction)

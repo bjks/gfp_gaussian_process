@@ -9,7 +9,7 @@
 #include <iterator> 
 
 
-void run_minimization(std::vector<MOMAdata> &cells, Parameter_set params, 
+void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
                       std::map<std::string, std::string> arguments){
     std::cout << "-> Minimizaton" << "\n";
     init_cells(cells, 5);
@@ -72,8 +72,8 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     std::cout << "Outfile forward: " << outfile_f << "\n";
 
 
-    std::vector<double> params_vec = params.get_init();
-
+    std::vector<double> params_vec = params.get_final();
+    pvector(params_vec);
     /* forward...*/
     init_cells(cells, 5);
     prediction_forward(params_vec, cells);
@@ -212,6 +212,7 @@ int main(int argc, char** argv){
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize"))
         run_minimization(cells, params, arguments);
+        std::cout <<"dasjuasd" << params ;
 
     if (arguments.count("scan"))
         run_bound_1dscan(cells, params, arguments);
