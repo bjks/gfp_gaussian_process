@@ -3,7 +3,7 @@ FADFLAG =  Faddeeva.cc
 
 NLOPTLAGS = -I $(HOME)/nlopt/include -L$(HOME)/nlopt/lib -lnlopt -lm  
 # NLOPTLAGS = -I nlopt/include -L nlopt/lib -lnlopt -lm  
-EIGENFLAG = -I /Applications/Eigen/eigen  
+EIGENFLAG = -I $(HOME)/eigen  
 
 compile_all: 
 	g++ $(CFLAGS) $(NLOPTLAGS) $(BOOSTFLAG) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian main.cpp

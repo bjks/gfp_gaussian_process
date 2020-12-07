@@ -1,7 +1,21 @@
 # gfp_gaussian_process
 Likelihood calculation and predictions of 1 dimensional genealogy is re-implementaion of the python code: https://github.com/fioriathos/new_protein_project.
 
+---
+## Usage 
+
 ### Compile
+The following libraries are needed:
+- nlopt (for minimization)
+  - can be installed via cmake
+  - can be statically compiled easily
+  - see also https://nlopt.readthedocs.io/en/latest/#download-and-installation
+- Eigen (for linear algebra)
+  - available via modules
+  - see also http://eigen.tuxfamily.org/index.php?title=Main_Page
+  
+Make sure the correct paths to the two libraries are set in the `Makefile`. Currently both are assumed to be located in the home directory. Then, compile with:
+
 `cd src; make`
 
 ### Run
@@ -82,14 +96,8 @@ Full list of parameter:
   - the upper triangle of the covariance matrix 
   - of each time point for each cell in the same order as the input file
 
+---
 ## Notes 
-
-### Libraries
-- Minimization: nlopt
-  - can be installed via cmake
-  - can be statically compiled easily
-- Linear algebra: Eigen
-  - available via modules
   
 ### TODO: 
 - [ ] compare forward/backward prediction with python version
