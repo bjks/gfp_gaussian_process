@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <iostream> 
 #include <iterator> 
+#include <iomanip> 
 
 
 void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
@@ -152,7 +153,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cout << "Required infile flag not set!\n";
         arguments["quit"] = "1";
     }
-    else if(! std::__fs::filesystem::exists(arguments["infile"])){
+    else if(! std::filesystem::exists(arguments["infile"])){
         std::cout << "Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         arguments["quit"] = "1";
     }
@@ -161,13 +162,13 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cout << "Required parameter_bounds flag not set!\n";
         arguments["quit"] = "1";
     }
-    else if(! std::__fs::filesystem::exists(arguments["parameter_bounds"])){   
+    else if(! std::filesystem::exists(arguments["parameter_bounds"])){   
         std::cout << "Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
         arguments["quit"] = "1";
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
-    if(arguments.count("csv_config") && !std::__fs::filesystem::exists(arguments["csv_config"])){   
+    if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
         std::cout << "csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         arguments["quit"] = "1";
     }
