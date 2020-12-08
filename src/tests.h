@@ -221,7 +221,7 @@ void test_prediction(){
                                             0.001,
                                             5000.0};
         sc_prediction_forward(params_vec, cell);
-        for (int i =0; i<cell.mean_forward.size();++i){
+        for (size_t i =0; i<cell.mean_forward.size();++i){
           std::cout << cell.mean_forward[i]; 
 
         }

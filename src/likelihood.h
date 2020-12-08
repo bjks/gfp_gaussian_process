@@ -56,7 +56,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
     Eigen::Matrix2d S;
     Eigen::Matrix2d Si;
 
-    for (long t=0; t<cell.time.size(); ++t ){
+    for (size_t t=0; t<cell.time.size(); ++t ){
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
 
@@ -107,7 +107,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     // type cast the void vector back to vector of MOMAdata pointers
     std::vector<MOMAdata*> cells = *(std::vector<MOMAdata*> *) c;
 
-    for(int i=0; i < cells.size(); ++i){
+    for(size_t i=0; i < cells.size(); ++i){
         if (cells[i]->is_root() ){
             likelihood_recr(params_vec,  cells[i] , tl);
         }
@@ -118,7 +118,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     std::ofstream file(_outfile_ll, std::ios_base::app);
 
     file << _iteration << ",";
-    for (int i=0; i<params_vec.size(); ++i){
+    for (size_t i=0; i<params_vec.size(); ++i){
         file << params_vec[i]  << ",";
     }
     file << std::setprecision(10) << tl  << "\n";
@@ -130,7 +130,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
             std::cout << _iteration << ": " << tl << "\n";
         if (_print_level>0){
             std::cout << _iteration << ": ";
-                for (int i=0; i<params_vec.size(); ++i){
+                for (size_t i=0; i<params_vec.size(); ++i){
                     std::cout << params_vec[i]  << ", ";
                 }
                 std::cout << "ll=" << tl  << "\n";
@@ -155,7 +155,7 @@ void setup_outfile_likelihood(std::string outfile, Parameter_set params){
     params.to_csv(outfile);
     std::ofstream file(outfile,std::ios_base::app);
     file << "\nlikelihoods:\niteration,";
-    for (int i=0; i<params.all.size(); ++i){
+    for (size_t i=0; i<params.all.size(); ++i){
         file << params.all[i].name << ",";
     }
     file << "likelihood" <<"\n";
@@ -166,13 +166,14 @@ void setup_outfile_likelihood(std::string outfile, Parameter_set params){
 std::string outfile_name_minimization(std::map<std::string, std::string> arguments, Parameter_set params){
     std::string outfile = out_dir(arguments);
     outfile += file_base(arguments["infile"]) + "_f";
-    for(int i=0;i<params.all.size();++i){
+
+    for(size_t i=0; i < params.all.size() ;++i){
         if (!params.all[i].bound && !params.all[i].fixed){
             outfile += std::to_string(i);
         }
     }
     outfile += "_b";
-    for(int i=0;i<params.all.size();++i){
+    for(size_t i=0; i < params.all.size(); ++i){
         if (params.all[i].bound){
             outfile += std::to_string(i);
         }

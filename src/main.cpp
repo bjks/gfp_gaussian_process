@@ -30,7 +30,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
     std::cout << "-> 1d Scan" << "\n";
     init_cells(cells, 5);
     
-    for(int i=0; i<params.all.size(); ++i){
+    for(size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].bound){
             /* 
             reset params, if paramters have been minimized the final value will be taken
@@ -50,7 +50,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
             std::vector<double> sampling = arange<double>(params.all[i].lower, 
                                                             params.all[i].upper, 
                                                             params.all[i].step);
-            for(int j=0; j<sampling.size(); ++j){
+            for(size_t j=0; j<sampling.size(); ++j){
                 params_vec[i] = sampling[j];
                 total_likelihood(params_vec, cells);
             }
@@ -74,7 +74,7 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
 
     std::vector<double> params_vec = params.get_final();
-    pvector(params_vec);
+
     /* forward...*/
     init_cells(cells, 5);
     prediction_forward(params_vec, cells);
@@ -109,7 +109,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         };
 
     std::map<std::string, int> key_indices; 
-    for (int i = 0; i < keys.size(); ++i){
+    for (size_t i = 0; i < keys.size(); ++i){
         key_indices.insert(std::pair<std::string, int>(keys[i][0], i)); 
     }
 
@@ -118,7 +118,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     arguments["print_level"] = "0";
     arguments["rel_tol"] = "1e-2";
 
-    for(int k=0; k<keys.size(); ++k){
+    for(size_t k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
             if (argv[i] == keys[k][0] || argv[i] == keys[k][1]){
                  if(k==key_indices["-i"]) 
@@ -142,7 +142,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                 else if (k==key_indices["-h"]){
                     arguments["quit"] = "1";
                     std::cout << "Usage: ./gfp_gaussian <infile> [-options]\n";
-                    for(int j=0; j<keys.size(); ++j)
+                    for(size_t j=0; j<keys.size(); ++j)
                         std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 27) << keys[j][2] <<"\n";
                 }
             }

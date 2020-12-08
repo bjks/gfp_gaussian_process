@@ -49,7 +49,7 @@ public:
                     cell_tags.clear();
                     std::vector<std::string> val_split;
                     val_split = split_string_at(parts[1], ",");
-                    for (int i=0; i<val_split.size(); ++i){
+                    for (size_t i=0; i<val_split.size(); ++i){
                         cell_tags.push_back(trim(val_split[i]));
                     }
                 }
@@ -57,7 +57,7 @@ public:
                     parent_tags.clear();
                     std::vector<std::string> val_split;
                     val_split = split_string_at(parts[1], ",");
-                    for (int i=0; i<val_split.size(); ++i){
+                    for (size_t i=0; i<val_split.size(); ++i){
                         parent_tags.push_back(trim(val_split[i]));
                     }
                 }
@@ -78,12 +78,12 @@ std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
                 << pad_str("fp_col:", col) << config.fp_col << "\n" 
                 << pad_str("delm:", col) << config.delm << "\n" 
                 << pad_str("cell_tags:", col) ;
-    for(int i=0; i < config.cell_tags.size(); i++){
+    for(size_t i=0; i < config.cell_tags.size(); i++){
         os << config.cell_tags[i] << ' ';
     }
     os << "\n"; 
     os << pad_str("parent_tags:", col);
-    for(int i=0; i < config.parent_tags.size(); i++){
+    for(size_t i=0; i < config.parent_tags.size(); i++){
         os << config.parent_tags[i] << ' ';
     }
     os << "\n";

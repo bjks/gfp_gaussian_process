@@ -12,7 +12,7 @@ double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad,
     MOMAdata cell = *(MOMAdata *) p;
     std::cout << cell.cell_id << std::endl; 
     double sum=0;
-    for (int i=0; i<parameters.size();++i){
+    for (size_t i=0; i<parameters.size();++i){
         sum += (i+1)*parameters[i];
     } 
     return pow(sum, 2);
@@ -30,7 +30,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
 
     std::vector<double> parameter_state(params.all.size());
 
-    for (int i=0; i<params.all.size(); ++i){
+    for (size_t i=0; i<params.all.size(); ++i){
         parameter_state[i] = params.all[i].init;
         if (params.all[i].fixed){
             steps[i] = 1; // will not be used anyway, but needs to be non-zero

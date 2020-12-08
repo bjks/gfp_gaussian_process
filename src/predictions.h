@@ -176,19 +176,16 @@ void append_reversed_cov(MOMAdata &cell){
     */
     Eigen::MatrixXd temp_cov(4,4);
     temp_cov << cell.cov;
-    std::cout << temp_cov <<"\n\n";
-
     std::vector<std::vector<int>> entries   {{0,2},
                                             {0,3},
                                             {1,2},
                                             {1,3}};
 
-    for(int k=0; k<entries.size(); ++k){
+    for(size_t k=0; k<entries.size(); ++k){
         temp_cov(entries[k][0], entries[k][1]) = - cell.cov(entries[k][0], entries[k][1]);
         temp_cov(entries[k][1], entries[k][0]) = - cell.cov(entries[k][1], entries[k][0]);
     }
     cell.cov_backward.insert(cell.cov_backward.begin(), temp_cov);
-    std::cout << temp_cov <<"\n\n";
 }
 
 
@@ -256,7 +253,7 @@ void prediction_backward_recr(const std::vector<double> &params_vec,
 void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
     std::vector<MOMAdata *> p_roots = get_roots(cells);
 
-    for(int i=0; i<p_roots.size(); ++i){
+    for(size_t i=0; i<p_roots.size(); ++i){
         prediction_backward_recr(params_vec,  p_roots[i]);
     }
 }
@@ -267,8 +264,8 @@ void combine_predictions(std::vector<MOMAdata> &cells){
     Eigen::VectorXd temp_mean(4); 
     Eigen::MatrixXd temp_cov(4,4); 
 
-    for(int i=0; i<cells.size();++i){
-        for (int j=0; j<cells[i].time.size();++j ){
+    for(size_t i=0; i<cells.size();++i){
+        for (size_t j=0; j<cells[i].time.size();++j ){
             temp_mean << cells[i].mean_forward[j];
             temp_cov << cells[i].cov_forward[j];
 
@@ -297,7 +294,7 @@ void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd m){
                                                                 {2,2}, {2,3},
                                                                        {3,3}};
                                                                        
-    for (int k=0; k<upper_triangle.size(); ++k){
+    for (size_t k=0; k<upper_triangle.size(); ++k){
         if (k>0)
             file << ",";
         file << m(upper_triangle[k][0], upper_triangle[k][1]);
@@ -306,7 +303,7 @@ void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd m){
 
 void output_vector(std::ofstream &file, Eigen::VectorXd v){
     /* Comma seperated output of Eigen::vector */
-    for (int k=0; k<v.size(); ++k){
+    for (size_t k=0; k<v.size(); ++k){
         if (k>0)
             file << ",";
         file << v(k);
@@ -325,8 +322,8 @@ void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string o
                      << "cov_gg,cov_gl,cov_gq,"
                             << "cov_ll,cov_lq,"
                                    << "cov_qq\n";
-    for(int i=0; i<cells.size();++i){
-        for (int j=0; j<cells[i].mean_forward.size();++j ){
+    for(size_t i=0; i<cells.size();++i){
+        for (size_t j=0; j<cells[i].mean_forward.size();++j ){
             file << cells[i].cell_id << "," << cells[i].time[j] << "," << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
             if(direction=="f"){
                 output_vector(file, cells[i].mean_forward[j]);

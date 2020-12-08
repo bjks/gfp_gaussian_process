@@ -40,7 +40,7 @@ public:
         
         std::vector<std::string> val_split;
         val_split = split_string_at(parts[1], ",");
-        for (int i=0; i<val_split.size(); ++i){
+        for (size_t i=0; i<val_split.size(); ++i){
             val_split[i] = trim(val_split[i]);
         }
 
@@ -171,7 +171,7 @@ public:
 void const Parameter_set::to_csv(const std::string outfile){
     std::ofstream file(outfile);
     file << "no,name,type,init,step,lower_bound,upper_bound\n";
-    for (int i=0; i<all.size(); ++i){
+    for (size_t i=0; i<all.size(); ++i){
         if (all[i].set){
             file <<  i << "," ;
             if (all[i].fixed){
@@ -198,7 +198,7 @@ void const Parameter_set::to_csv(const std::string outfile){
 
 
 void Parameter_set::set_final(std::vector<double> vals){
-    for (int i=0; i<all.size(); ++i){
+    for (size_t i=0; i<all.size(); ++i){
         all[i].final = vals[i];
         all[i].miminized = true;
     }
@@ -207,7 +207,7 @@ void Parameter_set::set_final(std::vector<double> vals){
 
 std::vector<double> Parameter_set::get_final(){
     std::vector<double> vals;
-    for (int i=0; i<all.size(); ++i){
+    for (size_t i=0; i<all.size(); ++i){
         if (all[i].miminized){
             vals.push_back(all[i].final);
         }
@@ -220,7 +220,7 @@ std::vector<double> Parameter_set::get_final(){
 
 std::vector<double> Parameter_set::get_init(){
     std::vector<double> vals;
-    for (int i=0; i<all.size(); ++i){
+    for (size_t i=0; i<all.size(); ++i){
         vals.push_back(all[i].init);
     }
     return vals;

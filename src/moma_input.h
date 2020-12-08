@@ -110,8 +110,8 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     /*  
     * Assign respective pointers to parent, daughter1 and daughter2 for each cell
     */
-    for(long k = 0; k < cell_vector.size(); ++k) {
-        for(long j = 0; j < cell_vector.size(); ++j) {
+    for(size_t k = 0; k < cell_vector.size(); ++k) {
+        for(size_t j = 0; j < cell_vector.size(); ++j) {
             if( cell_vector[j].cell_id == cell_vector[k].parent_id ){
                 //  Assign pointers to PARENT variable of the cell
                 cell_vector[k].parent = &cell_vector[j];
@@ -143,7 +143,7 @@ std::vector<MOMAdata *> get_leafs(std::vector<MOMAdata > &cells){
     * each pointer points to a leaf of the cell tree
     */
     std::vector<MOMAdata *> leafs;
-    for(int i=0; i < cells.size(); ++i){
+    for(size_t i=0; i < cells.size(); ++i){
         if (cells[i].is_leaf()){
             leafs.push_back(&cells[i]);
         }
@@ -157,7 +157,7 @@ std::vector<MOMAdata *> get_roots(std::vector<MOMAdata > &cells){
     * each pointer points to a root of the cell trees
     */
     std::vector<MOMAdata *> roots;
-    for(int i=0; i < cells.size(); ++i){
+    for(size_t i=0; i < cells.size(); ++i){
         if (cells[i].is_root()){
             roots.push_back(&cells[i]);
         }
@@ -301,7 +301,7 @@ std::string get_cell_id(std::vector<std::string> &str_vec,
     * Compose id of the cell by adding all elements in tags seperated by "."
     */
     std::string id =""; 
-    for (int i=0; i<tags.size(); ++i){
+    for (size_t i=0; i<tags.size(); ++i){
         if (i>0)
             id += ".";
         id += std::to_string(std::stoi(str_vec[header_indices[tags[i]]]));
@@ -316,7 +316,7 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
     * Create a map containing the header tags and the corresponding index
     */
     std::map<std::string, int> header_indices; 
-    for (int i = 0; i < str_vec.size(); ++i){
+    for (size_t i = 0; i < str_vec.size(); ++i){
         header_indices.insert(std::pair<std::string, int>(str_vec[i], i)); 
     }
     return header_indices;
@@ -466,7 +466,7 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     * Inititalizes the mean vector and the covariance matrix of the root cells estimated from 
     * the data using the FIRST time point and the FIRST n time points of each cell 
     */
-    for(int i=0; i<cells.size(); ++i){
+    for(size_t i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
         cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
     }
@@ -476,7 +476,7 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     std::vector<double> l0;
     std::vector<double> q0;
 
-    for(int i=0; i<cells.size(); ++i){
+    for(size_t i=0; i<cells.size(); ++i){
         if(cells[i].time.size()>=n_cells){
             x0.push_back(cells[i].log_length(0));
             g0.push_back(cells[i].fp(0));
@@ -486,7 +486,7 @@ void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
     }
 
     std::vector<MOMAdata *> roots = get_roots(cells);
-    for(int i=0; i<roots.size(); ++i){
+    for(size_t i=0; i<roots.size(); ++i){
         roots[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
         roots[i]->cov_init(0,0) = vec_var(x0);
         roots[i]->cov_init(1,1) = vec_var(g0);
@@ -502,7 +502,7 @@ void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
     * Inititalizes the mean vector and the covariance matrix of the leafs cells estimated from 
     * the data using the LAST time point and the LAST n time points of each cell 
     */
-    for(int i=0; i<cells.size(); ++i){
+    for(size_t i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
         cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
     }
@@ -512,7 +512,7 @@ void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
     std::vector<double> l0;
     std::vector<double> q0;
 
-    for(int i=0; i<cells.size(); ++i){
+    for(size_t i=0; i<cells.size(); ++i){
         if(cells[i].time.size()>=n_cells){
             x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
             g0.push_back(cells[i].fp(cells[i].log_length.size()-1));
@@ -522,7 +522,7 @@ void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
     }
 
     std::vector<MOMAdata *> leafs = get_leafs(cells);
-    for(int i=0; i<leafs.size(); ++i){
+    for(size_t i=0; i<leafs.size(); ++i){
         leafs[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
         leafs[i]->cov_init(0,0) = vec_var(x0);
         leafs[i]->cov_init(1,1) = vec_var(g0);
@@ -537,13 +537,13 @@ void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::Matri
     * Inititalizes the mean vector and the covariance matrix of the root cells with
     * pre-defined values
     */
-    for(int i=0; i<cells.size(); ++i){
+    for(size_t i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
         cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
     }
 
     std::vector<MOMAdata *> roots = get_roots(cells);
-    for(int i=0; i<roots.size(); ++i){
+    for(size_t i=0; i<roots.size(); ++i){
         roots[i]->mean_init = mean;
         roots[i]->cov_init = cov;
     }

@@ -27,14 +27,14 @@ std::string pad_str(double d, const size_t num, const char paddingChar = ' '){
 }
 
 void pvector(std::vector <std::string> const &a) {
-    for(int i=0; i < a.size(); i++){
+    for(size_t i=0; i < a.size(); i++){
         std::cout << a[i] << ' ';
     }
     std::cout << std::endl;
 }
 
 void pvector(std::vector <double> const &a) {
-    for(int i=0; i < a.size(); i++){
+    for(size_t i=0; i < a.size(); i++){
         std::cout << a[i] << ' ';
     }
     std::cout << std::endl;
@@ -78,7 +78,7 @@ std::string default_out_dir(std::string infile){
     base_split = split_string_at(infile_split[infile_split.size()-1], ".");
 
     std::string out_dir = "";
-    for(int i=0; i<infile_split.size()-1; ++i){
+    for(size_t i=0; i<infile_split.size()-1; ++i){
         out_dir += infile_split[i] + "/";
     }
     out_dir += base_split[0] + "_out/";
