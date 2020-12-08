@@ -89,10 +89,11 @@ std::string out_dir(std::map<std::string, std::string> arguments){
     std::string out_dir;
     if (!arguments.count("outdir"))
         out_dir = default_out_dir(arguments["infile"]);
-    else 
+    else{
         out_dir = arguments["outdir"];
         if (out_dir.back() != '/')
             out_dir += "/";
+    }
     std::__fs::filesystem::create_directory(out_dir);
     return out_dir;
 }

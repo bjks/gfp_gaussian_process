@@ -4,7 +4,7 @@
 #include "minimizer_nlopt.h"
 
 #include "tests.h"
-
+#include <filesystem>
 #include <iostream> 
 #include <iterator> 
 
@@ -214,7 +214,6 @@ int main(int argc, char** argv){
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize"))
         run_minimization(cells, params, arguments);
-        std::cout <<"dasjuasd" << params ;
 
     if (arguments.count("scan"))
         run_bound_1dscan(cells, params, arguments);
