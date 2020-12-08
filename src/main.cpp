@@ -118,7 +118,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     arguments["print_level"] = "0";
     arguments["rel_tol"] = "1e-2";
 
-    for(size_t k=0; k<keys.size(); ++k){
+    for(int k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
             if (argv[i] == keys[k][0] || argv[i] == keys[k][1]){
                  if(k==key_indices["-i"]) 

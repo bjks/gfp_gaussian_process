@@ -5,18 +5,37 @@ Likelihood calculation and predictions of 1 dimensional genealogy is re-implemen
 ## Usage 
 
 ### Compile
-The following libraries are needed:
+##### Compile locally
+The following two libraries are needed:
 - nlopt (for minimization)
   - can be installed via cmake
   - can be statically compiled easily
   - see also https://nlopt.readthedocs.io/en/latest/#download-and-installation
 - Eigen (for linear algebra)
-  - available via modules
+  - available via modules: `ml Eigen/3.3.7`
   - see also http://eigen.tuxfamily.org/index.php?title=Main_Page
   
 Make sure the correct paths to the two libraries are set in the `Makefile`. Currently both are assumed to be located in the home directory. Then, compile with:
 
-`cd src; make`
+`cd src; make local`
+
+##### Compile on cluster
+1. Install nlopt
+- no sudo
+- will install it in home-directory
+- static
+```
+ml CMake
+wget https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz
+tar -xf v2.6.2.tar.gz 
+cd nlopt-2.6.2/
+cmake -DCMAKE_INSTALL_PREFIX=~/nlopt -DBUILD_SHARED_LIBS=OFF .
+make
+make install
+```
+2. Compile 
+Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command!
+
 
 ### Run
 `cd bin`
@@ -191,3 +210,4 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
    -  starting from x1 1D optimization along first direction h2 -> find x2
    -  h3 connects x0 and x2
    -  starting from x2 1D optimization along first direction h3 -> find x3
+

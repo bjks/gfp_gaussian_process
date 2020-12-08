@@ -101,7 +101,7 @@ void prediction_forward(const std::vector<double> &params_vec, std::vector<MOMAd
     /* applies prediction to each cell going down the tree starting from all root cells */
     std::vector<MOMAdata *> p_roots = get_roots(cells);
 
-    for(int i=0; i<p_roots.size(); ++i){
+    for(size_t i=0; i<p_roots.size(); ++i){
         prediction_forward_recr(params_vec,  p_roots[i]);
     }
 }

@@ -233,12 +233,12 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
     os  << pad_str("No", column_widths[0]) << pad_str("Name", column_widths[1])<< pad_str("Type", column_widths[2])
         << pad_str("Init", column_widths[3]) << pad_str("Step", column_widths[4]) << pad_str("Bounds", column_widths[5]) << "\n";
 
-    for(int i=0; i<accumulate(column_widths.begin(), column_widths.end(), 0); ++i){
+    for(size_t i=0; i<accumulate(column_widths.begin(), column_widths.end(), 0); ++i){
         os << "_";
     }
         os << "\n";
 
-    for (int i=0; i<params.all.size(); ++i){
+    for (size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].set){
             os <<  pad_str(std::to_string(i) +":", column_widths[0]);
             if (params.all[i].fixed){
