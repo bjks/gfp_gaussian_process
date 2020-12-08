@@ -1,4 +1,4 @@
-CFLAGS = -Wall -std=c++17 -ffast-math -O3
+CFLAGS = -Wall -std=c++14 -ffast-math -O3
 FADFLAG =  Faddeeva.cc
 
 NLOPTLAGS = -I $(HOME)/nlopt/include -L$(HOME)/nlopt/lib -lnlopt -lm  

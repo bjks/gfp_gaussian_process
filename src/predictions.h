@@ -176,6 +176,8 @@ void append_reversed_cov(MOMAdata &cell){
     */
     Eigen::MatrixXd temp_cov(4,4);
     temp_cov << cell.cov;
+    std::cout << temp_cov <<"\n\n";
+
     std::vector<std::vector<int>> entries   {{0,2},
                                             {0,3},
                                             {1,2},
@@ -186,6 +188,7 @@ void append_reversed_cov(MOMAdata &cell){
         temp_cov(entries[k][1], entries[k][0]) = - cell.cov(entries[k][1], entries[k][0]);
     }
     cell.cov_backward.insert(cell.cov_backward.begin(), temp_cov);
+    std::cout << temp_cov <<"\n\n";
 }
 
 
