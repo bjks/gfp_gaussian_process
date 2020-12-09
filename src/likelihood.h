@@ -1,5 +1,4 @@
 #include "predictions.h"
-#include <iomanip> 
 
 #define _USE_MATH_DEFINES
 

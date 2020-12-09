@@ -4,24 +4,29 @@
 
 # Defaults (based on a Moma output):
 #   time_col = "time_sec";
+#   divide_time = 60
+
 #   length_col = "length_um";
+#   length_islog= false;
+
 #   fp_col = "gfp_nb";
+
 #   delm = ",";
+
 #   parent_tags = {"date", "pos", "gl", "parent_id"};
 #   cell_tag = {"date", "pos", "gl", "id"};
 
 # ========================== #
 
+time_col = time_sec
+divide_time = 60
 
 length_col = log_leng_noise
+length_islog = true
+
 fp_col = gfp_gaussian_noise
 parent_tags = lane_ID, parent_id
 cell_tags = lane_ID, id
-
-#length_col = length_um
-#fp_col = gfp_nb
-#parent_tags = date, pos, gl, parent_id
-#cell_tags = date, pos, gl, id
 
 
 

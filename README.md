@@ -8,12 +8,9 @@ Likelihood calculation and predictions of 1 dimensional genealogy is re-implemen
 ##### Compile locally
 The following two libraries are needed:
 - nlopt (for minimization)
-  - can be installed via cmake
-  - can be statically compiled easily
-  - see also https://nlopt.readthedocs.io/en/latest/#download-and-installation
+  - see https://nlopt.readthedocs.io/en/latest/#download-and-installation
 - Eigen (for linear algebra)
-  - available via modules: `ml Eigen/3.3.7`
-  - see also http://eigen.tuxfamily.org/index.php?title=Main_Page
+  - see http://eigen.tuxfamily.org/index.php?title=Main_Page
   
 Make sure the correct paths to the two libraries are set in the `Makefile`. Currently both are assumed to be located in the home directory. Then, compile with:
 
@@ -21,9 +18,7 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 
 ##### Compile on cluster
 1. Install nlopt
-- no sudo
-- will install it in home-directory
-- static
+- Will install nlopt in home-directory with static linking. You can change that via `DCMAKE_INSTALL_PREFIX`, but make sure to adjust the makefile accordingly!
 ```
 ml CMake
 wget https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz
@@ -33,8 +28,8 @@ cmake -DCMAKE_INSTALL_PREFIX=~/nlopt -DBUILD_SHARED_LIBS=OFF .
 make
 make install
 ```
-2. Compile 
-Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command!
+1. Compile 
+Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command! Note, that the modules remain loaded after compilation.
 
 
 ### Run
@@ -53,6 +48,8 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
 ```
+Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -r 1e-1 -m -p`
+
 ##### Required arguments
 - `infile` sets the input file that contains the data, eg as given by MOMA
 - `parameter_bounds` sets the file that defines the parameter space
@@ -67,7 +64,6 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 ##### Run modes
 - `m (maximize), s(scan), p(predict` will run the respective task. In case `maximize` and `predict`is set, the estimated paramters after the maximization will be used for the prediction. Those paramters that are fixed are of course not effected.
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
-
 
 
 ### Parameter file
@@ -120,15 +116,16 @@ Finally, asymmentric cell division is modelled via
 - Will create a file for each parameter containing the parameter settings at the top 12 lines and ...
   - the 4 mean quanties of x, g, l/lambda, q 
   - the upper triangle of the covariance matrix 
-  - of each time point for each cell in the same order as the input file
+- ... of each time point for each cell in the same order as the input file
 
 ---
 ## Notes 
   
 ### TODO: 
-- [ ] compare forward/backward prediction with python version
-- [ ] check signs in backwards direction
-- [ ] new simulation including asymmetric cell division?
+- [x] prepare for cluster
+- [ ] compare forward/backward predictions with python version
+- [ ] check signs in backwards direction (mostly done)
+- [ ] write new simulation including asymmetric cell division and tree structure?
 
 ## Technical Notes
 ### Log-Likelihood maximization with multiple cell trees
@@ -136,7 +133,7 @@ The log-likelihoods of all cell trees are added and the summed log-likelihood is
 
 ### Cell division in backwards direction
 In forward direction the first time point distributions of daughter cells are calculated from the mother cell (including asymmetric cell division. In backward direction, we might have two daughter cells that determine the distribution of the mother cell. In that case, two mother cells are calculated and the distribution of the two are multiplied to obtain a single distribution for the last time point of the mother cell.
-<img src="slides/slides.001.jpeg" alt="drawing" width="400"/>
+<img src="slides/slides.001.jpeg" alt="drawing" width="600"/>
 
 ### Likelihhod and prediction calculation along cell tree
 - function for likelihood and predictions for the single cells are applies recursively to go up/down the tree

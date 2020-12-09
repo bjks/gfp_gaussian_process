@@ -11,7 +11,9 @@ class CSVconfig {
 public:
     // Defaults
     std::string time_col = "time_sec";
+    double divide_time = 60;
     std::string length_col = "length_um";
+    bool length_islog = false;
     std::string fp_col = "gfp_nb";
     std::string delm = ",";
 
@@ -36,8 +38,15 @@ public:
                 if (parts[0] == "time_col"){
                     time_col = parts[1];
                 }
+                else if (parts[0] == "divide_time"){
+                    divide_time = std::stod(parts[1]);
+                }
                 else if (parts[0] == "length_col"){
                     length_col = parts[1];
+                }
+                else if (parts[0] == "length_islog"){
+                    if ( parts[1] == "true")
+                        length_islog = true;
                 }
                 else if (parts[0] == "fp_col"){
                     fp_col = parts[1];
@@ -74,7 +83,9 @@ std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
     os << "Configuration used for reading the input file\n"; 
     os << "_____________________________________________\n"; 
     os          << pad_str("time_col:", col)  << config.time_col << "\n" 
+                << pad_str("divide_time:", col)  << config.divide_time << "\n" 
                 << pad_str("length_col:", col) <<  config.length_col << "\n" 
+                << pad_str("length_islog:", col) <<  config.length_islog << "\n" 
                 << pad_str("fp_col:", col) << config.fp_col << "\n" 
                 << pad_str("delm:", col) << config.delm << "\n" 
                 << pad_str("cell_tags:", col) ;

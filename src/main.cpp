@@ -199,7 +199,9 @@ int main(int argc, char** argv){
     std::cout << "-> Reading" << "\n";
     std::vector<MOMAdata> cells =  getData(arguments["infile"], 
                                             config.time_col,
+                                            config.divide_time,
                                             config.length_col,
+                                            config.length_islog,
                                             config.fp_col,
                                             config.delm,
                                             config.cell_tags,

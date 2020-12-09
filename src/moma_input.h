@@ -336,7 +336,9 @@ void append_vec(Eigen::VectorXd &v, double elem){
 
 std::vector<MOMAdata> getData(std::string filename,
                             std::string time_col, 
-                            std::string length_col, 
+                            double divide_time,
+                            std::string length_col,
+                            bool length_islog, 
                             std::string fp_col, 
                             std::string delm,
                             std::vector<std::string> cell_tags,
@@ -391,8 +393,13 @@ std::vector<MOMAdata> getData(std::string filename,
                 data[last_idx].parent_id = get_cell_id(line_parts, header_indices, parent_tags);
             }
 
-            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/60. );
-            append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[length_col]]) );
+            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/divide_time );
+
+            if (length_islog)
+                append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[length_col]]) );
+            else
+                append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[length_col]])) );
+
             append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[fp_col]]) );
             last_cell = curr_cell;
         }
