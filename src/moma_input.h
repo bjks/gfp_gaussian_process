@@ -294,6 +294,27 @@ void apply_up_tree(const std::vector<double> &params_vec,
 // ============================================================================= //
 // READING CSV
 // ============================================================================= //
+std::string remove_last_decimal(std::string str){
+    /* removes endings .0 .00 .000... of purely numeric strings */
+
+    // check if only numeric chars in str
+    for (size_t i = 0; i < str.size(); ++i){
+        if (!isdigit(str[i]) && str[i] != '.')
+            return str; 
+    }
+
+    // check if all characters after last '.' are 0s
+    std::vector parts = split_string_at(str, ".");
+    std::string last_part = parts[parts.size()-1];
+    for (size_t i = 0; i < last_part.size(); ++i){
+        if (last_part[i] != '0'){
+            return str;
+        }
+    }
+    return std::to_string(std::stoi(str));
+}
+
+
 std::string get_cell_id(std::vector<std::string> &str_vec, 
                             std::map<std::string, int> &header_indices,
                             std::vector<std::string> tags){
@@ -304,7 +325,7 @@ std::string get_cell_id(std::vector<std::string> &str_vec,
     for (size_t i=0; i<tags.size(); ++i){
         if (i>0)
             id += ".";
-        id += std::to_string(std::stoi(str_vec[header_indices[tags[i]]]));
+        id += remove_last_decimal(str_vec[header_indices[tags[i]]]);
         // need to get rid of decimal points, hence the double type cast
     }
     return id;
