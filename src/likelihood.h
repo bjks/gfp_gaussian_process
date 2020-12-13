@@ -145,6 +145,108 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAd
     return total_likelihood(params_vec, g, &p_roots);
 }
 
+/* --------------------------------------------------------------------------
+* ERROR BARS
+* -------------------------------------------------------------------------- */
+Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    double lminus, lplus;
+    std::vector<double> xminus, xplus;
+    double h;
+    int ii;
+    std::vector<double> params_vec = params.get_final();
+
+    std::vector<int> idx_non_fixed = params.non_fixed();
+    Eigen::MatrixXd jacobian(idx_non_fixed.size(), 1);
+
+    for(size_t i=0; i<idx_non_fixed.size(); ++i){
+        ii = idx_non_fixed[i];
+
+        h = std::max(params_vec[ii] * epsilon, 1e-13);
+
+        xminus = params_vec;
+        xminus[ii] = xminus[ii] - h;
+        lminus = total_likelihood(xminus, cells);
+
+        xplus = params_vec;
+        xplus[ii] = xplus[ii] + h;
+        lplus = total_likelihood(xplus, cells);
+        jacobian(i,0) = (lplus - lminus)/(2.*h);
+    }
+    return jacobian;
+}
+
+Eigen::MatrixXd num_jac_hessian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    Eigen::MatrixXd jacobian = num_jacobian_ll(params, cells, epsilon);
+    return jacobian* jacobian.transpose() ;
+}
+
+
+Eigen::MatrixXd num_hessian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    /* Computes approx. of hessian matrix of log-likelihood 
+    Hij = [f(x + hi ei + hj ej) - f(x + hi ei - hj ej) - f(x - hi ei + hj ej) + f(x - hi ei - hj ej) ]/(4 hi hj) 
+    */
+    double lij, li_j, l_ij, l_i_j;
+    std::vector<double> xij, xi_j, x_ij, x_i_j;
+    double h1, h2;
+    int ii, jj;
+
+    std::vector<double> params_vec = params.get_final();
+
+    std::vector<int> idx_non_fixed = params.non_fixed();
+    Eigen::MatrixXd hessian(idx_non_fixed.size(), idx_non_fixed.size());
+
+    // i,j are the indices of the matrix, less or equal in size than parameter number
+    // ii, jj are the indices of the full paramter set
+    for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
+        ii = idx_non_fixed[i]; // paramterer index
+        for(size_t j=0; j<idx_non_fixed.size(); ++j){
+            jj = idx_non_fixed[j];
+            if (!params.all[i].fixed){
+                h1 = std::max(params_vec[ii] * epsilon, 1e-13);
+                h2 = std::max(params_vec[jj] * epsilon, 1e-13);
+
+                xij = params_vec;
+                xij[ii] = xij[ii] + h1;
+                xij[jj] = xij[jj] + h2;
+                lij = total_likelihood(xij, cells);
+                
+                xi_j = params_vec;
+                xi_j[ii] = xi_j[ii] + h1;
+                xi_j[jj] = xi_j[jj] - h2;
+                li_j = total_likelihood(xi_j, cells);
+
+                x_ij = params_vec;
+                x_ij[ii] = x_ij[ii] - h1;
+                x_ij[jj] = x_ij[jj] + h2;
+                l_ij = total_likelihood(x_ij, cells);
+
+                x_i_j = params_vec;
+                x_i_j[ii] = x_i_j[ii] - h1;
+                x_i_j[jj] = x_i_j[jj] - h2;
+                l_i_j = total_likelihood(x_i_j, cells);
+                hessian(i,j) = (lij - li_j - l_ij + l_i_j)/ (4*h1*h2);
+
+            }
+        }
+    }
+    std::cout << hessian << "\n";
+    std::cout << hessian << "\n";
+
+    return (0.5*hessian * 0.5*hessian.transpose());
+    
+}
+
+std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon = 1e-8){
+    Eigen::MatrixXd hessian_inv = num_jac_hessian_ll(params,cells, epsilon).inverse();
+    std::cout << hessian_inv << "\n\n";
+
+    std::vector<double> error;
+    for(int i=0; i<hessian_inv.rows(); ++i){
+        error.push_back(sqrt(hessian_inv(i, i)));
+    }
+    return error;
+}
+
 
 /* --------------------------------------------------------------------------
 * OUTPUT

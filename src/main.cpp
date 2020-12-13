@@ -210,9 +210,10 @@ int main(int argc, char** argv){
         std::cout << "Quit\n";
         return 0;    
     }
-
     /* genealogy built via the parent_id (string) given in data file */
     build_cell_genealogy(cells);
+
+
 
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize"))

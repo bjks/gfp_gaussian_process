@@ -33,6 +33,7 @@ public:
     double lower;
     double upper;
 
+    double err;
     std::string name;
 
     void set_paramter(std::vector<std::string> parts){
@@ -164,6 +165,8 @@ public:
     void set_final(std::vector<double> vals);
     std::vector<double> get_final();
     std::vector<double> get_init();
+    std::vector<int> non_fixed();
+    
     void const to_csv(std::string outfile);
 };
 
@@ -177,7 +180,7 @@ void const Parameter_set::to_csv(const std::string outfile){
             if (all[i].fixed){
                 file  << all[i].name << ","
                     << "fixed"<< ","
-                    << all[i].init << "\n";
+                    << all[i].init << ", , ,\n";
             } else if (all[i].bound){
                 file <<  all[i].name << ","
                     << "bound" << ","
@@ -189,7 +192,7 @@ void const Parameter_set::to_csv(const std::string outfile){
                 file <<  all[i].name << ","
                     << "free" << ","
                     << all[i].init << ","
-                    << all[i].step << "\n";
+                    << all[i].step << ", ,\n";
             }
         }
     }
@@ -226,6 +229,15 @@ std::vector<double> Parameter_set::get_init(){
     return vals;
 }
 
+std::vector<int> Parameter_set::non_fixed(){
+    std::vector<int> idx;
+    for (size_t i=0; i<all.size(); ++i){
+        if (!all[i].fixed){
+            idx.push_back(i);
+        }
+    }
+    return idx;
+}
 
 std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
     std::vector<int> column_widths {4, 15, 8, 10, 10, 10, 10};
@@ -244,7 +256,8 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
             if (params.all[i].fixed){
                 os  << pad_str(params.all[i].name, column_widths[1]) 
                     << pad_str("(fixed)", column_widths[2]) 
-                    << pad_str(params.all[i].init, column_widths[3]) ;
+                    << pad_str(params.all[i].init, column_widths[3])
+                    << pad_str("", column_widths[4]+column_widths[5]+column_widths[6]);
             } else if (params.all[i].bound){
                 os <<  pad_str(params.all[i].name, column_widths[1]) 
                     << pad_str("(bound)", column_widths[2]) 
@@ -256,7 +269,8 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
                 os <<  pad_str(params.all[i].name, column_widths[1]) 
                     << pad_str("(free)", column_widths[2]) 
                     << pad_str(params.all[i].init, column_widths[3])
-                    << pad_str(params.all[i].step , column_widths[4]);
+                    << pad_str(params.all[i].step , column_widths[4])
+                    << pad_str("", column_widths[5]+column_widths[6]) ;
             }
             if (params.all[i].miminized && !params.all[i].fixed){
                 os << " -> "<< params.all[i].final;
