@@ -16,12 +16,21 @@ void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
     init_cells(cells, 5);
 
     /* set and setup (global) output file */
-    _outfile_ll = outfile_name_minimization(arguments, params);
+    _outfile_ll = outfile_name_minimization_process(arguments, params);
     setup_outfile_likelihood(_outfile_ll, params);
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
+    _running = true;
     minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
+    _running = false;
+
+    /* estimate errors of params via hessian */
+    std::cout << "-> Error estimation" << "\n";
+    std::string outfile_estim = outfile_name_minimization_estimation(arguments, params);
+    std::cout << "Outfile: " << outfile_estim << "\n";
+
+    save_error_bars(outfile_estim, params, cells);
 }
 
 
@@ -212,8 +221,6 @@ int main(int argc, char** argv){
     }
     /* genealogy built via the parent_id (string) given in data file */
     build_cell_genealogy(cells);
-
-
 
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize"))

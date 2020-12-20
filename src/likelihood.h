@@ -1,10 +1,11 @@
 #include "predictions.h"
-
+#include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 
 int _iteration = 0;
 int _print_level;
 std::string _outfile_ll;
+bool _running;
 
 
 Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
@@ -114,14 +115,16 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     ++ _iteration;
 
     /* Save state of iteration in outfile */
-    std::ofstream file(_outfile_ll, std::ios_base::app);
+    if (_running){
+        std::ofstream file(_outfile_ll, std::ios_base::app);
 
-    file << _iteration << ",";
-    for (size_t i=0; i<params_vec.size(); ++i){
-        file << params_vec[i]  << ",";
+        file << _iteration << ",";
+        for (size_t i=0; i<params_vec.size(); ++i){
+            file << params_vec[i]  << ",";
+        }
+        file << std::setprecision(10) << tl  << "\n";
+        file.close();
     }
-    file << std::setprecision(10) << tl  << "\n";
-    file.close();
 
     /* Print output dependend on set _print_level */
     if (_print_level>0){
@@ -142,13 +145,15 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
 double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
     std::vector<double> g;
     std::vector<MOMAdata *> p_roots = get_roots(cells);
-    return total_likelihood(params_vec, g, &p_roots);
+    return -total_likelihood(params_vec, g, &p_roots);
 }
 
 /* --------------------------------------------------------------------------
 * ERROR BARS
 * -------------------------------------------------------------------------- */
-Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, 
+                                std::vector<MOMAdata> &cells, 
+                                double epsilon){
     double lminus, lplus;
     std::vector<double> xminus, xplus;
     double h;
@@ -156,7 +161,7 @@ Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, std::vector<MOMAdata> &ce
     std::vector<double> params_vec = params.get_final();
 
     std::vector<int> idx_non_fixed = params.non_fixed();
-    Eigen::MatrixXd jacobian(idx_non_fixed.size(), 1);
+    Eigen::MatrixXd jacobian(1, idx_non_fixed.size());
 
     for(size_t i=0; i<idx_non_fixed.size(); ++i){
         ii = idx_non_fixed[i];
@@ -170,19 +175,15 @@ Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, std::vector<MOMAdata> &ce
         xplus = params_vec;
         xplus[ii] = xplus[ii] + h;
         lplus = total_likelihood(xplus, cells);
-        jacobian(i,0) = (lplus - lminus)/(2.*h);
+        jacobian(0,i) = (lplus - lminus)/(2.*h);
     }
     return jacobian;
 }
 
-Eigen::MatrixXd num_jac_hessian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
-    Eigen::MatrixXd jacobian = num_jacobian_ll(params, cells, epsilon);
-    return jacobian* jacobian.transpose() ;
-}
 
-
-Eigen::MatrixXd num_hessian_ll(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
-    /* Computes approx. of hessian matrix of log-likelihood 
+Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std::vector<MOMAdata> &c),
+                                Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    /* Computes approx. of hessian matrix of target function:
     Hij = [f(x + hi ei + hj ej) - f(x + hi ei - hj ej) - f(x - hi ei + hj ej) + f(x - hi ei - hj ej) ]/(4 hi hj) 
     */
     double lij, li_j, l_ij, l_i_j;
@@ -198,55 +199,78 @@ Eigen::MatrixXd num_hessian_ll(Parameter_set &params, std::vector<MOMAdata> &cel
     // i,j are the indices of the matrix, less or equal in size than parameter number
     // ii, jj are the indices of the full paramter set
     for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
+
         ii = idx_non_fixed[i]; // paramterer index
         for(size_t j=0; j<idx_non_fixed.size(); ++j){
             jj = idx_non_fixed[j];
             if (!params.all[i].fixed){
-                h1 = std::max(params_vec[ii] * epsilon, 1e-13);
-                h2 = std::max(params_vec[jj] * epsilon, 1e-13);
+                h1 = params_vec[ii] * epsilon;
+                h2 = params_vec[jj] * epsilon;
 
                 xij = params_vec;
                 xij[ii] = xij[ii] + h1;
                 xij[jj] = xij[jj] + h2;
-                lij = total_likelihood(xij, cells);
+                lij = func(xij, cells);
                 
                 xi_j = params_vec;
                 xi_j[ii] = xi_j[ii] + h1;
                 xi_j[jj] = xi_j[jj] - h2;
-                li_j = total_likelihood(xi_j, cells);
+                li_j = func(xi_j, cells);
 
                 x_ij = params_vec;
                 x_ij[ii] = x_ij[ii] - h1;
                 x_ij[jj] = x_ij[jj] + h2;
-                l_ij = total_likelihood(x_ij, cells);
+                l_ij = func(x_ij, cells);
 
                 x_i_j = params_vec;
                 x_i_j[ii] = x_i_j[ii] - h1;
                 x_i_j[jj] = x_i_j[jj] - h2;
-                l_i_j = total_likelihood(x_i_j, cells);
+                l_i_j = func(x_i_j, cells);
                 hessian(i,j) = (lij - li_j - l_ij + l_i_j)/ (4*h1*h2);
 
             }
         }
     }
-    std::cout << hessian << "\n";
-    std::cout << hessian << "\n";
-
-    return (0.5*hessian * 0.5*hessian.transpose());
+    return hessian;
     
 }
 
-std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon = 1e-8){
-    Eigen::MatrixXd hessian_inv = num_jac_hessian_ll(params,cells, epsilon).inverse();
-    std::cout << hessian_inv << "\n\n";
+std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    Eigen::MatrixXd hessian_inv = num_hessian_ll(total_likelihood,params,cells, epsilon).inverse();
 
     std::vector<double> error;
     for(int i=0; i<hessian_inv.rows(); ++i){
-        error.push_back(sqrt(hessian_inv(i, i)));
+        error.push_back(sqrt(-hessian_inv(i, i)));
     }
     return error;
 }
 
+void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOMAdata> &cells){
+    params.to_csv(outfile);
+
+    std::ofstream file(outfile,std::ios_base::app);
+    file << "\nerrors\n";
+    file << "\nepsilon";
+
+    std::vector<double> eps {1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4};
+    std::vector<double> error;
+    
+    std::vector<int> idx_non_fixed = params.non_fixed();
+    for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
+        file << "," << params.all[idx_non_fixed[i]].name;
+    }
+    file << "\n";
+
+    for(size_t i=0; i<eps.size(); ++i ){
+        error = ll_error_bars(params, cells, eps[i]);
+        file << eps[i];
+        for (size_t j=0; j<error.size(); ++j ){
+            file << "," << error[j];
+        }
+        file << "\n";
+    }
+    file.close();
+}
 
 /* --------------------------------------------------------------------------
 * OUTPUT
@@ -264,7 +288,7 @@ void setup_outfile_likelihood(std::string outfile, Parameter_set params){
 }
 
 /* -------------------------------------------------------------------------- */
-std::string outfile_name_minimization(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_minimization_process(std::map<std::string, std::string> arguments, Parameter_set params){
     std::string outfile = out_dir(arguments);
     outfile += file_base(arguments["infile"]) + "_f";
 
@@ -282,6 +306,23 @@ std::string outfile_name_minimization(std::map<std::string, std::string> argumen
     return outfile + ".csv";
 }
 
+std::string outfile_name_minimization_estimation(std::map<std::string, std::string> arguments, Parameter_set params){
+    std::string outfile = out_dir(arguments);
+    outfile += file_base(arguments["infile"]) + "_f";
+
+    for(size_t i=0; i < params.all.size() ;++i){
+        if (!params.all[i].bound && !params.all[i].fixed){
+            outfile += std::to_string(i);
+        }
+    }
+    outfile += "_b";
+    for(size_t i=0; i < params.all.size(); ++i){
+        if (params.all[i].bound){
+            outfile += std::to_string(i);
+        }
+    }
+    return outfile + "_final.csv";
+}
 
 std::string outfile_name_scan(std::map<std::string, std::string> arguments, std::string var){
     std::string outfile = out_dir(arguments);

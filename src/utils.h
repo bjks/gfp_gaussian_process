@@ -28,14 +28,18 @@ std::string pad_str(double d, const size_t num, const char paddingChar = ' '){
 
 void pvector(std::vector <std::string> const &a) {
     for(size_t i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
+        if (i>0)
+            std::cout << " , ";
+        std::cout << a[i];
     }
     std::cout << std::endl;
 }
 
 void pvector(std::vector <double> const &a) {
     for(size_t i=0; i < a.size(); i++){
-        std::cout << a[i] << ' ';
+        if (i>0)
+            std::cout << " , ";
+        std::cout << a[i];
     }
     std::cout << std::endl;
 }

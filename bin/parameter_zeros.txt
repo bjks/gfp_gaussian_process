@@ -1,0 +1,25 @@
+# -------------------------------------------------------- #
+# Syntax for (in that order) free, bound, fixed parameters
+#    parameter = value, step
+#    parameter = value, step, lower, upper
+#    parameter = value
+# 
+# Note: Free paramters will be treated as fixed in 1d scan mode
+# -------------------------------------------------------- #
+# empty lines and lines staring with '#' are ignored
+
+    mean_lambda = 1, 0.1
+    gamma_lambda = 1, 0.1
+    var_lambda = 1, 0.1
+
+    mean_q = 1, 0.1
+    gamma_q = 1, 0.1
+    var_q = 1, 0.1
+
+    beta = 1 
+    var_x = 1 
+    var_g = 1
+
+    var_dx = 1
+    var_dg = 1
+

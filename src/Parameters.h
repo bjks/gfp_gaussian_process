@@ -27,7 +27,7 @@ public:
     bool set = false;
 
     double final;
-    bool miminized = false;
+    bool minimized = false;
 
     double step;
     double lower;
@@ -173,27 +173,31 @@ public:
 
 void const Parameter_set::to_csv(const std::string outfile){
     std::ofstream file(outfile);
-    file << "no,name,type,init,step,lower_bound,upper_bound\n";
+    file << "no,name,type,init,step,lower_bound,upper_bound,final\n";
     for (size_t i=0; i<all.size(); ++i){
         if (all[i].set){
             file <<  i << "," ;
             if (all[i].fixed){
                 file  << all[i].name << ","
                     << "fixed"<< ","
-                    << all[i].init << ", , ,\n";
+                    << all[i].init << ", , , ,";
             } else if (all[i].bound){
                 file <<  all[i].name << ","
                     << "bound" << ","
                     << all[i].init << ","
                     << all[i].step << ","
                     << all[i].lower << ","
-                    << all[i].upper << "\n";
+                    << all[i].upper << ",";
             } else {
                 file <<  all[i].name << ","
                     << "free" << ","
                     << all[i].init << ","
-                    << all[i].step << ", ,\n";
+                    << all[i].step << ", , ,";
             }
+            if (all[i].minimized){
+                file << all[i].final;
+            }
+        file << "\n";    
         }
     }
     file.close();
@@ -203,7 +207,7 @@ void const Parameter_set::to_csv(const std::string outfile){
 void Parameter_set::set_final(std::vector<double> vals){
     for (size_t i=0; i<all.size(); ++i){
         all[i].final = vals[i];
-        all[i].miminized = true;
+        all[i].minimized = true;
     }
     
 }
@@ -211,7 +215,7 @@ void Parameter_set::set_final(std::vector<double> vals){
 std::vector<double> Parameter_set::get_final(){
     std::vector<double> vals;
     for (size_t i=0; i<all.size(); ++i){
-        if (all[i].miminized){
+        if (all[i].minimized){
             vals.push_back(all[i].final);
         }
         else{
@@ -272,7 +276,7 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
                     << pad_str(params.all[i].step , column_widths[4])
                     << pad_str("", column_widths[5]+column_widths[6]) ;
             }
-            if (params.all[i].miminized && !params.all[i].fixed){
+            if (params.all[i].minimized && !params.all[i].fixed){
                 os << " -> "<< params.all[i].final;
             }
         }
