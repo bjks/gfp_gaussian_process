@@ -5,7 +5,7 @@
 int _iteration = 0;
 int _print_level;
 std::string _outfile_ll;
-bool _running;
+bool _save_ll;
 
 
 Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
@@ -115,7 +115,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     ++ _iteration;
 
     /* Save state of iteration in outfile */
-    if (_running){
+    if (_save_ll){
         std::ofstream file(_outfile_ll, std::ios_base::app);
 
         file << _iteration << ",";

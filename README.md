@@ -106,9 +106,9 @@ Finally, asymmentric cell division is modelled via
 ### Output
 ##### Maximization
 - Will create 2 files: one for the maximization process and one for the final estimations
-- The files (given the input file `example.csv`) are named as follows: `example_f<fixed>_b<bounds>.csv` and `example_f<fixed>_b<bounds>_final.csv`, where `<fixed>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, `example_f034_b129_final.csv`
+- The files (given the input file `example.csv`) are named as follows: `example_f<free>_b<bounds>.csv` and `example_f<free>_b<bounds>_final.csv`, where `<free>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, `example_f034_b129_final.csv`
 - The first file contains the parameter settings at the top 12 lines and all steps of the likelihood maximization
-- The second file contains the parameter settings at the top 12 line including a column with the final parameters(i.e. estimated via log likelihood maximization and init value for fixed parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta!!!**).
+- The second file contains the parameter settings at the top 12 line including a column with the final parameters(i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta!!!**).
 - The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of all paramterer are used for the hessian matrix estimation
  
 ##### 1D scan

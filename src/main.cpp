@@ -21,9 +21,9 @@ void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    _running = true;
+    _save_ll = true;
     minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
-    _running = false;
+    _save_ll = false;
 
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
@@ -38,7 +38,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
                       std::map<std::string, std::string> arguments){
     std::cout << "-> 1d Scan" << "\n";
     init_cells(cells, 5);
-    
+    _save_ll = true;
     for(size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].bound){
             /* 
@@ -65,6 +65,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
             }
         }
     }
+    _save_ll = false;
 }
 
 
