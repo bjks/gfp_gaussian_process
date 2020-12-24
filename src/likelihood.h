@@ -135,7 +135,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
                 for (size_t i=0; i<params_vec.size(); ++i){
                     std::cout << params_vec[i]  << ", ";
                 }
-                std::cout << "ll=" << tl  << "\n";
+                std::cout << "ll=" <<  std::setprecision(10) << tl  << "\n";
         }
     }
 

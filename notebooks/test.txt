@@ -1,0 +1,6 @@
+length_col = log_leng
+ length_islog = true
+ fp_col = gfp_noise
+ parent_tags = parent_id
+ cell_tags = cell_id
+ 
