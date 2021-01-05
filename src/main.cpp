@@ -158,6 +158,10 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
             }
         }
     }
+    if (arguments.count("quit")){
+        return arguments;
+    }
+
     /* Check is required filenames are parsed and files exist */
     if (!arguments.count("infile")){
         std::cout << "Required infile flag not set!\n";
