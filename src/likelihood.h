@@ -1,6 +1,7 @@
 #include "predictions.h"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
+#include <iomanip>
 
 int _iteration = 0;
 int _print_level;

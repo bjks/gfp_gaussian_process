@@ -214,13 +214,13 @@ def plot_errors(errors_df, final_params, plot_file):
 
 
 
-def compare_init_final(filename, plot_file):
+def compare_init_final(filename, plot_file, except_param=[]):
     """ bar plot of relative deviation between init and final parameter value """
     init = read_params_config(filename)[["name", "init"]]
     init = init.set_index("name")
 
     minimized = read_minimization(filename, 1).transpose()
-    reldev = [(init.loc[key].values[0]-minimized.loc[key].values[0])/init.loc[key].values[0] if init.loc[key].values[0]!=0 else None for key in init.index]
+    reldev = [(init.loc[key].values[0]-minimized.loc[key].values[0])/init.loc[key].values[0] if init.loc[key].values[0]!=0 and key not in except_param else None for key in init.index]
 
     # Table
     comparison = pd.DataFrame({'parameter': init.index, 
