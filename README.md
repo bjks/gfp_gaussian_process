@@ -28,7 +28,7 @@ cmake -DCMAKE_INSTALL_PREFIX=~/nlopt -DBUILD_SHARED_LIBS=OFF .
 make
 make install
 ```
-1. Compile 
+2. Compile 
 Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command! Note, that the modules remain loaded after compilation.
 
 
@@ -97,11 +97,16 @@ Additionally, the lenth of the cell and the gfp is effected by measurement noise
     - var_x     
     - var_g     
 
-Finally, asymmentric cell division is modelled via
+Finally, asymmentric cell division is modelled two variances of gaussians
 - cell division:
     - var_dx 
     - var_dg      
 
+### Input file
+The input file is assumed to fullfil the following:
+- the data points of a cell appear as consecutive rows and are in the correct order with repect to time
+- the data set has to include all columns that are set via the `csv_config` file, i.e. time_col, length_col, fp_col
+- the cells can be uniquely identified via the tags provided via `parent_tags` and `cell_tags` and each mother cell has at most 2 daughter cells. If that is not the case, a warning will be printed and the `parent_tags` and `cell_tags` are not sufficient
 
 ### Output
 ##### Maximization
