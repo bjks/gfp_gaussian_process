@@ -11,6 +11,8 @@
 #include <Eigen/Core>
 #include <Eigen/LU> 
 
+#include "CSVconfig.h"
+
 // ============================================================================= //
 // MOMAdata CLASS
 // ============================================================================= //
@@ -355,17 +357,9 @@ void append_vec(Eigen::VectorXd &v, double elem){
 }
 
 
-std::vector<MOMAdata> getData(std::string filename,
-                            std::string time_col, 
-                            double divide_time,
-                            std::string length_col,
-                            bool length_islog, 
-                            std::string fp_col, 
-                            std::string delm,
-                            std::vector<std::string> cell_tags,
-                            std::vector<std::string> parent_tags){
-    /*  
-    * Parses through csv file line by line and returns the data as a vector of MOMAdata instances
+std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
+    /* 
+    * Parses csv file line by line and returns the data as a vector of MOMAdata instances
     */
     std::ifstream file(filename);
     
@@ -375,19 +369,19 @@ std::vector<MOMAdata> getData(std::string filename,
 
     // read the header and assign an index to every entry, such that we can 'index' with a string
     getline(file, line);
-    line_parts = split_string_at(line, delm);
+    line_parts = split_string_at(line, config.delm);
     std::map<std::string, int> header_indices = get_header_indices(line_parts);
     // check if the columns that are set actually exist in header 
-    if (!header_indices.count(time_col)){
-        std::cerr << time_col << " (time_col) is not an column in input file!\n";
+    if (!header_indices.count(config.time_col)){
+        std::cerr << config.time_col << " (time_col) is not an column in input file!\n";
         return data;
     }
-    if (!header_indices.count(length_col)){
-        std::cerr << length_col << " (length_col) is not an column in input file!\n";
+    if (!header_indices.count(config.length_col)){
+        std::cerr << config.length_col << " (length_col) is not an column in input file!\n";
         return data;
     }
-    if (!header_indices.count(fp_col)){
-        std::cerr << fp_col << " (fp_col) is not an column in input file!\n";
+    if (!header_indices.count(config.fp_col)){
+        std::cerr << config.fp_col << " (fp_col) is not an column in input file!\n";
         return data;
     }
     
@@ -397,31 +391,33 @@ std::vector<MOMAdata> getData(std::string filename,
 
     int last_idx = -1;
     long line_count = 0;
+    long data_point_cell;
     while (getline(file, line)) {
         ++line_count;
-        line_parts = split_string_at(line, delm);
+        line_parts = split_string_at(line, config.delm);
         // take lines only if end_type==div or header_indices "end_type" is not in header_indices
         if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
-            curr_cell = get_cell_id(line_parts, header_indices, cell_tags);
+            curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
             if (last_cell != curr_cell){
+                data_point_cell = 0;
                 last_idx++;
                 MOMAdata next_cell;
                 // add new MOMAdata instance to vector 
                 data.push_back(next_cell); 
 
                 data[last_idx].cell_id = curr_cell;
-                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, parent_tags);
+                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
             }
 
-            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[time_col]])/divide_time );
+            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[config.time_col]])/config.rescale_time);
 
-            if (length_islog)
-                append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[length_col]]) );
+            if (config.length_islog)
+                append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[config.length_col]]) );
             else
-                append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[length_col]])) );
+                append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[config.length_col]])) );
 
-            append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[fp_col]]) );
+            append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[config.fp_col]]) );
             last_cell = curr_cell;
         }
     }

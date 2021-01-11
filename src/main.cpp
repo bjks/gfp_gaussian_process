@@ -1,5 +1,3 @@
-#include "CSVconfig.h"
-
 #include "likelihood.h"
 #include "minimizer_nlopt.h"
 
@@ -70,7 +68,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
 
 
 void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params, 
-                    std::map<std::string, std::string> arguments){
+                    std::map<std::string, std::string> arguments, const CSVconfig &config){
     std::cout << "-> prediction" << "\n";
     
     std::string outfile = outfile_name_prediction(arguments);
@@ -97,10 +95,10 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     combine_predictions(cells);
 
     /* save */
-    write_pretictions_to_file(cells, outfile_b, params, "b");
-    write_pretictions_to_file(cells, outfile_f, params, "f");
+    write_pretictions_to_file(cells, outfile_b, params, config, "b");
+    write_pretictions_to_file(cells, outfile_f, params, config, "f");
 
-    write_pretictions_to_file(cells, outfile, params);
+    write_pretictions_to_file(cells, outfile, params, config);
 }
 
 
@@ -211,15 +209,7 @@ int main(int argc, char** argv){
 
     /* Read data from input file */
     std::cout << "-> Reading" << "\n";
-    std::vector<MOMAdata> cells =  getData(arguments["infile"], 
-                                            config.time_col,
-                                            config.divide_time,
-                                            config.length_col,
-                                            config.length_islog,
-                                            config.fp_col,
-                                            config.delm,
-                                            config.cell_tags,
-                                            config.parent_tags);
+    std::vector<MOMAdata> cells =  get_data(arguments["infile"], config);
     if (!cells.size()){
         std::cout << "Quit\n";
         return 0;    
@@ -235,7 +225,7 @@ int main(int argc, char** argv){
         run_bound_1dscan(cells, params, arguments);
 
     if (arguments.count("predict"))
-        run_prediction(cells, params, arguments);
+        run_prediction(cells, params, arguments, config);
 
     std::cout << "Done." << std::endl;
     return 0;

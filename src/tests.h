@@ -231,15 +231,7 @@ void test_prediction(){
 void run_likelihood(CSVconfig config, Parameter_set params, std::string infile){
 
     std::cout << "-> Reading" << "\n";
-    std::vector<MOMAdata> cells =  getData(infile, 
-                                            config.time_col,
-                                            config.divide_time,
-                                            config.length_col,
-                                            config.length_islog,
-                                            config.fp_col,
-                                            config.delm,
-                                            config.cell_tags,
-                                            config.parent_tags);
+    std::vector<MOMAdata> cells =  get_data(infile, config);
 
     /* genealogy */
     build_cell_genealogy(cells);

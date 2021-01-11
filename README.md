@@ -66,7 +66,18 @@ Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simul
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
 
 
-### Parameter file
+#### Csv_config file
+The following settings define how the input file will be read. Default values in brackets.
+- time_col (time_sec): column from which the time is read
+- rescale_time (60): factor by which time will be devided, time increments should be small, i.e in the order of 1. Note that the model parameters are in recaled units. I.e. if the time is given in seconds the time is rescaled by 60 and the parameters are in minutes. 
+- length_col (length_um): column from which the length of the cell is read
+- length_islog (false): indicates if the cell length in the data file is in logscale (true) of not (false)
+- fp_col (gfp_nb): column from which the intensity is read
+- delm (,):delimiter between columns, probably ',' or ';' 
+- cell_tag (date, pos, gl, id): columns that will make up the unique cell id, endings like .0 .00 etc of numeric values will be removed
+- parent_tags (date, pos, gl, parent_id): columns that will make up the unique cell id of the parent cell, endings like .0 .00 etc of numeric values will be removed
+
+#### Parameter file
 Syntax for free, bound, fixed (in that order) parameters
 - parameter = init, step
 - parameter = init, step, lower, upper
@@ -113,7 +124,7 @@ The input file is assumed to fullfil the following:
 - Will create 2 files: one for the maximization process and one for the final estimations
 - The files (given the input file `example.csv`) are named as follows: `example_f<free>_b<bounds>.csv` and `example_f<free>_b<bounds>_final.csv`, where `<free>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, `example_f034_b129_final.csv`
 - The first file contains the parameter settings at the top 12 lines and all steps of the likelihood maximization
-- The second file contains the parameter settings at the top 12 line including a column with the final parameters(i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta!!!**).
+- The second file contains the parameter settings at the top 12 line including a column with the final parameters(i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta version!!!**).
 - The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of all paramterer are used for the hessian matrix estimation
  
 ##### 1D scan
@@ -133,7 +144,7 @@ The input file is assumed to fullfil the following:
 - [x] prepare for cluster
 - [ ] compare forward/backward predictions with python version
 - [ ] check signs in backwards direction (mostly done)
-- [ ] write new simulation including asymmetric cell division and tree structure?
+- [x] write new simulation including asymmetric cell division and tree structure?
 
 ## Technical Notes
 ### Log-Likelihood maximization with multiple cell trees

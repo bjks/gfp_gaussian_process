@@ -1,37 +1,8 @@
+# -------------------------------------------------------- #
 # Config file for reading input file
+# -------------------------------------------------------- #
 # lines staring with '#' are ignored
 # Note: Everything behind the '=' sign (excluding l/r whitespaces) is taken
-
-# ============================================================================== #
-# Defaults (based on a Moma output):
-#   time_col = time_sec     
-#        (column from which the time is read)
-
-#   divide_time = 60        
-#        (factor by which time will be devided, 
-#        time increments should be small, i.e in the order of 1)
-
-#   length_col = length_um  
-#        (column from which the length of the cell is read)
-
-#   length_islog = false    
-#        (indicates if the cell length in the data file is in logscale (true) of not (false))
-
-#   fp_col = gfp_nb         
-#        (column from which the intensity is read)
-
-#   delm = ,                
-#        (delimiter between columns, probably ',' or ';' )
-
-#   cell_tag = date, pos, gl, id            
-#        (columns that will make up the unique cell id, 
-#        endings like .0 .00 etc of numeric values will be removed)
-
-#   parent_tags = date, pos, gl, parent_id
-#        (columns that will make up the unique cell id of the parent cell, 
-#        endings like .0 .00 etc of numeric values will be removed)
-
-# ============================================================================== #
 
 length_col = log_leng_noise
 length_islog = true

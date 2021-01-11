@@ -312,7 +312,7 @@ void output_vector(std::ofstream &file, Eigen::VectorXd v){
 
 
 void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
-                                Parameter_set& params, std::string direction="n"){        
+                                Parameter_set& params, const CSVconfig &config, std::string direction="n"){        
     params.to_csv(outfile);
 
     std::ofstream file(outfile, std::ios_base::app);
@@ -324,7 +324,8 @@ void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string o
                                    << "cov_qq\n";
     for(size_t i=0; i<cells.size();++i){
         for (size_t j=0; j<cells[i].mean_forward.size();++j ){
-            file << cells[i].cell_id << "," << cells[i].time[j] << "," << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
+            file << cells[i].cell_id << "," << cells[i].time[j] * config.rescale_time << "," 
+                 << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
             if(direction=="f"){
                 output_vector(file, cells[i].mean_forward[j]);
                 file << ",";  
