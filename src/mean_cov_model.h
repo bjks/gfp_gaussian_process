@@ -16,9 +16,9 @@ double zerotauint(double a, double b, double c, double t1, double t0=0){
             + exp(a*pow(t1,2) + b*t1 +c) *\
             (Faddeeva::Dawson((b + 2.*a*t1)/(2.*sqrt(a)))) );
 
-    if (std::isnan(x)){
-        std::cout   << "INF-WARNING: zerotauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "  ";
-    }
+    // if (std::isnan(x)){
+    //     std::cout   << "INF-WARNING: zerotauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "  ";
+    // }
     return x /(2.*sqrt(a));
 }
 
@@ -29,9 +29,9 @@ double onetauint(double a, double b, double c, double t1, double t0=0){
            (exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t0)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t0)/(2.*sqrt(a))) \
            -exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t1)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t1)/(2.*sqrt(a)))));
 
-    if (std::isnan(x)){
-        std::cout   << "INF-WARNING: onetauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "\n";
-    }    
+    // if (std::isnan(x)){
+    //     std::cout   << "INF-WARNING: onetauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "\n";
+    // }    
     return x/(4.*pow(a,1.5));
 }
 
@@ -43,10 +43,10 @@ double twotauint(double a, double b, double c, double t_1, double t_0=0){
             exp(-pow(b,2)/(4.*a) + c + pow((b + 2.*a*t_1)/(2.*sqrt(a)),2.)) * \
             (-2.*a + pow(b,2.))*2.*Faddeeva::Dawson((b + 2.*a*t_1)/(2.*sqrt(a)))));
 
-    if (std::isnan(x)){
-        std::cout  << "INF-WARNING: twotauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 <<  " "<<  t_1 << "\n";
-        std::cout  << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)),2)) << "\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout  << "INF-WARNING: twotauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 <<  " "<<  t_1 << "\n";
+    //     std::cout  << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)),2)) << "\n";
+    // }
     return x/(8.*pow(a,2.5));
 }
 
@@ -61,10 +61,10 @@ double treetauint(double a, double b, double c, double t_1, double t_0=0){
             exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t_1)/(2.*sqrt(a)), 2))*b*(-6*a + pow(b,2.))*2.* \
             Faddeeva::Dawson((b + 2.*a*t_1)/(2.*sqrt(a)));
 
-    if (std::isnan(x)){
-        std::cout << "INF-WARNING: treetauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 << " "<<  t_1 << "\n";
-        std::cout << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)), 2)) << "\n";
-    }
+    // if (std::isnan(x)){
+    //     std::cout << "INF-WARNING: treetauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 << " "<<  t_1 << "\n";
+    //     std::cout << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)), 2)) << "\n";
+    // }
     return x/(16.*pow(a,3.5));
 }
 

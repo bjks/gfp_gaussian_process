@@ -79,9 +79,11 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     std::string outfile_b = outfile_name_prediction(arguments, "_backward");
     std::string outfile_f = outfile_name_prediction(arguments, "_forward");
 
+
     std::cout << "Outfile: " << outfile << "\n";
     std::cout << "Outfile backward: " << outfile_b << "\n";
     std::cout << "Outfile forward: " << outfile_f << "\n";
+
 
     std::vector<double> params_vec = params.get_final();
 
@@ -191,7 +193,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
 
 int main(int argc, char** argv){
-
+    // test_mean_cov_model();
+    // return 0;
     /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
     _print_level = std::stoi(arguments["print_level"]);

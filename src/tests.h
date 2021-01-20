@@ -53,12 +53,12 @@ double treetauint2(double a, double b, double c, double t1, double t0=0){
 
 
 void test_mean_cov_model(){
-    double a = 0.01;
-    double b = 0.02;
-    double c = 0.02;
+    double a = 0.0111;
+    double b = 0.022;
+    double c = 0.01;
     double t1 = 0.2;
     // double t0 = 2;
-    double t0 = 1.5;
+    double t0 = 0.7;
 
 
     std::cout << "---------- ***tauint -----------"<< "\n";
