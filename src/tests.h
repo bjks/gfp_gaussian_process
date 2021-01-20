@@ -1,16 +1,76 @@
 
+// Naive implementations of critical integrals
+double zerotauint2(double a, double b, double c, double t1, double t0=0){
+    //int_t0^t1 exp[a*s**2+b*s+c]ds//
+    double x = (exp(-pow(b,2.)/(4.*a) + c)*sqrt(M_PI)*(-Faddeeva::erfi((b + 2.*a*t0)/(2.*sqrt(a))) + Faddeeva::erfi((b + 2.*a*t1)/(2.*sqrt(a)))))/(2.*sqrt(a));
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: zerotauint (a,b,c,t0,t1) " 
+                    << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "  ";
+        std::cout << "exp, erfi t0, x, erfi t1, x, "
+                    << exp(-pow(b,2)/(4.*a) + c) << " " 
+                    << -Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) << " " << (b + 2*a*t0)/(2.*sqrt(a)) << " " 
+                    <<  Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a))) << " " << (b + 2*a*t1)/(2.*sqrt(a)) << " " << "\n";
+    }
+    return x;
+}
+double onetauint2(double a, double b, double c, double t1, double t0=0){
+    //int_t0^t1 s*exp[a*s**2+b*s+c]ds//
+    double x= (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
+           b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) - b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(4.*pow(a,1.5));
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: onetauint (a,b,c,t0,t1) " 
+                    << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "\n";
+    }
+    return x;
+}
+
+double twotauint2(double a, double b, double c, double t1, double t0=0){
+    //int_t0^t1 s**2*exp[a*s**2+b*s+c]ds//
+    double x = (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*\
+           (-(b*exp(t0*(b + a*t0))) + b*exp(t1*(b + a*t1)) + 2*a*exp(t0*(b + a*t0))*t0 - 2*a*exp(t1*(b + a*t1))*t1) +\
+           (2*a - pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + (-2*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(8.*pow(a,2.5));
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: twotauint (a,b,c,t0,t1) " 
+                    << a << " "<< b << " "<< c << " "<<  t0 <<  " "<<  t1 << "\n";
+    }
+    return x;
+}
+
+
+
+double treetauint2(double a, double b, double c, double t1, double t0=0){
+    //int_t0^t1 s**3*exp[a*s**2+b*s+c]ds//
+    double x = (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*\
+           (pow(b,2)*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) - 2*a*exp(t0*(b + a*t0))*(2 + b*t0) + 2*a*exp(t1*(b + a*t1))*(2 + b*t1) +\
+            4*pow(a,2)*(exp(t0*(b + a*t0))*pow(t0,2) - exp(t1*(b + a*t1))*pow(t1,2))) + b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) -\
+           b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(16.*pow(a,3.5));
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: treetauint (a,b,c,t0,t1) " 
+                    << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "\n";
+    }
+    return x;
+}
+
+
 void test_mean_cov_model(){
-    double a = 0.1;
-    double b = 0.2;
-    double c = 0.3;
-    double t1 = 1;
-    double t0 = 2;
+    double a = 0.01;
+    double b = 0.02;
+    double c = 0.02;
+    double t1 = 0.2;
+    // double t0 = 2;
+    double t0 = 1.5;
+
 
     std::cout << "---------- ***tauint -----------"<< "\n";
-    std::cout << zerotauint(a, b, c, t1, t0) << "\n";
-    std::cout << onetauint(a, b, c, t1, t0) << "\n";
-    std::cout << twotauint(a, b, c, t1, t0) << "\n";
-    std::cout << treetauint(a, b, c, t1, t0) << "\n";
+    std::cout << "zerotauint  " << zerotauint(a, b, c, t1, t0) << "\n";
+    std::cout << "zerotauint2 " << zerotauint2(a, b, c, t1, t0) << "\n\n";
+    std::cout << "onetauint  " << onetauint(a, b, c, t1, t0) << "\n";
+    std::cout << "onetauint2 " << onetauint2(a, b, c, t1, t0) << "\n\n";
+    std::cout << "twotauint  " << twotauint(a, b, c, t1, t0) << "\n";
+    std::cout << "twotauint2 " << twotauint2(a, b, c, t1, t0) << "\n\n";
+    std::cout << "treetauint  "  << treetauint(a, b, c, t1, t0) << "\n";
+    std::cout << "treetauint2 "  << treetauint2(a, b, c, t1, t0) << "\n\n";
+
 
     double 	t	 = 	0.1	;
     double 	bx 	 = 	0.2	;

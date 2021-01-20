@@ -8,7 +8,7 @@
 #include <iomanip> 
 
 
-void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
+int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
                       std::map<std::string, std::string> arguments){
     std::cout << "-> Minimizaton" << "\n";
     init_cells(cells, 5);
@@ -20,15 +20,19 @@ void run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
 
     /* minimization for tree starting from cells[0] */
     _save_ll = true;
-    minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
+    int min_message = minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
     _save_ll = false;
 
+    if (min_message  == -1){
+        return -1;
+    }
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
     std::string outfile_estim = outfile_name_minimization_estimation(arguments, params);
     std::cout << "Outfile: " << outfile_estim << "\n";
 
     save_error_bars(outfile_estim, params, cells);
+    return 0;
 }
 
 
@@ -75,11 +79,9 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     std::string outfile_b = outfile_name_prediction(arguments, "_backward");
     std::string outfile_f = outfile_name_prediction(arguments, "_forward");
 
-
     std::cout << "Outfile: " << outfile << "\n";
     std::cout << "Outfile backward: " << outfile_b << "\n";
     std::cout << "Outfile forward: " << outfile_f << "\n";
-
 
     std::vector<double> params_vec = params.get_final();
 
@@ -124,7 +126,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::map<std::string, std::string> arguments;
     /* defaults: */
     arguments["print_level"] = "0";
-    arguments["rel_tol"] = "1e-2";
+    arguments["rel_tol"] = "1e-3";
 
     for(int k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
@@ -189,7 +191,6 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
 
 int main(int argc, char** argv){
-    // test_prediction();
 
     /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
@@ -218,8 +219,12 @@ int main(int argc, char** argv){
     build_cell_genealogy(cells);
 
     /* run bound_1dscan, minimization and/or prediction... */
-    if (arguments.count("minimize"))
-        run_minimization(cells, params, arguments);
+    if (arguments.count("minimize")){
+        int min_message = run_minimization(cells, params, arguments);
+        if (min_message  == -1){
+            return -1;
+        }
+    }
 
     if (arguments.count("scan"))
         run_bound_1dscan(cells, params, arguments);

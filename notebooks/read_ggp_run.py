@@ -257,25 +257,3 @@ def compare_init_final(filename, plot_file, except_param=[]):
     return comparison
 
 
-
-def compare_time_series(data, cols, data2, cols2, data_slice, title=None):
-    cmap = plt.cm.tab10
-    fig, ax = plt.subplots(figsize=(15,7))
-
-    if title !=None:
-        plt.title(title)
-
-    time = data['time_min'][data_slice]
-    plots = []
-
-    for i, col in enumerate(cols):
-        d = data[col][data_slice]
-        plots.append(ax.plot(time, d, 'o', c=cmap(i), label=col)[0])
-
-    for i, col in enumerate(cols2):
-        d = data2[col][data_slice]
-        plots.append(ax.plot(time, d, '-', c=cmap(i), label=col)[0])
-
-    ax.set_xlabel('time (min)')
-    ax.legend(plots, [l.get_label() for l in plots])
-    plt.show()

@@ -4,52 +4,70 @@
 
 #define _USE_MATH_DEFINES
 
+// ======================================================================================================== //       
+
+// The following intergals are calculated via Dawson functions, to avoid numerical overflows
+
 double zerotauint(double a, double b, double c, double t1, double t0=0){
-    //int_t0^t1 exp[a*s**2+b*s+c]ds//
-    double x = (exp(-pow(b,2)/(4.*a) + c)*sqrt(M_PI)*(-Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(2.*sqrt(a));
-    // if (std::isnan(x)){
-    //     std::cout << a << " "<< b << " "<< c << " " << t1 << " " << t0 << " " << " INF-WARING: zerotauint ";
-    //     std::cout   << exp(-pow(b,2)/(4.*a) + c) << " " 
-    //                 << -Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) << " " 
-    //                 <<  Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))  << " "
-    //                 << (2.*sqrt(a)) << "\n";
-    // }
-    return x;
+    //int_t0^t1 exp[a*s**2+b*s+c]ds rewritten with Dawson functions 
+    double x = 2. *(\
+            - exp(a*pow(t0,2) + b*t0 +c) *\
+             Faddeeva::Dawson((b + 2.*a*t0)/(2.*sqrt(a)) ) \
+            + exp(a*pow(t1,2) + b*t1 +c) *\
+            (Faddeeva::Dawson((b + 2.*a*t1)/(2.*sqrt(a)))) );
+
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: zerotauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "  ";
+    }
+    return x /(2.*sqrt(a));
 }
 
 double onetauint(double a, double b, double c, double t1, double t0=0){
-    //int_t0^t1 s*exp[a*s**2+b*s+c]ds//
-    double x= (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
-           b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) - b*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(4.*pow(a,1.5));
-    // if (std::isnan(x)){
-    //     std::cout<< a << " "<< b << " "<< c << " " << t1 << " " <<" INF-WARING: onetauint\n";
-    // }
-    return x;
+    //int_t0^t1 s*exp[a*s**2+b*s+c]ds rewritten with Dawson functions 
+    double x= (-2.*sqrt(a) * exp(-pow(b,2.)/(4.*a) + c + pow(b,2.)/(4.*a)) * (exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
+           b*2.* \
+           (exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t0)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t0)/(2.*sqrt(a))) \
+           -exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t1)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t1)/(2.*sqrt(a)))));
+
+    if (std::isnan(x)){
+        std::cout   << "INF-WARNING: onetauint (a,b,c,t0,t1) " << a << " "<< b << " "<< c << " "<<  t0 << " "<<  t1 << "\n";
+    }    
+    return x/(4.*pow(a,1.5));
 }
 
-double twotauint(double a, double b, double c, double t1, double t0=0){
-    //int_t0^t1 s**2*exp[a*s**2+b*s+c]ds//
-    double x = (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*\
-           (-(b*exp(t0*(b + a*t0))) + b*exp(t1*(b + a*t1)) + 2*a*exp(t0*(b + a*t0))*t0 - 2*a*exp(t1*(b + a*t1))*t1) +\
-           (2*a - pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) + (-2*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(8.*pow(a,2.5));
-    // if (std::isnan(x)){
-    //     std::cout<< a << " "<< b << " "<< c << " "<<  t1 << " " << " INF-WARING: twotauint\n";
-    // }
-    return x;
+double twotauint(double a, double b, double c, double t_1, double t_0=0){
+    //int_t_0^t_1 s**2*exp[a*s**2+b*s+c]ds rewritten with Dawson functions 
+    double x = (2.*sqrt(a)*exp(c)*(exp(t_0*(a*t_0 + b))*(b - 2.*a*t_0) - exp(t_1*(a*t_1 + b))*(b - 2.*a*t_1))  +\
+            (exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t_0)/(2.*sqrt(a)),2.)) * \
+            (2.*a - pow(b,2.))*2.*Faddeeva::Dawson((b + 2.*a*t_0)/(2.*sqrt(a))) +\
+            exp(-pow(b,2)/(4.*a) + c + pow((b + 2.*a*t_1)/(2.*sqrt(a)),2.)) * \
+            (-2.*a + pow(b,2.))*2.*Faddeeva::Dawson((b + 2.*a*t_1)/(2.*sqrt(a)))));
+
+    if (std::isnan(x)){
+        std::cout  << "INF-WARNING: twotauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 <<  " "<<  t_1 << "\n";
+        std::cout  << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)),2)) << "\n";
+    }
+    return x/(8.*pow(a,2.5));
 }
 
+double treetauint(double a, double b, double c, double t_1, double t_0=0){
+    //int_t_0^t_1 s**3*exp[a*s**2+b*s+c]ds rewritten with Dawson functions 
+    double x = (-2.*sqrt(a)*exp(c)*\
+            (pow(b,2.)*(exp(t_0*(b + a*t_0)) - exp(t_1*(b + a*t_1))) - \
+            2.*a*exp(t_0*(b + a*t_0))*(2.+b*t_0) + 2*a*exp(t_1*(b + a*t_1))*(2 + b*t_1) +\
+            4*pow(a,2.)*(exp(t_0*(b + a*t_0))*pow(t_0,2.) - exp(t_1*(b + a*t_1))*pow(t_1,2))))  + \
+            exp(-pow(b,2)/(4.*a) + c + pow((b + 2.*a*t_0)/(2.*sqrt(a)), 2.))*b*(-6.*a + pow(b,2.))*2.* \
+            Faddeeva::Dawson((b + 2.*a*t_0)/(2.*sqrt(a))) -\
+            exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t_1)/(2.*sqrt(a)), 2))*b*(-6*a + pow(b,2.))*2.* \
+            Faddeeva::Dawson((b + 2.*a*t_1)/(2.*sqrt(a)));
 
-double treetauint(double a, double b, double c, double t1, double t0=0){
-    //int_t0^t1 s**3*exp[a*s**2+b*s+c]ds//
-    double x = (exp(-pow(b,2)/(4.*a) + c)*(-2*sqrt(a)*exp(pow(b,2)/(4.*a))*\
-           (pow(b,2)*(exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) - 2*a*exp(t0*(b + a*t0))*(2 + b*t0) + 2*a*exp(t1*(b + a*t1))*(2 + b*t1) +\
-            4*pow(a,2)*(exp(t0*(b + a*t0))*pow(t0,2) - exp(t1*(b + a*t1))*pow(t1,2))) + b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t0)/(2.*sqrt(a))) -\
-           b*(-6*a + pow(b,2))*sqrt(M_PI)*Faddeeva::erfi((b + 2*a*t1)/(2.*sqrt(a)))))/(16.*pow(a,3.5));
-    // if (std::isnan(x)){
-    //     std::cout<< a << " "<< b << " "<< c << " " << t1 << " " << " INF-WARING: treetauint\n";
-    // }
-    return x;
+    if (std::isnan(x)){
+        std::cout << "INF-WARNING: treetauint (a,b,c,t_0,t_1) " << a << " "<< b << " "<< c << " "<<  t_0 << " "<<  t_1 << "\n";
+        std::cout << exp(-pow(b,2)/(4.*a) + c + pow((b + 2*a*t_1)/(2.*sqrt(a)), 2)) << "\n";
+    }
+    return x/(16.*pow(a,3.5));
 }
+
 
 // ======================================================================================================== //
 // ======================================================================================================== //
@@ -60,7 +78,6 @@ double mean_x(double t,double bx,double bg,double bl,double bq,double Cxx,double
 }
 
 double mean_g(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
-    //Analytical integration over time not necessary//
     return bg/exp(b*t)+Clq*onetauint(Cll/2.,b+bl+Cxl-gq,bx+Cxx/2.-b*t,t)+mq*zerotauint(Cll/2.,b+bl+Cxl,bx+Cxx/2.-b*t,t) +\
         (bq+Cxq-mq)*zerotauint(Cll/2.,b+bl+Cxl-gq,bx+Cxx/2.-b*t,t);
 }
@@ -110,6 +127,12 @@ double cov_xq(double t,double bx,double bg,double bl,double bq,double Cxx,double
 }
 
 double cov_gg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+    // std::cout << "Cll " << Cll << "\n";
+    // std::cout << b + bl + Cxl << " b " << b << " bl " << bl << " Cxl " << Cxl << "\n";
+    // std::cout << b + bl + 2*Cxl << "\n";
+    // std::cout << b + bl + Cxl - gq << "\n";
+    // std::cout << b + bl + 2*Cxl - gq << "\n";
+    // std::cout << b + bl + 2*Cxl + gq << "\n";
     return (pow(bg,2) + Cgg)/exp(2*b*t) + \
        2*Cgl*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - 2*b*t,t) + \
        (mq*(2*Clq + gq*mq)*onetauint(Cll/2.,b + bl + 2*Cxl,2*(bx + Cxx - b*t),t))/\
@@ -168,7 +191,10 @@ double cov_gl(double t,double bx,double bg,double bl,double bq,double Cxx,double
 }
 
 double cov_gq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
-	return (bg*bq)/exp((b + gq)*t) + Cgq/exp((b + gq)*t) + (bg*mq)/exp(b*t) - (bg*mq)/exp((b + gq)*t) + \
+	// std::cout << b + bl + Cxl << "\n";
+	// std::cout << b + bl + Cxl - gq << "\n";
+    // std::cout << b + bl + Cxl + gq << "\n";
+    return (bg*bq)/exp((b + gq)*t) + Cgq/exp((b + gq)*t) + (bg*mq)/exp(b*t) - (bg*mq)/exp((b + gq)*t) + \
         Clq*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gq*t,t) + Clq*mq*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
         (2*bq*Clq + 2*Clq*Cxq - 2*Clq*mq)*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gq*t,t) + \
         pow(Clq,2)*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gq*t,t) + pow(mq,2)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t) + \
@@ -202,6 +228,19 @@ void mean_cov_model(MOMAdata &cell,
     Eigen::VectorXd nm(4);
     Eigen::MatrixXd nC(4, 4);
 
+    // for(size_t i=0; i<cell.mean.size(); ++i){
+    //     if (std::isnan(cell.mean(i))){
+    //         std::cout << "NAN-WARNING: cell.mean(i) " << i << "\n";
+    //     }
+    // }
+    // for(size_t i=0; i<cell.cov.rows(); ++i){
+    //     for(size_t j=0; j<cell.cov.cols(); ++j){
+    //         if (std::isnan(cell.cov(i,j))){
+    //             std::cout << "NAN-WARNING: cell.cov(i,j) " << i << " " << j << "\n";
+    //         }
+    //     }
+    // }
+
     double bx=cell.mean(0);
     double bg=cell.mean(1);
     double bl=cell.mean(2); 
@@ -230,15 +269,29 @@ void mean_cov_model(MOMAdata &cell,
     nC(0,3) = nC(3,0) = cov_xq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
 
     nC(1,2) = nC(2,1) = cov_gl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm);
-    nC(1,3) = nC(3,1) = cov_gq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm);
+    nC(1,3) = nC(3,1) = cov_gq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm); // can cause nan
 
     nC(2,3) = nC(3,2) = cov_lq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
 
     nC(0,0) = cov_xx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
-    nC(1,1) = cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm);
+    nC(1,1) = cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm); // can cause nan
     nC(2,2) = cov_ll(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
     nC(3,3) = cov_qq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
     
     cell.mean = nm;
     cell.cov = nC;
+
+    // for(size_t i=0; i<nm.size(); ++i){
+    //     if (std::isnan(nm(i))){
+    //         std::cout << "NAN-WARNING: nm(i) " << i << "\n";
+    //     }
+    // }
+    // for(size_t i=0; i<nC.rows(); ++i){
+    //     for(size_t j=0; j<nC.cols(); ++j){
+    //         if (std::isnan(nC(i,j))){
+    //             std::cout << "NAN-WARNING: nC(i,j) " << i << " " << j << "\n";
+    //         }
+    //     }
+    // }
+
 }

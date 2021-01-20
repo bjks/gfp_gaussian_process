@@ -253,7 +253,7 @@ void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOM
     file << "\nerrors\n";
     file << "\nepsilon";
 
-    std::vector<double> eps {1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4};
+    std::vector<double> eps {1e-1, 5e-2, 1e-2, 5e-3, 1e-3};
     std::vector<double> error;
     
     std::vector<int> idx_non_fixed = params.non_fixed();

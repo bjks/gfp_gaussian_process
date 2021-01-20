@@ -18,7 +18,7 @@ double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad,
     return pow(sum, 2);
 }
 
-void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
+int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
                         std::vector<MOMAdata> &cells,
                         Parameter_set &params, 
                         double relative_tol){
@@ -72,5 +72,7 @@ void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::v
     }
     catch(std::exception &e) {
         std::cout << "Nlopt failed: " << e.what() << std::endl;
+        return -1;
     }
+    return 1;
 }
