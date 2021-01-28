@@ -11,7 +11,7 @@
 int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
                       std::map<std::string, std::string> arguments){
     std::cout << "-> Minimizaton" << "\n";
-    init_cells(cells, 5);
+    init_cells(cells);
 
     /* set and setup (global) output file */
     _outfile_ll = outfile_name_minimization_process(arguments, params);
@@ -39,7 +39,7 @@ int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
 void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
                       std::map<std::string, std::string> arguments){
     std::cout << "-> 1d Scan" << "\n";
-    init_cells(cells, 5);
+    init_cells(cells);
     _save_ll = true;
     for(size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].bound){
@@ -81,18 +81,18 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
 
     std::cout << "Outfile: " << outfile << "\n";
-    std::cout << "Outfile backward: " << outfile_b << "\n";
     std::cout << "Outfile forward: " << outfile_f << "\n";
+    std::cout << "Outfile backward: " << outfile_b << "\n";
 
 
     std::vector<double> params_vec = params.get_final();
 
     /* forward...*/
-    init_cells(cells, 5);
+    init_cells(cells);
     prediction_forward(params_vec, cells);
 
     /* backward...*/
-    init_cells_r(cells, 5);
+    init_cells_r(cells);
     prediction_backward(params_vec, cells);
 
     /* combine the two */

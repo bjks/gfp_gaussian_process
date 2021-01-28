@@ -485,73 +485,110 @@ double vec_var(std::vector<double> v){
     return sq_sum / v.size() - pow(vec_mean(v), 2);
 }
 
-void init_cells(std::vector<MOMAdata> &cells, int n_cells = 3){
+double estimate_lambda(MOMAdata &cell){
+    size_t t_last = cell.time.size()-1;
+    double l = (cell.log_length(t_last) - cell.log_length(0)) / (cell.time(t_last) - cell.time(0));
+    return l;
+}
+
+double estimate_q(MOMAdata &cell, double lambda_est){
+    size_t t_last = cell.time.size()-1;
+    double dg = cell.fp(t_last) - cell.fp(0);
+    double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));
+    double q = dg*lambda_est/dv;
+    return q;
+}
+
+void init_cells(std::vector<MOMAdata> &cells){
     /* 
-    * Inititalizes the mean vector and the covariance matrix of the root cells estimated from 
-    * the data using the FIRST time point and the FIRST n time points of each cell 
+    * Inititalizes the mean vector and the covariance matrix of the ROOT cells estimated from 
+    * the data using the FIRST time point for x and fp 
     */
     for(size_t i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
         cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
     }
 
+    // Estimate initial x, g, and lambda
     std::vector<double> x0;
     std::vector<double> g0;
     std::vector<double> l0;
-    std::vector<double> q0;
 
     for(size_t i=0; i<cells.size(); ++i){
-        if(cells[i].time.size()>=n_cells){
-            x0.push_back(cells[i].log_length(0));
-            g0.push_back(cells[i].fp(0));
-            l0.push_back(lin_fit_slope(cells[i].time.head(n_cells), cells[i].log_length.head(n_cells)));
-            q0.push_back(lin_fit_slope(cells[i].time.head(n_cells), cells[i].fp.head(n_cells)));
-        }
+        x0.push_back(cells[i].log_length(0));
+        g0.push_back(cells[i].fp(0));
+        l0.push_back(estimate_lambda(cells[i]));
     }
+    double mean_x0 = vec_mean(x0);
+    double mean_g0 = vec_mean(g0);
+    double mean_l0 = vec_mean(l0);
+    
+    // Estimate initial q, which needs some guess for lambda
+    std::vector<double> q0;
+    for(size_t i=0; i<cells.size(); ++i){
+        q0.push_back(estimate_q(cells[i], mean_l0));
+    }
+    double mean_q0 = vec_mean(q0);
+
+    double var_x0 =  vec_var(x0);
+    double var_g0 =  vec_var(g0);
+    double var_l0 =  vec_var(l0);
+    double var_q0 =  vec_var(q0);
 
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(size_t i=0; i<roots.size(); ++i){
-        roots[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
-        roots[i]->cov_init(0,0) = vec_var(x0);
-        roots[i]->cov_init(1,1) = vec_var(g0);
-        roots[i]->cov_init(2,2) = vec_var(l0);
-        roots[i]->cov_init(3,3) = vec_var(q0);
+        roots[i]->mean_init << mean_x0, mean_g0, mean_l0, mean_q0;
+        roots[i]->cov_init(0,0) = var_x0;
+        roots[i]->cov_init(1,1) = var_g0;
+        roots[i]->cov_init(2,2) = var_l0;
+        roots[i]->cov_init(3,3) = var_q0;
     }
 }
 
 
-
-void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
+void init_cells_r(std::vector<MOMAdata> &cells){
     /* 
-    * Inititalizes the mean vector and the covariance matrix of the leafs cells estimated from 
-    * the data using the LAST time point and the LAST n time points of each cell 
+    * Inititalizes the mean vector and the covariance matrix of the LEAF cells estimated from 
+    * the data using the LAST time point for x and fp 
     */
     for(size_t i=0; i<cells.size(); ++i){
         cells[i].mean_init = Eigen::VectorXd::Zero(4);
         cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
     }
 
+    // Estimate initial x, g, and lambda
     std::vector<double> x0;
     std::vector<double> g0;
     std::vector<double> l0;
-    std::vector<double> q0;
 
     for(size_t i=0; i<cells.size(); ++i){
-        if(cells[i].time.size()>=n_cells){
-            x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
-            g0.push_back(cells[i].fp(cells[i].log_length.size()-1));
-            l0.push_back(-lin_fit_slope(cells[i].time.tail(n_cells), cells[i].log_length.tail(n_cells)));
-            q0.push_back(-lin_fit_slope(cells[i].time.tail(n_cells), cells[i].fp.tail(n_cells)));
-        }
+        x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
+        g0.push_back(cells[i].fp(cells[i].fp.size()-1));
+        l0.push_back(estimate_lambda(cells[i]));
     }
+    double mean_x0 = vec_mean(x0);
+    double mean_g0 = vec_mean(g0);
+    double mean_l0 = vec_mean(l0);
+    
+    // Estimate initial q, which needs some guess for lambda
+    std::vector<double> q0;
+    for(size_t i=0; i<cells.size(); ++i){
+        q0.push_back(estimate_q(cells[i], mean_l0));
+    }
+    double mean_q0 = vec_mean(q0);
+
+    double var_x0 = vec_var(x0);
+    double var_g0 = vec_var(g0);
+    double var_l0 = vec_var(l0);
+    double var_q0 = vec_var(q0);
 
     std::vector<MOMAdata *> leafs = get_leafs(cells);
     for(size_t i=0; i<leafs.size(); ++i){
-        leafs[i]->mean_init << vec_mean(x0),vec_mean(g0),vec_mean(l0),vec_mean(q0);
-        leafs[i]->cov_init(0,0) = vec_var(x0);
-        leafs[i]->cov_init(1,1) = vec_var(g0);
-        leafs[i]->cov_init(2,2) = vec_var(l0);
-        leafs[i]->cov_init(3,3) = vec_var(q0);
+        leafs[i]->mean_init << mean_x0, mean_g0, -mean_l0, -mean_q0;
+        leafs[i]->cov_init(0,0) = var_x0;
+        leafs[i]->cov_init(1,1) = var_g0;
+        leafs[i]->cov_init(2,2) = var_l0;
+        leafs[i]->cov_init(3,3) = var_q0;
     }
 }
 
