@@ -16,19 +16,23 @@ class Cell:
         self.length = [np.exp(log_length0)]  # s(t)
         self.log_length = [log_length0]      # x(t) = x0 + int lambda dt
         self.gfp = [gfp0]
-        self.time = [time0]
+        self.lt = [lambda0]
         self.qt = [q0]
-        self.lambda_t = [lambda0]
+        self.time = [time0]
 
     def to_df(self, n=1):
         return pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[::n],
                                 "time_min": self.time[::n],
                                 "parent_id": ([self.parent_id]*len(self.time))[::n],
                                 "log_length": self.log_length[::n], 
-                                "gfp": self.gfp[::n]})
+                                "gfp": self.gfp[::n],
+                                "lt": self.lt[::n],
+                                "qt": self.qt[::n]})
 
-def df2cells(dataset, time="time_min", log_length="log_length", gfp="gfp", 
-            cell_id="cell_id", parent_id="parent_id"):
+def df2cells(dataset, time="time_min", 
+            log_length="log_length", gfp="gfp", 
+            cell_id="cell_id", parent_id="parent_id", 
+            lt=None, qt=None):
     """ 
     dataset (pandas data frame as read from csv file) to list of Cell instances 
     either using columns with measurment noise or without
@@ -36,23 +40,37 @@ def df2cells(dataset, time="time_min", log_length="log_length", gfp="gfp",
     cell_list = []
     last_cell = ""
     for _, row in dataset.iterrows(): 
-        if row["cell_id"] != last_cell:
-            if parent_id == None:
-                new_cell = Cell(row[log_length], row[gfp], 0, 0, time0=row[time],
-                            cell_id=row[cell_id], 
-                            parent_id=-1)
-            else:
-                new_cell = Cell(row[log_length], row[gfp], 0, 0, time0=row[time],
-                                cell_id=row[cell_id], 
-                                parent_id=row[parent_id])
+        if row[cell_id] != last_cell:
+            if parent_id == None:   p = -1
+            else:                   p = row[parent_id]
+
+            if lt == None:    lambda0 = None
+            else:                   lambda0 = row[lt]
+
+            if qt == None:          q0 = None
+            else:                   q0 = row[qt]
+
+            new_cell = Cell(row[log_length], row[gfp], 
+                        lambda0, q0, 
+                        time0=row[time],
+                        cell_id=row[cell_id], 
+                        parent_id=p)
             cell_list.append(new_cell)
         else:
             cell_list[-1].log_length.append(row[log_length])
             cell_list[-1].gfp.append(row[gfp])
             cell_list[-1].time.append(row[time])
 
+            if lt != None: 
+                cell_list[-1].lt.append(row[lt])
+
+            if qt != None:
+                cell_list[-1].qt.append(row[qt])
+
         last_cell = row[cell_id]
     return cell_list
+
+
 
 # =============== Simulation functions ===============#
 
@@ -60,12 +78,12 @@ def single_ou_step(dt, mean, gamma, var, x):
     noise = np.sqrt(var) * np.random.normal(loc=0, scale=1) * np.sqrt(dt)
     return x - gamma*(x-mean)*dt + noise
 
-def growth(cell, dt, lambda_t):  
+def growth(cell, dt, lt):  
     # calculate next step
-    next_step = cell.log_length[-1] + lambda_t*dt
+    next_step = cell.log_length[-1] + lt*dt
 
     # save everything
-    cell.lambda_t.append(lambda_t)
+    cell.lt.append(lt)
     cell.log_length.append(next_step)
     cell.length.append(np.exp(next_step))
     return cell
@@ -81,12 +99,12 @@ def gfp_production(cell, dt, qt, beta):
 def cell_divsion(cell, var_dx, var_dg, no_cells):
 
     cell1 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
-                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lambda_t[-1], cell.qt[-1],
+                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1],
                     time0 = cell.time[-1],
                     cell_id = no_cells + 1, parent_id=cell.cell_id)
 
     cell2 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
-                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lambda_t[-1], cell.qt[-1], 
+                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1], 
                     time0 = cell.time[-1],
                     cell_id = no_cells + 2, parent_id=cell.cell_id)
     # print(cell1.cell_id, cell.time[-1], cell1.log_length[0], cell.log_length[-1])
@@ -150,7 +168,7 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode, division_log_length=Non
             lambda_ou = single_ou_step(dt,  parameter_set['mean_lambda'], 
                                             parameter_set['gamma_lambda'], 
                                             parameter_set['var_lambda'], 
-                                            cell.lambda_t[-1]) 
+                                            cell.lt[-1]) 
             cell = growth(cell, dt, lambda_ou)
             if is_cell_division(cell, div_mode, division_log_length, division_time, division_addition):
                 # save the simulated cell
@@ -246,7 +264,7 @@ def write_param_file(filename, parameters, non_default={}):
                                                                                     v*non_default[k][3] ))
             else:
                 if v==0:
-                    fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, 1e-3)) 
+                    fin.write("{:s} = {:.2E}, {:.2E}, 0, {:.2E}\n".format(k, v, 1e-3, 1e15)) 
                 else:
                     fin.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(k, v, v*1e-2, v*0.3, v*11. ))
 
@@ -282,15 +300,21 @@ def suggest_run_command(directory, filename, modes ="-s -m -p"):
 
 # =============== PLOT =============== #
 def plot_cells(cells, n_steps=1):
-    _, axes = plt.subplots(2, figsize=(15,10))
+    _, axes = plt.subplots(2, figsize=(10,7))
     ax = axes.ravel()
 
     for j in range(len(cells[::n_steps])):
         cell = copy.deepcopy(cells[j])
         cell.time = np.array(cell.time)
 
-        ax[0].set_title("log length (showing every {:d}th cell)".format(n_steps))
-        ax[1].set_title("gfp (showing every {:d}th cell)".format(n_steps))
+        if n_steps>1:
+            ax[0].set_title("log length (showing every {:d}th cell)".format(n_steps))
+            ax[1].set_title("gfp (showing every {:d}th cell)".format(n_steps))
+
+        else:
+            ax[0].set_title("log length")
+            ax[1].set_title("gfp")
+
         # ax[0].set_ylim([1.2, 2.2])
         
         if len(cells[::n_steps]) <20:

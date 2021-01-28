@@ -167,7 +167,7 @@ void append_reversed_mean(MOMAdata &cell){
 }
 
 void append_reversed_cov(MOMAdata &cell){
-    /* append the "reverse" of the vov 
+    /* append the "reverse" of the cov 
     cov ->  + + - - 
             + + - - 
             - - + + 
@@ -316,7 +316,7 @@ void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string o
     params.to_csv(outfile);
 
     std::ofstream file(outfile, std::ios_base::app);
-    file << "\ncell_id,time,log_length,fp,";
+    file << "\ncell_id,parent_id,time,log_length,fp,";
     file    << "mean_x,mean_g,mean_l,mean_q,"
             <<   "cov_xx,cov_xg,cov_xl,cov_xq," 
                      << "cov_gg,cov_gl,cov_gq,"
@@ -324,7 +324,8 @@ void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string o
                                    << "cov_qq\n";
     for(size_t i=0; i<cells.size();++i){
         for (size_t j=0; j<cells[i].mean_forward.size();++j ){
-            file << cells[i].cell_id << "," << cells[i].time[j] * config.rescale_time << "," 
+            file << cells[i].cell_id << "," << cells[i].parent_id << "," 
+                 << cells[i].time[j] * config.rescale_time << "," 
                  << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
             if(direction=="f"){
                 output_vector(file, cells[i].mean_forward[j]);

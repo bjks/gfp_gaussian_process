@@ -540,8 +540,8 @@ void init_cells_r(std::vector<MOMAdata> &cells, int n_cells = 3){
         if(cells[i].time.size()>=n_cells){
             x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
             g0.push_back(cells[i].fp(cells[i].log_length.size()-1));
-            l0.push_back(lin_fit_slope(cells[i].time.tail(n_cells), cells[i].log_length.tail(n_cells)));
-            q0.push_back(lin_fit_slope(cells[i].time.tail(n_cells), cells[i].fp.tail(n_cells)));
+            l0.push_back(-lin_fit_slope(cells[i].time.tail(n_cells), cells[i].log_length.tail(n_cells)));
+            q0.push_back(-lin_fit_slope(cells[i].time.tail(n_cells), cells[i].fp.tail(n_cells)));
         }
     }
 

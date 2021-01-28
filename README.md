@@ -43,7 +43,7 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 -c, --csv_config           file that sets the colums that will be used from the input file
 -l, --print_level          print level >=0, default=0
 -o, --outdir               specify output direction and do not use default
--r, --rel_tol              relative tolerance of maximization, default=1e-2
+-r, --rel_tol              relative tolerance of maximization, default=1e-3
 -m, --maximize             run maximization
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
@@ -85,30 +85,30 @@ Syntax for free, bound, fixed (in that order) parameters
   
 Example:
 ```
-mean_lambda = 0.01, 1e-4
-gamma_lambda = 0.01, 1e-4, 1e-4, 0.05
+mean_lambda = 0.01, 1e-3
+gamma_lambda = 0.01, 1e-3, 1e-4, 0.05
 var_lambda = 1e-07
 ```
 The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size.
 
 ### Model parameters
-The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters:
+The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp beta:
 - Growth rate fluctualtions params:
     - mean_lambda
     - gamma_lambda  
     - var_lambda     
-- gfp fluctuation params
+- gfp fluctuation params:
     - mean_q    
     - gamma_q    
     - var_q  
     - beta      
 
 Additionally, the lenth of the cell and the gfp is effected by measurement noise
-- Measurement noise
+- Measurement noise:
     - var_x     
     - var_g     
 
-Finally, asymmentric cell division is modelled two variances of gaussians
+Finally, asymmentric cell division is modeled via two variances of gaussians
 - cell division:
     - var_dx 
     - var_dg      
@@ -117,7 +117,7 @@ Finally, asymmentric cell division is modelled two variances of gaussians
 The input file is assumed to fullfil the following:
 - the data points of a cell appear as consecutive rows and are in the correct order with repect to time
 - the data set has to include all columns that are set via the `csv_config` file, i.e. time_col, length_col, fp_col
-- the cells can be uniquely identified via the tags provided via `parent_tags` and `cell_tags` and each mother cell has at most 2 daughter cells. If that is not the case, a warning will be printed and the `parent_tags` and `cell_tags` are not sufficient
+- the cells can be uniquely identified via the tags provided via `parent_tags` and `cell_tags` and each mother cell has at most 2 daughter cells. If that is not the case, the `parent_tags` and `cell_tags` are not sufficient and a warning will be printed.
 
 ### Output
 ##### Maximization
@@ -142,7 +142,7 @@ The input file is assumed to fullfil the following:
   
 ### TODO: 
 - [x] prepare for cluster
-- [ ] compare forward/backward predictions with python version
+- [ ] compare backward predictions with python version
 - [ ] check signs in backwards direction (mostly done)
 - [x] write new simulation including asymmetric cell division and tree structure?
 
@@ -213,7 +213,7 @@ void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMA
  - Note, `total_likelihood` return -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
 
 ```cpp
-void minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
+int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
                         std::vector<MOMAdata> &cells,
                         Parameter_set &params, 
                         double relative_tol)
