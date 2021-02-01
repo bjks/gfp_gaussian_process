@@ -48,7 +48,7 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
 ```
-Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -r 1e-1 -m -p`
+Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -r 1e-4 -m -p`
 
 ##### Required arguments
 - `infile` sets the input file that contains the data, eg as given by MOMA
@@ -62,18 +62,18 @@ Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simul
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 
 ##### Run modes
-- `m (maximize), s(scan), p(predict` will run the respective task. In case `maximize` and `predict`is set, the estimated paramters after the maximization will be used for the prediction. Those paramters that are fixed are of course not effected.
+- `m (maximize), s(scan), p(predict)` will run the respective task. In case `maximize` and `predict`is set, the estimated paramters after the maximization will be used for the prediction. Those paramters that are fixed are of course not effected.
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
 
 
 #### Csv_config file
 The following settings define how the input file will be read. Default values in brackets.
 - time_col (time_sec): column from which the time is read
-- rescale_time (60): factor by which time will be devided, time increments should be small, i.e in the order of 1. Note that the model parameters are in recaled units. I.e. if the time is given in seconds the time is rescaled by 60 and the parameters are in minutes. 
+- rescale_time (60): factor by which time will be devided before the anything is run. This can be used to use a different time unit for the input than for the model paramters.
 - length_col (length_um): column from which the length of the cell is read
 - length_islog (false): indicates if the cell length in the data file is in logscale (true) of not (false)
 - fp_col (gfp_nb): column from which the intensity is read
-- delm (,):delimiter between columns, probably ',' or ';' 
+- delm (,): delimiter between columns, probably ',' or ';' 
 - cell_tag (date, pos, gl, id): columns that will make up the unique cell id, endings like .0 .00 etc of numeric values will be removed
 - parent_tags (date, pos, gl, parent_id): columns that will make up the unique cell id of the parent cell, endings like .0 .00 etc of numeric values will be removed
 
@@ -92,7 +92,7 @@ var_lambda = 1e-07
 The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size.
 
 ### Model parameters
-The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp beta:
+The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp, beta:
 - Growth rate fluctualtions params:
     - mean_lambda
     - gamma_lambda  
@@ -122,10 +122,10 @@ The input file is assumed to fullfil the following:
 ### Output
 ##### Maximization
 - Will create 2 files: one for the maximization process and one for the final estimations
-- The files (given the input file `example.csv`) are named as follows: `example_f<free>_b<bounds>.csv` and `example_f<free>_b<bounds>_final.csv`, where `<free>` lists the variable via the index as eg printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, `example_f034_b129_final.csv`
+- The files (given the input file `example.csv`) are named as follows: `example_f<free>_b<bounds>.csv` and `example_f<free>_b<bounds>_final.csv`, where `<free>` lists the variable via the index as e.g. printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, and `example_f034_b129_final.csv`
 - The first file contains the parameter settings at the top 12 lines and all steps of the likelihood maximization
-- The second file contains the parameter settings at the top 12 line including a column with the final parameters(i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta version!!!**).
-- The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of all paramterer are used for the hessian matrix estimation
+- The second file contains the parameter settings at the top 12 line including a column with the final parameters (i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta version!!!**).
+- The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation.
  
 ##### 1D scan
 - Will create a file for each parameter containing the parameter settings at the top 12 lines and all calculated likelihoods of the scan
@@ -142,8 +142,6 @@ The input file is assumed to fullfil the following:
   
 ### TODO: 
 - [x] prepare for cluster
-- [ ] compare backward predictions with python version
-- [ ] check signs in backwards direction (mostly done)
 - [x] write new simulation including asymmetric cell division and tree structure?
 
 ## Technical Notes
@@ -151,8 +149,7 @@ The input file is assumed to fullfil the following:
 The log-likelihoods of all cell trees are added and the summed log-likelihood is then maximized. This of course implies that the parameters are the same for all cell trees. 
 
 ### Cell division in backwards direction
-In forward direction the first time point distributions of daughter cells are calculated from the mother cell (including asymmetric cell division. In backward direction, we might have two daughter cells that determine the distribution of the mother cell. In that case, two mother cells are calculated and the distribution of the two are multiplied to obtain a single distribution for the last time point of the mother cell.
-<img src="slides/slides.001.jpeg" alt="drawing" width="600"/>
+In forward direction the first time point distributions of daughter cells are calculated from the mother cell (including asymmetric cell division. In the backward direction, we might have two daughter cells that determine the distribution of the mother cell. In that case, two mother cells are calculated and the distribution of the two are multiplied to obtain a single distribution for the last time point of the mother cell.
 
 ### Likelihhod and prediction calculation along cell tree
 - function for likelihood and predictions for the single cells are applies recursively to go up/down the tree
@@ -164,7 +161,7 @@ In forward direction the first time point distributions of daughter cells are ca
     * such that the parent cell has already been accessed when the function is applied 
     * to the cell.
     * 
-    * Example (number implies the order in which)
+    * Example (number implies the order in which cell is accessed)
     * _________________________________________________ 
 
 	       1            |
@@ -211,6 +208,7 @@ void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMA
 ## Minimizer 
  - nlopt 
  - Note, `total_likelihood` return -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
+ - the wrapper ```double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells);``` meant for direct calculation without minimization returns just the log_likelihood
 
 ```cpp
 int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
