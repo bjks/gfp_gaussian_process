@@ -19,19 +19,20 @@ int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    _save_ll = true;
-    int min_message = minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
-    _save_ll = false;
+    int ll_max = minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
 
-    if (min_message  == -1){
+    if (ll_max == 0){
         return -1;
     }
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
-    std::string outfile_estim = outfile_name_minimization_estimation(arguments, params);
+    std::string outfile_estim = outfile_name_minimization_final(arguments, params);
     std::cout << "Outfile: " << outfile_estim << "\n";
 
+    params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
+    save_final_likelihood(outfile_estim, cells, ll_max);
+
     return 0;
 }
 

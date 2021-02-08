@@ -291,6 +291,17 @@ def build_data_set(cells_simulated, var_x, var_g, n):
 
     return dataset
 
+def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):
+    print("Every", n, "th datapoint is saved")
+    dataset = pd.DataFrame()
+    for i in range(len(cells_simulated)):
+        next_celldf = cells_simulated[i].to_df(n)
+        next_celldf['log_length_noise'] = next_celldf['log_length'] + np.random.normal(loc=np.zeros_like( next_celldf['log_length']), scale=np.sqrt(var_x))
+        next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
+                                                                        scale=np.sqrt(var_g * next_celldf['gfp']))
+        dataset = dataset.append(next_celldf)
+
+    return dataset
 
 # =============== RUN COMMAND =============== #
 def suggest_run_command(directory, filename, modes ="-s -m -p"):

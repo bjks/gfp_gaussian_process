@@ -79,11 +79,11 @@ def read_1dscan(filename):
     parameter = base[base.find(tag)+len(tag):-4]
 
     df = pd.read_csv(filename, skiprows=14)    
-    return df[[parameter, 'likelihood']], parameter
+    return df[[parameter, 'log_likelihood']], parameter
 
 def read_iteration_process(filename):
     df = pd.read_csv(filename, skiprows=14)    
-    return df[["iteration", 'likelihood']]
+    return df[["iteration", 'log_likelihood']]
 
 def read_minimization(filename, last_n=None):
     df = pd.read_csv(filename, skiprows=14)    
@@ -233,8 +233,8 @@ def compare_init_final(filename, plot_file, except_param=[]):
     fig, ax = plt.subplots(figsize=(7,5))
     plt.title(r"Relative deviation to initial value $(\Theta_i - \Theta_{i, opt})/\Theta_i $")
 
-    x = [xi for xi, ri in zip(np.arange(len(reldev)), reldev) if ri != None]
     reldev = [ri for ri in reldev if ri != None]
+    x = np.arange(len(reldev))
     ax.bar(x, reldev, color=colors)
 
     for i, r in enumerate(reldev):
@@ -243,7 +243,9 @@ def compare_init_final(filename, plot_file, except_param=[]):
         else:
             ax.text(x[i] -0.3, r +0.03 , "{:.3f}".format(r), va='center')
 
-    plt.xticks(np.arange(len(reldev)), init.index[x], rotation=45)
+    xticks = [key for key in init.index if key not in except_param]
+
+    plt.xticks(np.arange(len(reldev)), xticks, rotation=45)
     custom_legend = [Patch(facecolor='tab:orange', label='variances'),
                     Patch(facecolor='tab:blue', label='others')]
     # ax.legend(handles=custom_legend, bbox_to_anchor=(1,1), loc="upper left")

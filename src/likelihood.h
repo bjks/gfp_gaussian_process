@@ -246,8 +246,18 @@ std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &
     return error;
 }
 
+void save_final_likelihood(std::string outfile, std::vector<MOMAdata> const &cells, double ll_max){
+    std::ofstream file(outfile,std::ios_base::app);
+    long ndata_points = count_data_points(cells);
+    file << "\n";
+    file << "n_data_points, " << ndata_points << "\n";
+    file << "total_log_likelihoood," << ll_max << "\n";
+    file << "norm_log_likelihoood," << ll_max/ndata_points << "\n";
+    file.close();
+
+}
+
 void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOMAdata> &cells){
-    params.to_csv(outfile);
 
     std::ofstream file(outfile,std::ios_base::app);
     file << "\nerrors\n";
@@ -280,11 +290,11 @@ void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOM
 void setup_outfile_likelihood(std::string outfile, Parameter_set params){
     params.to_csv(outfile);
     std::ofstream file(outfile,std::ios_base::app);
-    file << "\nlikelihoods:\niteration,";
+    file << "\nlog_likelihoods:\niteration,";
     for (size_t i=0; i<params.all.size(); ++i){
         file << params.all[i].name << ",";
     }
-    file << "likelihood" <<"\n";
+    file << "log_likelihood" <<"\n";
     file.close();
 }
 
@@ -307,7 +317,7 @@ std::string outfile_name_minimization_process(std::map<std::string, std::string>
     return outfile + ".csv";
 }
 
-std::string outfile_name_minimization_estimation(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_minimization_final(std::map<std::string, std::string> arguments, Parameter_set params){
     std::string outfile = out_dir(arguments);
     outfile += file_base(arguments["infile"]) + "_f";
 

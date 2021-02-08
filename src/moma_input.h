@@ -426,6 +426,15 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     return data;
 }
 
+
+long count_data_points(std::vector<MOMAdata> const &cells){
+    long ndata_points = 0;
+    for(size_t i=0; i<cells.size(); ++i){
+        ndata_points += cells[i].time.size();
+    }
+    return ndata_points;
+}
+
 // ============================================================================= //
 // MEAN/COV
 // ============================================================================= //

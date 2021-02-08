@@ -18,7 +18,7 @@ double myvfunc(const std::vector<double> &parameters, std::vector<double> &grad,
     return pow(sum, 2);
 }
 
-int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
+double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
                         std::vector<MOMAdata> &cells,
                         Parameter_set &params, 
                         double relative_tol){
@@ -48,7 +48,9 @@ int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::ve
     }
 
     // set up optimizer
-    nlopt::opt opt(nlopt::LN_COBYLA, params.all.size());
+    // nlopt::opt opt(nlopt::LN_COBYLA, params.all.size());
+    nlopt::opt opt(nlopt::LN_BOBYQA, params.all.size());
+
 
     opt.set_lower_bounds(lower_bounds);
     opt.set_upper_bounds(upper_bounds);
@@ -59,20 +61,22 @@ int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::ve
 
     opt.set_min_objective(target_func, &p_roots); // is type casted to void pointer
 
-    double minf;
+    double ll_min;
     // actual minimization
     try{
-        opt.optimize(parameter_state, minf);
-        std::cout << "Found minimum: log likelihood = " << std::setprecision(10) << minf << std::endl;
+        _save_ll = true;
+        opt.optimize(parameter_state, ll_min);
+        std::cout << "Found minimum: log likelihood = " << std::setprecision(10) << -ll_min << std::endl;
+        _save_ll = false;
 
         // save final value for each parameter
         params.set_final(parameter_state);
         std::cout << params << std::endl;
+        return -ll_min;
 
     }
     catch(std::exception &e) {
         std::cout << "Nlopt failed: " << e.what() << std::endl;
-        return -1;
+        return 0;
     }
-    return 1;
 }

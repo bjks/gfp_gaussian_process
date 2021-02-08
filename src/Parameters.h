@@ -33,7 +33,6 @@ public:
     double lower;
     double upper;
 
-    double err;
     std::string name;
 
     void set_paramter(std::vector<std::string> parts){

@@ -89,7 +89,7 @@ mean_lambda = 0.01, 1e-3
 gamma_lambda = 0.01, 1e-3, 1e-4, 0.05
 var_lambda = 1e-07
 ```
-The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size.
+The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size. From nlopt doc: "For derivative-free local-optimization algorithms, the optimizer must somehow decide on some initial step size to perturb x by when it begins the optimization. This step size should be big enough that the value of the objective changes significantly, but not too big if you want to find the local optimum nearest to x."
 
 ### Model parameters
 The OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp, beta:
@@ -221,7 +221,6 @@ int minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::ve
 -  Implementation of Powell's method:
    -  pick initial x0 and two directions h1, h2
    -  starting from x0 1D optimization along first direction h1 -> find x1
-   -  starting from x1 1D optimization along first direction h2 -> find x2
+   -  starting from x1 1D optimization along direction h2 -> find x2
    -  h3 connects x0 and x2
-   -  starting from x2 1D optimization along first direction h3 -> find x3
-
+   -  starting from x2 1D optimization along direction h3 -> find x3
