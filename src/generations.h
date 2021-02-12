@@ -1,6 +1,6 @@
+/* genealogy testing */
 
-
-// example function to illustrate how this works
+// example function to illustrate how genealogy realtions are handled here
 void set_generation(const std::vector<double> &params_vec, MOMAdata &cell){
     if (cell.parent != nullptr){
         cell.generation = cell.parent->generation + 1;

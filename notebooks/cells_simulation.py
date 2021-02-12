@@ -7,7 +7,7 @@ import subprocess
 import os
 
 # ========================================== #
-# =============== SIMULATION =============== #
+# =============== CELL CLASS =============== #
 # ========================================== #
 class Cell:
     def __init__(self, log_length0, gfp0, lambda0, q0, time0=0., cell_id = 0, parent_id=-1):
@@ -28,6 +28,8 @@ class Cell:
                                 "gfp": self.gfp[::n],
                                 "lt": self.lt[::n],
                                 "qt": self.qt[::n]})
+
+# =============== pd dataframe to cells =============== #
 
 def df2cells(dataset, time="time_min", 
             log_length="log_length", gfp="gfp", 
@@ -72,7 +74,131 @@ def df2cells(dataset, time="time_min",
 
 
 
-# =============== Simulation functions ===============#
+def ggp_df2cells(dataset, time="time", 
+            log_length="mean_x", gfp="mean_g", 
+            lt="mean_l", qt="mean_q",
+            cov_xx="cov_xx",
+            cov_gg="cov_gg",
+            cov_ll="cov_ll",
+            cov_qq="cov_qq",
+            cell_id="cell_id", 
+            parent_id="parent_id"):
+    """ 
+    dataset (pandas data frame as read from csv file) to list of Cell instances, m
+    written for ggp output
+    """
+    cell_list = []
+    last_cell = ""
+    for _, row in dataset.iterrows(): 
+        if row[cell_id] != last_cell:
+            p = row[parent_id]
+            lambda0 = row[lt]
+            q0 = row[qt]
+
+            new_cell = Cell(row[log_length], row[gfp], 
+                        lambda0, q0, 
+                        time0=row[time],
+                        cell_id=row[cell_id], 
+                        parent_id=p)
+            cell_list.append(new_cell)
+            cell_list[-1].cov_xx = []
+            cell_list[-1].cov_gg = []
+            cell_list[-1].cov_ll = []
+            cell_list[-1].cov_qq = []
+
+        else:
+            cell_list[-1].log_length.append(row[log_length])
+            cell_list[-1].gfp.append(row[gfp])
+            cell_list[-1].time.append(row[time])
+
+            cell_list[-1].lt.append(row[lt])
+            cell_list[-1].qt.append(row[qt])
+
+        cell_list[-1].cov_xx.append(row[cov_xx])
+        cell_list[-1].cov_gg.append(row[cov_gg])
+        cell_list[-1].cov_ll.append(row[cov_ll])
+        cell_list[-1].cov_qq.append(row[cov_qq])
+
+        last_cell = row[cell_id]
+    return cell_list
+
+
+# ============ Cell tree ============ #
+
+def get_cell_by_cell_id(cell_list, cell_id):
+    for cell in cell_list:
+        if cell_id == cell.cell_id:
+            return cell 
+    return None
+
+
+def get_cell_by_parent_id(cell_list, parent_id, ignore=None):
+    dcells = []
+    for cell in cell_list:
+        if parent_id == cell.parent_id and cell.parent_id != ignore:
+            dcells.append(cell) 
+    return dcells + [None, None]
+
+
+def cell_paths(curr_cell, cell_list):
+    def cell_paths_recr(curr_cell, cell_list):
+        if curr_cell == None:
+            return
+        current_path.append(curr_cell)
+        dcells = get_cell_by_parent_id(cell_list, curr_cell.cell_id)
+
+        if dcells[0] == None:
+            path.append(copy.deepcopy(current_path))
+        else:
+            cell_paths_recr(dcells[0], cell_list)
+            cell_paths_recr(dcells[1], cell_list)
+        current_path.pop()
+
+    path = []
+    current_path = []
+    cell_paths_recr(curr_cell, cell_list)
+    return path
+
+
+# =============== create super cells =============== #
+
+def cocanate_cells(cell_list):
+    new = copy.deepcopy(cell_list[0])
+    new.cell_id = str(new.cell_id )
+    for cell in cell_list[1:]:
+        new.cell_id += "_"+ str(cell.cell_id)
+        new.time = np.append(new.time, cell.time)
+
+        new.log_length = np.append(new.log_length, cell.log_length)
+        new.gfp = np.append(new.gfp, cell.gfp)
+        new.lt = np.append(new.lt, cell.lt)
+        new.qt = np.append(new.qt, cell.qt)
+    return new
+
+
+def cocanate_ggp_cells(cell_list):
+    new = copy.deepcopy(cell_list[0])
+    new.cell_id = str(new.cell_id )
+    for cell in cell_list[1:]:
+        new.cell_id += "_"+ str(cell.cell_id)
+        new.time = np.append(new.time, cell.time)
+
+        new.log_length = np.append(new.log_length, cell.log_length)
+        new.gfp = np.append(new.gfp, cell.gfp)
+        new.lt = np.append(new.lt, cell.lt)
+        new.qt = np.append(new.qt, cell.qt)
+
+        new.cov_xx = np.append(new.cov_xx, cell.cov_xx)
+        new.cov_gg = np.append(new.cov_gg, cell.cov_gg)
+        new.cov_ll = np.append(new.cov_ll, cell.cov_ll)
+        new.cov_qq = np.append(new.cov_qq, cell.cov_qq)
+    return new
+
+
+
+# ========================================== #
+# =============== SIMULATION =============== #
+# ========================================== #
 
 def single_ou_step(dt, mean, gamma, var, x):
     noise = np.sqrt(var) * np.random.normal(loc=0, scale=1) * np.sqrt(dt)
@@ -233,11 +359,16 @@ def mk_mising_dir(path_name):
         os.mkdir(path_name)
     return path_name
 
-def get_next_file_name(out_dir, no=None):
+def get_next_file_name(out_dir, force_index=None):
     sample = out_dir.split('/')[-1]
-    if no != None:
-        new_dir = os.path.join(out_dir, sample+"_{:d}".format(no),'')
-        new_file = os.path.join(new_dir, sample+"_{:d}".format(no)+".csv")
+    print(force_index)
+
+    if force_index !=None:
+        new_dir = os.path.join(out_dir, sample+"_{:d}".format(force_index),'')
+        new_file = os.path.join(new_dir, sample+"_{:d}".format(force_index)+".csv")
+        print("force i=",force_index)
+        if not os.path.isdir(new_dir):
+            os.mkdir(new_dir)
         return new_dir, new_file
 
     for i in range(1000):
@@ -304,9 +435,14 @@ def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):
     return dataset
 
 # =============== RUN COMMAND =============== #
-def suggest_run_command(directory, filename, modes ="-s -m -p"):
-    cmd = "../bin/gfp_gaussian -c " + os.path.join(directory, "csv_config.txt") +  " -b " + os.path.join(directory, "parameters.txt") + " -r 1e-3  -i " + filename + " -l 0 "
-    return cmd + modes
+def suggest_run_command(directory, filename, modes ="-s -m -p", out_dir=None):
+    cmd = "../bin/gfp_gaussian -c " + os.path.join(directory, "csv_config.txt") + \
+        " -b " + os.path.join(directory, "parameters.txt") + \
+        " -r 1e-12  -i " + filename + " -l 0 "
+    if out_dir==None:
+        return cmd + modes
+    else:
+        return cmd + modes + " -o " + out_dir
 
 
 # =============== PLOT =============== #
@@ -343,3 +479,6 @@ def plot_cells(cells, n_steps=1):
     for j in range(2):
         ax[j].legend()
     plt.show()
+
+
+   

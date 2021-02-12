@@ -25,7 +25,7 @@ plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
 
 
 
-# ============== FILES ============== #
+# ============== get file names ============== #
 def default_filebase(directory, sample, ext="_out"):
     return os.path.join(directory, sample+ext, sample) 
 
@@ -73,13 +73,13 @@ def read_params_config(filename):
 def get_params_config(df, param):
     return df.loc[df['name'] == param]
     
-def read_1dscan(filename):
+def read_1dscan(filename, l='log_likelihood'):
     tag = "scan_"
     base = filename.split("/")[-1]
     parameter = base[base.find(tag)+len(tag):-4]
 
     df = pd.read_csv(filename, skiprows=14)    
-    return df[[parameter, 'log_likelihood']], parameter
+    return df[[parameter, l]], parameter
 
 def read_iteration_process(filename):
     df = pd.read_csv(filename, skiprows=14)    
@@ -92,15 +92,16 @@ def read_minimization(filename, last_n=None):
     return df
 
 # ============== PLOTTING ============== #
+# some basic plots for a ggp run
 
-def plot_1dscans(filenames, plot_file, cols=3, width=14):
+def plot_1dscans(filenames, plot_file, cols=3, width=14, l_col='log_likelihood'):
     """ plots the scan for all filenames as a grid """
     rows = np.ceil(len(filenames)/cols).astype(int)
     fig, axes = plt.subplots(rows, cols, figsize=(width,0.7*width/cols*rows))
     # fig = plt.figure()
     for i, ax in enumerate(axes.ravel()):
         if i<len(filenames):
-            scan, parameter = read_1dscan(filenames[i])
+            scan, parameter = read_1dscan(filenames[i], l_col)
 
             param_range = scan.to_numpy()[:,0]
             ll = scan.to_numpy()[:,1]
@@ -143,53 +144,6 @@ def plot_minimization(filename, plot_file):
     ax.set_ylabel("log likelihood")
     if plot_file != None:
         plt.savefig(plot_file + '_minimization.pdf')
-    plt.show()
-
-
-
-def compare_predictions(predictions, labels, col, data, data_col, data_slice, title=None, ratio=None, plot_file=None):
-    """compares predictions
-
-    Args:
-        predictions (list of pandas DataFrames): predictions
-        labels (list of stings): labels of predictios for legend
-        col (sting): column in predictions DataFrames that will be plotted
-        data (pandas DataFrame): data that will be plotted as dots 
-        data_col (string): column in data DataFrame that will be plotted
-        data_slice (slice): show only those data points
-        title: Defaults to None.
-        ratio (tuple of ints, optional): indices of predictions of which the ratio will be plotted on second axis. Defaults to None.
-        plot_file (string, optional): output file. Defaults to None.
-    """
-    cmap = plt.cm.tab10
-    fig, ax = plt.subplots(figsize=(15,7))
-    plots = []
-
-    if title !=None:
-        plt.title(title)
-        ax.set_ylabel(title)
-
-    time = data['time'][data_slice]
-    for i, p in enumerate(predictions):
-        if i == 0:
-            ls = '-'
-        else:
-            ls ='--'
-        plots.append(ax.plot(time, p[col][data_slice], ls, c=cmap(i), label=labels[i])[0])
-    ax.set_xlabel("time")
-    plots.append(ax.plot(time, data[data_col][data_slice], 'o', c=cmap(0), label="data")[0])
-
-    if ratio!=None:
-        ax2 = ax.twinx()
-        plots.append(ax2.plot(time, 
-                    predictions[ratio[0]][col][data_slice]/predictions[ratio[1]][col][data_slice],
-                    color='grey', label='ratio')[0])
-        ax2.axhline(y=1, ls='--', color='grey')
-        ax2.set_ylabel("ratio")
-
-    ax.legend(plots, [l.get_label() for l in plots])
-    if plot_file != None:
-        plt.savefig(plot_file + '_' + data_col + '_prediction.pdf')
     plt.show()
 
 

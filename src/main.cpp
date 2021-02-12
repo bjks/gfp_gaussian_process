@@ -8,8 +8,10 @@
 #include <iomanip> 
 
 
-int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params, 
-                      std::map<std::string, std::string> arguments){
+int run_minimization(std::vector<MOMAdata> &cells, 
+                    Parameter_set &params, 
+                    std::map<std::string, std::string> arguments){
+
     std::cout << "-> Minimizaton" << "\n";
     init_cells(cells);
 
@@ -19,9 +21,14 @@ int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    int ll_max = minimize_wrapper(&total_likelihood, cells, params, std::stod(arguments["rel_tol"] ));
+    // get "close" to optimum
+    bool found_min = false;
+    std::string min_algo = "LN_COBYLA";
+    double ll_max = minimize_wrapper(&total_likelihood, cells, 
+                                    params, std::stod(arguments["tolerance"]), 
+                                    found_min, min_algo);
 
-    if (ll_max == 0){
+    if (!found_min){
         return -1;
     }
     /* estimate errors of params via hessian */
@@ -31,7 +38,7 @@ int run_minimization(std::vector<MOMAdata> &cells, Parameter_set &params,
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
-    save_final_likelihood(outfile_estim, cells, ll_max);
+    save_final_likelihood(outfile_estim, cells, ll_max, min_algo, std::stod(arguments["tolerance"]));
 
     return 0;
 }
@@ -109,13 +116,13 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::vector<std::string>> keys = {
-        {"-h","--help", "help message"},
-        {"-i", "--infile", "(required) input/data file"},
-        {"-b", "--parameter_bounds", "(required) file defining the type, step, bounds of the parameters"},
+        {"-h","--help", "this help message"},
+        {"-i", "--infile", "(required) input data file"},
+        {"-b", "--parameter_bounds", "(required) file setting the type, step, bounds of the parameters"},
         {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
         {"-l","--print_level", "print level >=0, default=0"},
         {"-o","--outdir", "specify output direction and do not use default"},
-        {"-r","--rel_tol", "relative tolerance of maximization, default=1e-2"},
+        {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default=1e-1"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"}
@@ -129,7 +136,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::map<std::string, std::string> arguments;
     /* defaults: */
     arguments["print_level"] = "0";
-    arguments["rel_tol"] = "1e-3";
+    arguments["tolerance"] = "1e-1";
 
     for(int k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
@@ -144,8 +151,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["print_level"] = argv[i+1];
 				else if(k==key_indices["-o"])
                     arguments["outdir"] = argv[i+1];
-				else if(k==key_indices["-r"])
-                    arguments["rel_tol"] = argv[i+1];
+				else if(k==key_indices["-t"])
+                    arguments["tolerance"] = argv[i+1];
                 else if(k==key_indices["-m"])
                     arguments["minimize"] = "1";
                 else if(k==key_indices["-s"])
@@ -154,7 +161,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["predict"] = "1";
                 else if (k==key_indices["-h"]){
                     arguments["quit"] = "1";
-                    std::cout << "Usage: ./gfp_gaussian <infile> [-options]\n";
+                    std::cout << "Usage: ./gfp_gaussian [-options]\n";
                     for(size_t j=0; j<keys.size(); ++j)
                         std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 27) << keys[j][2] <<"\n";
                 }
@@ -194,8 +201,6 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
 
 int main(int argc, char** argv){
-    // test_mean_cov_model();
-    // return 0;
     /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
     _print_level = std::stoi(arguments["print_level"]);
@@ -217,10 +222,13 @@ int main(int argc, char** argv){
     std::vector<MOMAdata> cells =  get_data(arguments["infile"], config);
     if (!cells.size()){
         std::cout << "Quit\n";
-        return 0;    
+        return -1;    
     }
     /* genealogy built via the parent_id (string) given in data file */
-    build_cell_genealogy(cells);
+    bool valid_genealogy = build_cell_genealogy(cells);
+    if (!valid_genealogy){
+        return -1;
+    }
 
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize")){

@@ -19,25 +19,35 @@ Non-fixed parameters have a step.
 Bound parameters have upper/lower (double) which are the respective bounds
 */
 public:
-    bool fixed = false;
-    bool bound = false;
-    bool free = false;
+    bool fixed;
+    bool bound;
+    bool free;
 
     double init;
-    bool set = false;
+    bool set;
 
     double final;
-    bool minimized = false;
+    bool minimized;
 
     double step;
     double lower;
     double upper;
 
     std::string name;
+    Parameter(std::string name_, double lower_ = -HUGE_VAL, double upper_ = HUGE_VAL){
+        name = name_;
+        lower = lower_;
+        upper = upper_;
+
+        minimized = false;
+        set = false;
+
+        fixed = false;
+        bound = false;
+        free = false;
+    }
 
     void set_paramter(std::vector<std::string> parts){
-        name = parts[0];
-        
         std::vector<std::string> val_split;
         val_split = split_string_at(parts[1], ",");
         for (size_t i=0; i<val_split.size(); ++i){
@@ -95,21 +105,21 @@ cell division:
 
 */
 protected:
-    Parameter mean_lambda;
-    Parameter gamma_lambda;
-    Parameter var_lambda;
+    Parameter mean_lambda = Parameter("mean_lambda", 0.);
+    Parameter gamma_lambda = Parameter("gamma_lambda", 0.);
+    Parameter var_lambda = Parameter("var_lambda", 0.);
 
-    Parameter mean_q;
-    Parameter gamma_q;
-    Parameter var_q;
+    Parameter mean_q = Parameter("mean_q", 0.);
+    Parameter gamma_q = Parameter("gamma_q", 0.);
+    Parameter var_q = Parameter("var_q", 0.);
     
-    Parameter beta;
+    Parameter beta = Parameter("beta", 0.);
 
-    Parameter var_x;
-    Parameter var_g;
+    Parameter var_x = Parameter("var_x", 0.);
+    Parameter var_g = Parameter("var_g", 0.);
 
-    Parameter var_dx;
-    Parameter var_dg;
+    Parameter var_dx = Parameter("var_dx", 0.);
+    Parameter var_dg = Parameter("var_dg", 0.);
 
 public:
     std::vector<Parameter> all;
@@ -272,7 +282,7 @@ std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
                 os <<  pad_str(params.all[i].name, column_widths[1]) 
                     << pad_str("(free)", column_widths[2]) 
                     << pad_str(params.all[i].init, column_widths[3])
-                    << pad_str(params.all[i].step , column_widths[4])
+                    << pad_str(params.all[i].step, column_widths[4])
                     << pad_str("", column_widths[5]+column_widths[6]) ;
             }
             if (params.all[i].minimized && !params.all[i].fixed){

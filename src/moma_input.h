@@ -108,9 +108,10 @@ bool MOMAdata :: is_root() const {
 // GENEALOGY
 // ============================================================================= //
 
-void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
+bool build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     /*  
-    * Assign respective pointers to parent, daughter1 and daughter2 for each cell
+    * Assign respective pointers to parent, daughter1 and daughter2 for each cell.
+    * Returns true when each parent was assigned to max. 2 daughters. false otherwise
     */
     for(size_t k = 0; k < cell_vector.size(); ++k) {
         for(size_t j = 0; j < cell_vector.size(); ++j) {
@@ -118,15 +119,20 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                 //  Assign pointers to PARENT variable of the cell
                 cell_vector[k].parent = &cell_vector[j];
                 //  Assign pointers to CELL of the parent cell to 'free' pointer
-                if (cell_vector[j].daughter1 == nullptr)
+                if (cell_vector[j].daughter1 == nullptr){
                     cell_vector[j].daughter1 = &cell_vector[k];
-                else if (cell_vector[j].daughter2 == nullptr)
+                }
+                else if (cell_vector[j].daughter2 == nullptr){
                     cell_vector[j].daughter2 = &cell_vector[k];
-                else
-                    std::cout << "(build_cell_genealogy) Warning: both daughter pointers are set!" << std::endl;
+                }
+                else{
+                    std::cerr << "(build_cell_genealogy) ERROR: both daughter pointers are set!" << std::endl;
+                    return false;
+                }
             }
         }
     }
+    return true;
 }
 
 void print_cells(std::vector<MOMAdata> const &cell_vector){
@@ -359,7 +365,8 @@ void append_vec(Eigen::VectorXd &v, double elem){
 
 std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     /* 
-    * Parses csv file line by line and returns the data as a vector of MOMAdata instances
+    * Parses csv file line by line and returns the data as a vector of MOMAdata instances.
+    * Returns data as vector of MOMAdata instances. Pointers for genealogy are not set yet!
     */
     std::ifstream file(filename);
     
@@ -373,15 +380,15 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     std::map<std::string, int> header_indices = get_header_indices(line_parts);
     // check if the columns that are set actually exist in header 
     if (!header_indices.count(config.time_col)){
-        std::cerr << config.time_col << " (time_col) is not an column in input file!\n";
+        std::cerr << config.time_col << "(get_data) ERROR: (time_col) is not an column in input file!\n";
         return data;
     }
     if (!header_indices.count(config.length_col)){
-        std::cerr << config.length_col << " (length_col) is not an column in input file!\n";
+        std::cerr << config.length_col << "(get_data) ERROR: (length_col) is not an column in input file!\n";
         return data;
     }
     if (!header_indices.count(config.fp_col)){
-        std::cerr << config.fp_col << " (fp_col) is not an column in input file!\n";
+        std::cerr << config.fp_col << "(get_data) ERROR: (fp_col) is not an column in input file!\n";
         return data;
     }
     
@@ -495,12 +502,14 @@ double vec_var(std::vector<double> v){
 }
 
 double estimate_lambda(MOMAdata &cell){
+    /* Straigt-forward estimation of the growth rate taking the last and the first data point of cell */
     size_t t_last = cell.time.size()-1;
     double l = (cell.log_length(t_last) - cell.log_length(0)) / (cell.time(t_last) - cell.time(0));
     return l;
 }
 
 double estimate_q(MOMAdata &cell, double lambda_est){
+    /* Straigt-forward estimation of 1 taking the last and the first data point of cell, while assuming beta=0 */
     size_t t_last = cell.time.size()-1;
     double dg = cell.fp(t_last) - cell.fp(0);
     double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));

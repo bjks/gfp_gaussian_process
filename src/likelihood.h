@@ -23,7 +23,6 @@ Eigen::MatrixXd rowwise_add(Eigen::MatrixXd m, Eigen::VectorXd v){
 }
 
 double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::MatrixXd S, Eigen::MatrixXd Si){
-    // tested (i.e. same output as python functions)
     /*
     * log likelihood
     */
@@ -36,10 +35,10 @@ double log_likelihood(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::MatrixXd S, Ei
 void sc_likelihood(const std::vector<double> &params_vec, 
                     MOMAdata &cell, 
                     double &tl){
-/* Calculates the likelihood of a single cell (can be a root cell)
-* the params_vec contains paramters in the following (well defined) order:
-* {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
-*/
+    /* Calculates the likelihood of a single cell (can be a root cell)
+    * the params_vec contains paramters in the following (well defined) order:
+    * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
+    */
     if (cell.is_root()){
         cell.mean = cell.mean_init;
         cell.cov = cell.cov_init;
@@ -104,7 +103,6 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     */
 
     double tl = 0;
-
     // type cast the void vector back to vector of MOMAdata pointers
     std::vector<MOMAdata*> cells = *(std::vector<MOMAdata*> *) c;
 
@@ -149,12 +147,14 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAd
     return -total_likelihood(params_vec, g, &p_roots);
 }
 
+
 /* --------------------------------------------------------------------------
 * ERROR BARS
 * -------------------------------------------------------------------------- */
 Eigen::MatrixXd num_jacobian_ll(Parameter_set &params, 
                                 std::vector<MOMAdata> &cells, 
                                 double epsilon){
+    /* numerical estimation of jacobian of log_likelihood */
     double lminus, lplus;
     std::vector<double> xminus, xplus;
     double h;
@@ -184,7 +184,7 @@ Eigen::MatrixXd num_jacobian_ll(Parameter_set &params,
 
 Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std::vector<MOMAdata> &c),
                                 Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
-    /* Computes approx. of hessian matrix of target function:
+    /* Computes numerical hessian matrix of target function:
     Hij = [f(x + hi ei + hj ej) - f(x + hi ei - hj ej) - f(x - hi ei + hj ej) + f(x - hi ei - hj ej) ]/(4 hi hj) 
     */
     double lij, li_j, l_ij, l_i_j;
@@ -233,54 +233,16 @@ Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std:
         }
     }
     return hessian;
-    
 }
 
 std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
-    Eigen::MatrixXd hessian_inv = num_hessian_ll(total_likelihood,params,cells, epsilon).inverse();
+    Eigen::MatrixXd hessian_inv = num_hessian_ll(total_likelihood, params, cells, epsilon).inverse();
 
     std::vector<double> error;
     for(int i=0; i<hessian_inv.rows(); ++i){
         error.push_back(sqrt(-hessian_inv(i, i)));
     }
     return error;
-}
-
-void save_final_likelihood(std::string outfile, std::vector<MOMAdata> const &cells, double ll_max){
-    std::ofstream file(outfile,std::ios_base::app);
-    long ndata_points = count_data_points(cells);
-    file << "\n";
-    file << "n_data_points, " << ndata_points << "\n";
-    file << "total_log_likelihoood," << ll_max << "\n";
-    file << "norm_log_likelihoood," << ll_max/ndata_points << "\n";
-    file.close();
-
-}
-
-void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOMAdata> &cells){
-
-    std::ofstream file(outfile,std::ios_base::app);
-    file << "\nerrors\n";
-    file << "\nepsilon";
-
-    std::vector<double> eps {1e-1, 5e-2, 1e-2, 5e-3, 1e-3};
-    std::vector<double> error;
-    
-    std::vector<int> idx_non_fixed = params.non_fixed();
-    for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
-        file << "," << params.all[idx_non_fixed[i]].name;
-    }
-    file << "\n";
-
-    for(size_t i=0; i<eps.size(); ++i ){
-        error = ll_error_bars(params, cells, eps[i]);
-        file << eps[i];
-        for (size_t j=0; j<error.size(); ++j ){
-            file << "," << error[j];
-        }
-        file << "\n";
-    }
-    file.close();
 }
 
 /* --------------------------------------------------------------------------
@@ -334,6 +296,49 @@ std::string outfile_name_minimization_final(std::map<std::string, std::string> a
     }
     return outfile + "_final.csv";
 }
+
+void save_final_likelihood(std::string outfile, 
+                            std::vector<MOMAdata> const &cells, 
+                            double ll_max, 
+                            std::string min_algo, 
+                            double tolerance){
+    std::ofstream file(outfile,std::ios_base::app);
+    long ndata_points = count_data_points(cells);
+    file << "\n";
+    file << "n_data_points, " << ndata_points << "\n";
+    file << "total_log_likelihoood," << std::setprecision(15) << ll_max << "\n";
+    file << "norm_log_likelihoood," << std::setprecision(15) << ll_max/ndata_points << "\n";
+    file << "optimization_algorithm," << min_algo << "\n";
+    file << "tolerance," << tolerance << "\n";
+    file.close();
+}
+
+void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOMAdata> &cells){
+    /* calculates and saves the error bars on parameter estimates in outfile */
+    std::ofstream file(outfile,std::ios_base::app);
+    file << "\nerrors:";
+    file << "\nepsilon";
+
+    std::vector<double> eps {5e-2, 1e-2, 5e-3};
+    std::vector<double> error;
+    
+    std::vector<int> idx_non_fixed = params.non_fixed();
+    for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
+        file << "," << params.all[idx_non_fixed[i]].name;
+    }
+    file << "\n";
+
+    for(size_t i=0; i<eps.size(); ++i ){
+        error = ll_error_bars(params, cells, eps[i]);
+        file << eps[i];
+        for (size_t j=0; j<error.size(); ++j ){
+            file << "," << error[j];
+        }
+        file << "\n";
+    }
+    file.close();
+}
+
 
 std::string outfile_name_scan(std::map<std::string, std::string> arguments, std::string var){
     std::string outfile = out_dir(arguments);
