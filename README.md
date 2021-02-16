@@ -44,6 +44,7 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 -l, --print_level          print level >=0, default=0
 -o, --outdir               specify output direction and do not use default
 -t, --tolerance            absolute tolerance of maximization between optimization steps, default=1e-1
+-space, --search_space     search parameter space in 'log' or 'linear' space, default: 'linear'
 -m, --maximize             run maximization
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
@@ -51,8 +52,8 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -t 1e-2  -m -p`
 
 #### 2.1 Required arguments
-- `infile` sets the input file that contains the data, eg as given by MOMA
-- `parameter_bounds` sets the file that defines the parameter space
+- `infile` sets the input file that contains the data, eg as given by MOMA (see 2.1.1)
+- `parameter_bounds` sets the file that defines the parameter space (see 2.1.2)
 
 ##### 2.1.1 Input file
 The input file is assumed to fullfil the following:
@@ -82,11 +83,14 @@ The step value is used for the 1d scan to discretize the interval set by lower a
 
 
 #### 2.2 Optional arguments
-- `csv_config` sets the file that contains information on which columns will be used from the input file
+- `csv_config` sets the file that contains information on which columns will be used from the input file (see 2.2.1)
 - `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the maximization/scan/error bar calculation. This is purely meant for debugging!
 - `tolerance` sets the stopping critirium by setting the tolerance of maximization: Stop when an optimization step changes the function value by less than tolerance. By setting very low tolerances one might encounder rounding issues, in that case the last valid step is taken and a warning is printed to stderr.
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
-- run modes
+- run modes (see 2.2.2)
+- `search_space` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
+
+
 ##### 2.2.1 Csv_config file
 The following settings define how the input file will be read. Default values in brackets.
 - time_col (time_sec): column from which the time is read

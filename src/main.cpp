@@ -13,7 +13,6 @@ int run_minimization(std::vector<MOMAdata> &cells,
                     std::map<std::string, std::string> arguments){
 
     std::cout << "-> Minimizaton" << "\n";
-    init_cells(cells);
 
     /* set and setup (global) output file */
     _outfile_ll = outfile_name_minimization_process(arguments, params);
@@ -21,12 +20,19 @@ int run_minimization(std::vector<MOMAdata> &cells,
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    // get "close" to optimum
     bool found_min = false;
     std::string min_algo = "LN_COBYLA";
-    double ll_max = minimize_wrapper(&total_likelihood, cells, 
-                                    params, std::stod(arguments["tolerance"]), 
-                                    found_min, min_algo);
+    double ll_max;
+    if (arguments["search_space"] == "log"){
+        ll_max = minimize_wrapper_log_params(&total_likelihood_log_params, cells, 
+                                        params, std::stod(arguments["tolerance"]), 
+                                        found_min, min_algo);
+    }
+    else{
+        ll_max = minimize_wrapper(&total_likelihood, cells, 
+                                        params, std::stod(arguments["tolerance"]), 
+                                        found_min, min_algo);
+    }
 
     if (!found_min){
         return -1;
@@ -38,7 +44,9 @@ int run_minimization(std::vector<MOMAdata> &cells,
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
-    save_final_likelihood(outfile_estim, cells, ll_max, min_algo, std::stod(arguments["tolerance"]));
+    save_final_likelihood(outfile_estim, cells, ll_max, min_algo, 
+                        std::stod(arguments["tolerance"]), 
+                        arguments["search_space"]);
 
     return 0;
 }
@@ -47,7 +55,6 @@ int run_minimization(std::vector<MOMAdata> &cells,
 void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
                       std::map<std::string, std::string> arguments){
     std::cout << "-> 1d Scan" << "\n";
-    init_cells(cells);
     _save_ll = true;
     for(size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].bound){
@@ -96,11 +103,9 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     std::vector<double> params_vec = params.get_final();
 
     /* forward...*/
-    init_cells(cells);
     prediction_forward(params_vec, cells);
 
     /* backward...*/
-    init_cells_r(cells);
     prediction_backward(params_vec, cells);
 
     /* combine the two */
@@ -123,6 +128,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-l","--print_level", "print level >=0, default=0"},
         {"-o","--outdir", "specify output direction and do not use default"},
         {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default=1e-1"},
+        {"-space","--search_space", "search parameter space in 'log' or 'linear' space, default: 'linear'"},
+        {"-stat","--stationary", "indicates that the cell are not growing (much)"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"}
@@ -137,6 +144,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     /* defaults: */
     arguments["print_level"] = "0";
     arguments["tolerance"] = "1e-1";
+    arguments["search_space"] = "linear";
+
 
     for(int k=0; k<keys.size(); ++k){
         for(int i=1; i<argc ; ++i){
@@ -153,6 +162,10 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["outdir"] = argv[i+1];
 				else if(k==key_indices["-t"])
                     arguments["tolerance"] = argv[i+1];
+                else if(k==key_indices["-space"])
+                    arguments["search_space"] = argv[i+1];
+                else if(k==key_indices["-stat"])
+                    arguments["stationary"] = "1";
                 else if(k==key_indices["-m"])
                     arguments["minimize"] = "1";
                 else if(k==key_indices["-s"])
@@ -172,28 +185,34 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         return arguments;
     }
 
+    /* Check if meaningfull search space argument */
+    if (arguments["search_space"] != "log" && arguments["search_space"] != "linear"){
+        std::cerr << "search_space must be either 'log' or 'linear', not " << arguments["search_space"];
+        arguments["quit"] = "1";
+    }
+
     /* Check is required filenames are parsed and files exist */
     if (!arguments.count("infile")){
-        std::cout << "Required infile flag not set!\n";
+        std::cerr << "Required infile flag not set!\n";
         arguments["quit"] = "1";
     }
     else if(! std::filesystem::exists(arguments["infile"])){
-        std::cout << "Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
+        std::cerr << "Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         arguments["quit"] = "1";
     }
 
     if (!arguments.count("parameter_bounds")){
-        std::cout << "Required parameter_bounds flag not set!\n";
+        std::cerr << "Required parameter_bounds flag not set!\n";
         arguments["quit"] = "1";
     }
     else if(! std::filesystem::exists(arguments["parameter_bounds"])){   
-        std::cout << "Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
+        std::cerr << "Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
         arguments["quit"] = "1";
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
     if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
-        std::cout << "csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
+        std::cerr << "csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         arguments["quit"] = "1";
     }
     return arguments;
@@ -212,6 +231,10 @@ int main(int argc, char** argv){
 
     /* get parameter and csv config file */
     Parameter_set params(arguments["parameter_bounds"]);
+    if (!params.is_complete()){
+        std::cout << "Quit\n";
+        return -1;    
+    }
     std::cout << params << "\n";
 
     CSVconfig config(arguments["csv_config"]);
@@ -230,6 +253,11 @@ int main(int argc, char** argv){
         return -1;
     }
 
+    /* inititialize mean and cov for forward and backward direction */
+    init_cells(cells, arguments.count("stationary"));
+    init_cells_r(cells, arguments.count("stationary"));
+
+
     /* run bound_1dscan, minimization and/or prediction... */
     if (arguments.count("minimize")){
         int min_message = run_minimization(cells, params, arguments);
@@ -237,7 +265,6 @@ int main(int argc, char** argv){
             return -1;
         }
     }
-
     if (arguments.count("scan"))
         run_bound_1dscan(cells, params, arguments);
 

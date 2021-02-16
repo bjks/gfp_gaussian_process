@@ -131,17 +131,30 @@ def plot_1dscans(filenames, plot_file, cols=3, width=14, l_col='log_likelihood')
     plt.show()
 
 
-def plot_minimization(filename, plot_file):
+def plot_minimization(filenames, plot_file=None, labels=None, log=None):
     """ plots log likelihood vs number of iterations """
-    mini_data = read_iteration_process(filename)
-    fig, ax = plt.subplots(figsize=(7,5))
-    iterations = mini_data.to_numpy()[:,0].astype(int)
-    ll = mini_data.to_numpy()[:,1]
-    ax.plot(iterations, ll)
-    ax.scatter(iterations[-1], ll[-1], label="iteration: {:d}, log likelihood: {:.2f}".format(iterations[-1], ll[-1]))
+
+    fig, ax = plt.subplots(figsize=(10,7))
+    for i, filename in enumerate(filenames):
+        mini_data = read_iteration_process(filename)
+        iterations = mini_data.to_numpy()[:,0].astype(int)
+        ll = mini_data.to_numpy()[:,1]
+        ax.plot(iterations, ll)
+        if labels != None:
+            label = labels[i]+", iteration: {:d}, log likelihood: {:.2f}".format(iterations[-1], ll[-1])
+        else:
+            label = "iteration: {:d}, log likelihood: {:.2f}".format(iterations[-1], ll[-1])
+        ax.scatter(iterations[-1], ll[-1], label=label)
+    
     ax.legend()
     ax.set_xlabel("iterations")
     ax.set_ylabel("log likelihood")
+    if log == 'x':
+        plt.xscale('log')
+    if log == True:
+        plt.xscale('log')
+        plt.yscale('log')
+
     if plot_file != None:
         plt.savefig(plot_file + '_minimization.pdf')
     plt.show()

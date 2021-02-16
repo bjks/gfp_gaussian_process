@@ -41,8 +41,11 @@ public:
     int generation;
 
     // initial guess for mean and cov, to avoid recalculation
-    Eigen::VectorXd mean_init = Eigen::VectorXd::Zero(4);
-    Eigen::MatrixXd cov_init = Eigen::MatrixXd::Zero(4, 4);
+    Eigen::VectorXd mean_init_forward = Eigen::VectorXd::Zero(4);
+    Eigen::MatrixXd cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
+
+    Eigen::VectorXd mean_init_backward = Eigen::VectorXd::Zero(4);
+    Eigen::MatrixXd cov_init_backward = Eigen::MatrixXd::Zero(4, 4);
 
     // variables to for updating the current state
     Eigen::VectorXd mean = Eigen::VectorXd::Zero(4);
@@ -509,7 +512,7 @@ double estimate_lambda(MOMAdata &cell){
 }
 
 double estimate_q(MOMAdata &cell, double lambda_est){
-    /* Straigt-forward estimation of 1 taking the last and the first data point of cell, while assuming beta=0 */
+    /* Straigt-forward estimation of q taking the last and the first data point of cell, while assuming beta=0 */
     size_t t_last = cell.time.size()-1;
     double dg = cell.fp(t_last) - cell.fp(0);
     double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));
@@ -517,15 +520,20 @@ double estimate_q(MOMAdata &cell, double lambda_est){
     return q;
 }
 
-void init_cells(std::vector<MOMAdata> &cells){
+double estimate_q_stationary(MOMAdata &cell){
+    /* For non growing cells the estimation of q via lambda is critical, hence this version for lambda -> 0 */
+    size_t t_last = cell.time.size()-1;
+    double dg = cell.fp(t_last) - cell.fp(0);
+    double v0 = exp(cell.log_length(0));
+    double q = dg/(v0* (cell.time(t_last) - cell.time(0)) ) ;
+    return q;
+}
+
+void init_cells(std::vector<MOMAdata> &cells, bool stationary){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the ROOT cells estimated from 
     * the data using the FIRST time point for x and fp 
     */
-    for(size_t i=0; i<cells.size(); ++i){
-        cells[i].mean_init = Eigen::VectorXd::Zero(4);
-        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
-    }
 
     // Estimate initial x, g, and lambda
     std::vector<double> x0;
@@ -544,7 +552,12 @@ void init_cells(std::vector<MOMAdata> &cells){
     // Estimate initial q, which needs some guess for lambda
     std::vector<double> q0;
     for(size_t i=0; i<cells.size(); ++i){
-        q0.push_back(estimate_q(cells[i], mean_l0));
+        if (stationary){
+            q0.push_back(estimate_q_stationary(cells[i]));
+        }
+        else{
+            q0.push_back(estimate_q(cells[i], mean_l0));
+        }
     }
     double mean_q0 = vec_mean(q0);
 
@@ -555,24 +568,22 @@ void init_cells(std::vector<MOMAdata> &cells){
 
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(size_t i=0; i<roots.size(); ++i){
-        roots[i]->mean_init << mean_x0, mean_g0, mean_l0, mean_q0;
-        roots[i]->cov_init(0,0) = var_x0;
-        roots[i]->cov_init(1,1) = var_g0;
-        roots[i]->cov_init(2,2) = var_l0;
-        roots[i]->cov_init(3,3) = var_q0;
+        roots[i]->mean_init_forward << mean_x0, mean_g0, mean_l0, mean_q0;
+
+        roots[i]->cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
+        roots[i]->cov_init_forward(0,0) = var_x0;
+        roots[i]->cov_init_forward(1,1) = var_g0;
+        roots[i]->cov_init_forward(2,2) = var_l0;
+        roots[i]->cov_init_forward(3,3) = var_q0;
     }
 }
 
 
-void init_cells_r(std::vector<MOMAdata> &cells){
+void init_cells_r(std::vector<MOMAdata> &cells, bool stationary){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the LEAF cells estimated from 
     * the data using the LAST time point for x and fp 
     */
-    for(size_t i=0; i<cells.size(); ++i){
-        cells[i].mean_init = Eigen::VectorXd::Zero(4);
-        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
-    }
 
     // Estimate initial x, g, and lambda
     std::vector<double> x0;
@@ -591,7 +602,12 @@ void init_cells_r(std::vector<MOMAdata> &cells){
     // Estimate initial q, which needs some guess for lambda
     std::vector<double> q0;
     for(size_t i=0; i<cells.size(); ++i){
-        q0.push_back(estimate_q(cells[i], mean_l0));
+        if (stationary){
+            q0.push_back(estimate_q_stationary(cells[i]));
+        }
+        else{
+            q0.push_back(estimate_q(cells[i], mean_l0));
+        }
     }
     double mean_q0 = vec_mean(q0);
 
@@ -602,11 +618,14 @@ void init_cells_r(std::vector<MOMAdata> &cells){
 
     std::vector<MOMAdata *> leafs = get_leafs(cells);
     for(size_t i=0; i<leafs.size(); ++i){
-        leafs[i]->mean_init << mean_x0, mean_g0, -mean_l0, -mean_q0;
-        leafs[i]->cov_init(0,0) = var_x0;
-        leafs[i]->cov_init(1,1) = var_g0;
-        leafs[i]->cov_init(2,2) = var_l0;
-        leafs[i]->cov_init(3,3) = var_q0;
+        leafs[i]->mean_init_backward << mean_x0, mean_g0, -mean_l0, -mean_q0;
+
+        leafs[i]->cov_init_backward = Eigen::MatrixXd::Zero(4, 4);
+
+        leafs[i]->cov_init_backward(0,0) = var_x0;
+        leafs[i]->cov_init_backward(1,1) = var_g0;
+        leafs[i]->cov_init_backward(2,2) = var_l0;
+        leafs[i]->cov_init_backward(3,3) = var_q0;
     }
 }
 
@@ -617,13 +636,13 @@ void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::Matri
     * pre-defined values
     */
     for(size_t i=0; i<cells.size(); ++i){
-        cells[i].mean_init = Eigen::VectorXd::Zero(4);
-        cells[i].cov_init = Eigen::MatrixXd::Zero(4, 4);
+        cells[i].mean_init_forward = Eigen::VectorXd::Zero(4);
+        cells[i].cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
     }
 
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(size_t i=0; i<roots.size(); ++i){
-        roots[i]->mean_init = mean;
-        roots[i]->cov_init = cov;
+        roots[i]->mean_init_forward = mean;
+        roots[i]->cov_init_forward = cov;
     }
 }

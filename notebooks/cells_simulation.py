@@ -214,6 +214,15 @@ def growth(cell, dt, lt):
     cell.length.append(np.exp(next_step))
     return cell
 
+def growth_2OUs(cell, dt, lt1, lt2):  
+    # calculate next step
+    lt = lt1+lt2
+    next_step = cell.log_length[-1] + lt*dt
+
+    cell.log_length.append(next_step)
+    cell.length.append(np.exp(next_step))
+    return cell
+
 def gfp_production(cell, dt, qt, beta):
     # calculate next step
     next_step = cell.gfp[-1] + cell.length[-1]*qt*dt - cell.gfp[-1]*beta*dt   
@@ -259,9 +268,19 @@ def is_cell_division(cell, mode, division_log_length, division_time, division_ad
 
 # ============= FULL SIMULATION ============= # 
 
-def simulate_cells(dt, n_cells, parameter_set, div_mode, division_log_length=None, division_time=None, division_addition=None):
-    gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
-    cell_queue = [Cell(division_log_length-np.log(2), gfp0, parameter_set['mean_lambda'], parameter_set['mean_q'])]
+def simulate_cells(dt, n_cells, parameter_set, div_mode, 
+                    division_log_length=None, 
+                    division_time=None, 
+                    division_addition=None, 
+                    log_length0=None,
+                    gfp0=None):
+    if gfp0 == None:
+        gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
+    if log_length0 == None:
+        log_length0 = division_log_length-np.log(2)
+
+    cell_queue = [Cell(log_length0, gfp0, parameter_set['mean_lambda'], parameter_set['mean_q'])]
+
     cells_simulated = []
     no_cells = 0   # total number of cells (in queue and calculated)
 
@@ -379,25 +398,22 @@ def get_next_file_name(out_dir, force_index=None):
             return new_dir, new_file
 
 
-def write_param_file(filename, parameters, non_default={}):
+def write_param_file(filename, parameters, 
+                    init_scale=0.5, 
+                    bound_scales=[0.2, 5], 
+                    fixed_p=[], bound_p=[]):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data\n")
         for k, v in parameters.items():
-            if k in non_default:
-                if non_default[k][0] == "fixed":
-                    fin.write("{:s} = {:.2E}\n".format(k, v))
-                elif non_default[k][0] == "free":
-                    fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, v))
-                else:
-                    fin.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(k,   v*non_default[k][0],    
-                                                                                    v*non_default[k][1], 
-                                                                                    v*non_default[k][2], 
-                                                                                    v*non_default[k][3] ))
-            else:
-                if v==0:
-                    fin.write("{:s} = {:.2E}, {:.2E}, 0, {:.2E}\n".format(k, v, 1e-3, 1e15)) 
-                else:
-                    fin.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(k, v, v*1e-2, v*0.3, v*11. ))
+            if k in fixed_p:
+                fin.write("{:s} = {:.2E}\n".format(k, v))
+            elif k in bound_p:
+                fin.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(k, v,
+                                                                            v*init_scale, 
+                                                                            v*bound_scales[0], 
+                                                                            v*bound_scales[1]))
+            else:            
+                fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, v*init_scale))
 
 def write_csv_config(filename):
     with open(filename, "w") as fin:
@@ -435,10 +451,15 @@ def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):
     return dataset
 
 # =============== RUN COMMAND =============== #
-def suggest_run_command(directory, filename, modes ="-s -m -p", out_dir=None):
+def suggest_run_command(directory, filename, 
+                        modes ="-s -m -p", 
+                        out_dir=None, 
+                        t=1e-1, 
+                        param_file = "parameters.txt", 
+                        add_flag=''):
     cmd = "../bin/gfp_gaussian -c " + os.path.join(directory, "csv_config.txt") + \
-        " -b " + os.path.join(directory, "parameters.txt") + \
-        " -r 1e-12  -i " + filename + " -l 0 "
+        " -b " + os.path.join(directory, param_file) + \
+        " -t " + str(t) +  " -i " + filename + " -l 0 " + ' ' + add_flag + ' '
     if out_dir==None:
         return cmd + modes
     else:

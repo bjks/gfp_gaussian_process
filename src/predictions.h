@@ -46,8 +46,8 @@ void sc_prediction_forward(const std::vector<double> &params_vec,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
     if (cell.is_root()){
-        cell.mean = cell.mean_init;
-        cell.cov = cell.cov_init;
+        cell.mean = cell.mean_init_forward;
+        cell.cov = cell.cov_init_forward;
     }
     else{
         // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
@@ -198,8 +198,8 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
     if (cell.is_leaf()){
-        cell.mean = cell.mean_init;
-        cell.cov = cell.cov_init;
+        cell.mean = cell.mean_init_backward;
+        cell.cov = cell.cov_init_backward;
     }
     else{
         // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself

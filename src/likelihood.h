@@ -40,8 +40,8 @@ void sc_likelihood(const std::vector<double> &params_vec,
     * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
     */
     if (cell.is_root()){
-        cell.mean = cell.mean_init;
-        cell.cov = cell.cov_init;
+        cell.mean = cell.mean_init_forward;
+        cell.cov = cell.cov_init_forward;
     }
     else{
         // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
@@ -140,6 +140,15 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
 
     return -tl;
 }
+
+double total_likelihood_log_params(const std::vector<double> &log_params_vec, std::vector<double> &grad, void *c){
+    std::vector<double> params_vec(log_params_vec.size());
+    for (size_t i=0; i<log_params_vec.size(); ++i){
+        params_vec[i] = exp(log_params_vec[i]);
+    }
+    return total_likelihood(params_vec, grad, c);
+}
+
 
 double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
     std::vector<double> g;
@@ -301,7 +310,8 @@ void save_final_likelihood(std::string outfile,
                             std::vector<MOMAdata> const &cells, 
                             double ll_max, 
                             std::string min_algo, 
-                            double tolerance){
+                            double tolerance, 
+                            std::string search_space){
     std::ofstream file(outfile,std::ios_base::app);
     long ndata_points = count_data_points(cells);
     file << "\n";
@@ -310,6 +320,8 @@ void save_final_likelihood(std::string outfile,
     file << "norm_log_likelihoood," << std::setprecision(15) << ll_max/ndata_points << "\n";
     file << "optimization_algorithm," << min_algo << "\n";
     file << "tolerance," << tolerance << "\n";
+    file << "search space," << search_space << "\n";
+
     file.close();
 }
 
