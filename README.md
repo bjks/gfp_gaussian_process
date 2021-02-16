@@ -226,5 +226,4 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
                         double tolerance, 
                         bool &found_min)
 ```
-### Current minimizer: LN_BOBYQA
-- from doc: "This is an algorithm derived from the BOBYQA subroutine of M. J. D. Powell, converted to C and modified for the NLopt stopping criteria. BOBYQA performs derivative-free bound-constrained optimization using an iteratively constructed quadratic approximation for the objective function." See also http://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf for details.
+### Current minimizer: LN_COBYLA
