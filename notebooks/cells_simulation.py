@@ -214,14 +214,6 @@ def growth(cell, dt, lt):
     cell.length.append(np.exp(next_step))
     return cell
 
-def growth_2OUs(cell, dt, lt1, lt2):  
-    # calculate next step
-    lt = lt1+lt2
-    next_step = cell.log_length[-1] + lt*dt
-
-    cell.log_length.append(next_step)
-    cell.length.append(np.exp(next_step))
-    return cell
 
 def gfp_production(cell, dt, qt, beta):
     # calculate next step

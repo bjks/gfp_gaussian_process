@@ -493,6 +493,14 @@ double lin_fit_slope(Eigen::VectorXd x, Eigen::VectorXd y) {
     return (x.size() * x.dot(y) - s_x * s_y) / (x.size() * x.dot(x) - s_x * s_x);
 }
 
+double lin_fit_intercept(Eigen::VectorXd x, Eigen::VectorXd y) {
+    /* returns intercept of linear regression */
+    double s_x  = x.sum();
+    double s_y  = y.sum();
+    return (x.dot(x)*s_y - s_x*x.dot(y)) / (x.dot(x) * x.size() - s_x *s_x);
+}
+
+
 double vec_mean(std::vector<double> v){
     /* returns mean of std::vector */
     return std::accumulate(v.begin(), v.end(), 0.0) / v.size();

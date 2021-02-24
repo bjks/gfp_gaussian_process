@@ -109,6 +109,7 @@ Although the tolerance criterium was not met, the last valid step is used for pa
         // save final value for each parameter
         params.set_final(parameter_state);
         std::cout << params << std::endl;
+        found_min = true;
         _save_ll = false;
         return -ll_min;
     }
@@ -233,6 +234,7 @@ Although the tolerance criterium was not met, the last valid step is used for pa
         // save final value for each parameter
         params.set_final(parameter_state);
         std::cout << params << std::endl;
+        found_min = true;
         _save_ll = false;
         return -ll_min;
     }
