@@ -68,54 +68,56 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
         return 0;
     }
 
-    nlopt::opt opt = nlopt::opt(nlopt_algo, params.all.size());         // robust, but rather slow near mnimimum
-
+    nlopt::opt opt = nlopt::opt(nlopt_algo, params.all.size());
     opt.set_lower_bounds(lower_bounds);
     opt.set_upper_bounds(upper_bounds);
     opt.set_initial_step(steps);
-
     opt.set_ftol_abs(tolerance);
 
     std::vector<MOMAdata *> p_roots = get_roots(cells);
 
-    opt.set_min_objective(target_func, &p_roots); // is type casted to void pointer
+    opt.set_min_objective(target_func, &p_roots); // is type casted to void pointer (!)
 
     double ll_min;
     _save_ll = true;
 
     std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
+
     // actual minimization
     try{
         opt.optimize(parameter_state, ll_min);
-        std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
-
+        // check if ll is a value
         if (std::isnan(ll_min)){
-            std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: Log likelihood is Nan:\
-You may try more precise initial values or a smaller step size\n";
-            return 0;
+            std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: Log likelihood is Nan: You may try more precise initial values or a smaller step size\n";
+            found_min = false;
         }
-
-        // save final value for each parameter
-        params.set_final(parameter_state);
-        std::cout << params << std::endl;
-        found_min = true;
-        _save_ll = false;
-        return -ll_min;
-
+        else{
+            found_min = true;
+        }
     }
+
     catch(nlopt::roundoff_limited &e){
         std::cerr << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
 Although the tolerance criterium was not met, the last valid step is used for parameter estimation. (" << e.what() << ")\n";
-        // save final value for each parameter
-        params.set_final(parameter_state);
-        std::cout << params << std::endl;
         found_min = true;
-        _save_ll = false;
-        return -ll_min;
     }
+
     catch(std::exception &e) {
         std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: " << e.what() << std::endl;
-        _save_ll = false;
+        found_min = false;
+    }
+    _save_ll = false; // stop ll output
+
+
+    // if a minimum was found, return the max(!) and save the final params
+    if (found_min){
+        std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
+        params.set_final(parameter_state);
+        std::cout << params << std::endl;
+
+        return -ll_min;
+    }
+    else{
         return 0;
     }
 }
@@ -167,8 +169,6 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
     // -------------------------------------------- /
     // -------------------------------------------- //
 
-    pvector(steps);
-    pvector(parameter_state);
     // set up optimizer
     nlopt::algorithm nlopt_algo;
     if (opt_name == "LN_COBYLA"){
@@ -190,12 +190,10 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
         return 0;
     }
 
-    nlopt::opt opt = nlopt::opt(nlopt_algo, params.all.size());         // robust, but rather slow near mnimimum
-
+    nlopt::opt opt = nlopt::opt(nlopt_algo, params.all.size());
     opt.set_lower_bounds(lower_bounds);
     opt.set_upper_bounds(upper_bounds);
     opt.set_initial_step(steps);
-
     opt.set_ftol_abs(tolerance);
 
     std::vector<MOMAdata *> p_roots = get_roots(cells);
@@ -206,16 +204,35 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
     _save_ll = true;
 
     std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
-    // actual minimization
+
+   // actual minimization
     try{
         opt.optimize(parameter_state, ll_min);
-        std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
-
+        // check if ll is a value
         if (std::isnan(ll_min)){
-            std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: Log likelihood is Nan:\
-You may try more precise initial values or a smaller step size\n";
-            return 0;
+            std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: Log likelihood is Nan: You may try more precise initial values or a smaller step size\n";
+            found_min = false;
         }
+        else{
+            found_min = true;
+        }
+    }
+
+    catch(nlopt::roundoff_limited &e){
+        std::cerr << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
+Although the tolerance criterium was not met, the last valid step is used for parameter estimation. (" << e.what() << ")\n";
+        found_min = true;
+    }
+
+    catch(std::exception &e) {
+        std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: " << e.what() << std::endl;
+        found_min = false;
+    }
+    _save_ll = false; // stop ll output
+
+    // if a minimum was found, return the max(!) and save the final params
+    if (found_min){
+        std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
 
         // save final value for each parameter
         for(size_t i=0; i<parameter_state.size(); ++i){
@@ -223,24 +240,9 @@ You may try more precise initial values or a smaller step size\n";
         }
         params.set_final(parameter_state);
         std::cout << params << std::endl;
-        found_min = true;
-        _save_ll = false;
-        return -ll_min;
 
-    }
-    catch(nlopt::roundoff_limited &e){
-        std::cerr << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
-Although the tolerance criterium was not met, the last valid step is used for parameter estimation. (" << e.what() << ")\n";
-        // save final value for each parameter
-        params.set_final(parameter_state);
-        std::cout << params << std::endl;
-        found_min = true;
-        _save_ll = false;
         return -ll_min;
     }
-    catch(std::exception &e) {
-        std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed: " << e.what() << std::endl;
-        _save_ll = false;
-        return 0;
-    }
+    return 0;
 }
+
