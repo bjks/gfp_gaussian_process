@@ -46,7 +46,7 @@ def df2cells(dataset, time="time_min",
             if parent_id == None:   p = -1
             else:                   p = row[parent_id]
 
-            if lt == None:    lambda0 = None
+            if lt == None:          lambda0 = None
             else:                   lambda0 = row[lt]
 
             if qt == None:          q0 = None
@@ -265,7 +265,9 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                     division_time=None, 
                     division_addition=None, 
                     log_length0=None,
-                    gfp0=None):
+                    gfp0=None, 
+                    tree=True,
+                    tmax=np.inf):
     if gfp0 == None:
         gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
     if log_length0 == None:
@@ -275,8 +277,9 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
 
     cells_simulated = []
     no_cells = 0   # total number of cells (in queue and calculated)
+    t_total = 0    # the largest t in the current set of cells
 
-    while len(cells_simulated) < n_cells:
+    while len(cells_simulated) < n_cells and t_total < tmax:
         if len(cells_simulated)>0:
             idx = get_current_leafs_idx(cell_queue, cells_simulated)
             cell_index = np.random.choice(idx)
@@ -295,6 +298,10 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
         while True:
             cell.time.append(cell.time[-1]+dt)
 
+            t_total = np.max([t_total, cell.time[-1]])
+            if t_total > tmax:
+                break
+
             q_ou = single_ou_step(dt,   parameter_set['mean_q'], 
                                         parameter_set['gamma_q'], 
                                         parameter_set['var_q'], 
@@ -307,6 +314,7 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                                             parameter_set['var_lambda'], 
                                             cell.lt[-1]) 
             cell = growth(cell, dt, lambda_ou)
+
             if is_cell_division(cell, div_mode, division_log_length, division_time, division_addition):
                 # save the simulated cell
                 cells_simulated.append(cell)
@@ -319,7 +327,8 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                 # remove the simulated cell from queue and add the new ones 
                 cell_queue.pop(cell_index)
                 cell_queue.append(cell1)
-                cell_queue.append(cell2)
+                if tree:
+                    cell_queue.append(cell2)
                 break
             else:
                 pass
@@ -427,7 +436,6 @@ def build_data_set(cells_simulated, var_x, var_g, n):
         next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
                                                                         scale=np.sqrt(var_g))
         dataset = dataset.append(next_celldf)
-
     return dataset
 
 def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):

@@ -127,12 +127,6 @@ double cov_xq(double t,double bx,double bg,double bl,double bq,double Cxx,double
 }
 
 double cov_gg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
-    // std::cout << "Cll " << Cll << "\n";
-    // std::cout << b + bl + Cxl << " b " << b << " bl " << bl << " Cxl " << Cxl << "\n";
-    // std::cout << b + bl + 2*Cxl << "\n";
-    // std::cout << b + bl + Cxl - gq << "\n";
-    // std::cout << b + bl + 2*Cxl - gq << "\n";
-    // std::cout << b + bl + 2*Cxl + gq << "\n";
     return (pow(bg,2) + Cgg)/exp(2*b*t) + \
        2*Cgl*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - 2*b*t,t) + \
        (mq*(2*Clq + gq*mq)*onetauint(Cll/2.,b + bl + 2*Cxl,2*(bx + Cxx - b*t),t))/\
@@ -223,23 +217,10 @@ void mean_cov_model(MOMAdata &cell,
                 double gl, double sl2, 
                 double mq, double gq, 
                 double sq2, double b){
-    //Given p(z0)=n(m,C) find p(z1) with no cell division//
+    // Given p(z0)=N(m,C) find p(zt) given no cell division between 0 and t//
 
     Eigen::VectorXd nm(4);
     Eigen::MatrixXd nC(4, 4);
-
-    // for(size_t i=0; i<cell.mean.size(); ++i){
-    //     if (std::isnan(cell.mean(i))){
-    //         std::cout << "NAN-WARNING: cell.mean(i) " << i << "\n";
-    //     }
-    // }
-    // for(size_t i=0; i<cell.cov.rows(); ++i){
-    //     for(size_t j=0; j<cell.cov.cols(); ++j){
-    //         if (std::isnan(cell.cov(i,j))){
-    //             std::cout << "NAN-WARNING: cell.cov(i,j) " << i << " " << j << "\n";
-    //         }
-    //     }
-    // }
 
     double bx=cell.mean(0);
     double bg=cell.mean(1);

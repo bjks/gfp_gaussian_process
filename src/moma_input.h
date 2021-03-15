@@ -549,9 +549,11 @@ void init_cells(std::vector<MOMAdata> &cells, bool stationary){
     std::vector<double> l0;
 
     for(size_t i=0; i<cells.size(); ++i){
-        x0.push_back(cells[i].log_length(0));
-        g0.push_back(cells[i].fp(0));
-        l0.push_back(estimate_lambda(cells[i]));
+        if (cells[i].time.size()>1){
+            x0.push_back(cells[i].log_length(0));
+            g0.push_back(cells[i].fp(0));
+            l0.push_back(estimate_lambda(cells[i]));
+        }
     }
     double mean_x0 = vec_mean(x0);
     double mean_g0 = vec_mean(g0);
@@ -560,11 +562,13 @@ void init_cells(std::vector<MOMAdata> &cells, bool stationary){
     // Estimate initial q, which needs some guess for lambda
     std::vector<double> q0;
     for(size_t i=0; i<cells.size(); ++i){
-        if (stationary){
-            q0.push_back(estimate_q_stationary(cells[i]));
-        }
-        else{
-            q0.push_back(estimate_q(cells[i], mean_l0));
+        if (cells[i].time.size()>1){
+            if (stationary){
+                q0.push_back(estimate_q_stationary(cells[i]));
+            }
+            else{
+                q0.push_back(estimate_q(cells[i], mean_l0));
+            }
         }
     }
     double mean_q0 = vec_mean(q0);
@@ -599,9 +603,11 @@ void init_cells_r(std::vector<MOMAdata> &cells, bool stationary){
     std::vector<double> l0;
 
     for(size_t i=0; i<cells.size(); ++i){
-        x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
-        g0.push_back(cells[i].fp(cells[i].fp.size()-1));
-        l0.push_back(estimate_lambda(cells[i]));
+        if (cells[i].time.size()>1){
+            x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
+            g0.push_back(cells[i].fp(cells[i].fp.size()-1));
+            l0.push_back(estimate_lambda(cells[i]));
+        }
     }
     double mean_x0 = vec_mean(x0);
     double mean_g0 = vec_mean(g0);
@@ -610,11 +616,13 @@ void init_cells_r(std::vector<MOMAdata> &cells, bool stationary){
     // Estimate initial q, which needs some guess for lambda
     std::vector<double> q0;
     for(size_t i=0; i<cells.size(); ++i){
-        if (stationary){
-            q0.push_back(estimate_q_stationary(cells[i]));
-        }
-        else{
-            q0.push_back(estimate_q(cells[i], mean_l0));
+        if (cells[i].time.size()>1){
+            if (stationary){
+                q0.push_back(estimate_q_stationary(cells[i]));
+            }
+            else{
+                q0.push_back(estimate_q(cells[i], mean_l0));
+            }
         }
     }
     double mean_q0 = vec_mean(q0);
