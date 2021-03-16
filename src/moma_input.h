@@ -129,8 +129,11 @@ bool build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                     cell_vector[j].daughter2 = &cell_vector[k];
                 }
                 else{
-                    std::cerr << "(build_cell_genealogy) ERROR: both daughter pointers are set!" << std::endl;
-                    return false;
+                    std::cerr   << "(build_cell_genealogy) ERROR: both daughter pointers are set!" 
+                                << cell_vector[j].cell_id << "\n";
+                    std::cerr << "-> daughter1 " << cell_vector[j].daughter1->cell_id << "\n";
+                    std::cerr << "-> daughter2 " << cell_vector[j].daughter2->cell_id << "\n";
+                    return false;   
                 }
             }
         }
@@ -381,18 +384,31 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     getline(file, line);
     line_parts = split_string_at(line, config.delm);
     std::map<std::string, int> header_indices = get_header_indices(line_parts);
+
     // check if the columns that are set actually exist in header 
     if (!header_indices.count(config.time_col)){
-        std::cerr << config.time_col << "(get_data) ERROR: (time_col) is not an column in input file!\n";
+        std::cerr << "(get_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
         return data;
     }
     if (!header_indices.count(config.length_col)){
-        std::cerr << config.length_col << "(get_data) ERROR: (length_col) is not an column in input file!\n";
+        std::cerr << "(get_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
         return data;
     }
     if (!header_indices.count(config.fp_col)){
-        std::cerr << config.fp_col << "(get_data) ERROR: (fp_col) is not an column in input file!\n";
+        std::cerr << "(get_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
         return data;
+    }
+    for(size_t i=0; i<config.cell_tags.size(); ++i){
+        if (!header_indices.count(config.cell_tags[i])){
+            std::cerr << "(get_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
+            return data;
+        }
+    }
+    for(size_t i=0; i<config.parent_tags.size(); ++i){
+        if (!header_indices.count(config.parent_tags[i])){
+            std::cerr << "(get_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
+            return data;
+        }
     }
     
     // Iterate through each line and split the content using the delimeter then assign the 
@@ -407,6 +423,7 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
         line_parts = split_string_at(line, config.delm);
         // take lines only if end_type==div or header_indices "end_type" is not in header_indices
         if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
+            // compose the cell id of the cells using the cell_tags
             curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
             if (last_cell != curr_cell){
@@ -417,6 +434,7 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
                 data.push_back(next_cell); 
 
                 data[last_idx].cell_id = curr_cell;
+                // compose the cell id of the parent using the parent_tags
                 data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
             }
 

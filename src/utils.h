@@ -114,7 +114,6 @@ std::string file_base(std::string infile){
     infile_split = split_string_at(infile, "/");
     base_split = split_string_at(infile_split[infile_split.size()-1], ".");
     std::string file_base = "";
-
     for(size_t i=0; i<base_split.size()-1; ++i){
         if (i>0)
             file_base +='.';
