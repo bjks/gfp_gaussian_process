@@ -85,8 +85,12 @@ std::string default_out_dir(std::string infile){
     for(size_t i=0; i<infile_split.size()-1; ++i){
         out_dir += infile_split[i] + "/";
     }
-    out_dir += base_split[0] + "_out/";
-    return out_dir;
+    for(size_t i=0; i<base_split.size()-1; ++i){
+        if (i>0)
+            out_dir +='.';
+        out_dir += base_split[i];
+    }
+    return out_dir + "_out/";
 }
 
 std::string out_dir(std::map<std::string, std::string> arguments){
@@ -109,7 +113,13 @@ std::string file_base(std::string infile){
     std::vector<std::string> infile_split, base_split;    
     infile_split = split_string_at(infile, "/");
     base_split = split_string_at(infile_split[infile_split.size()-1], ".");
-    return base_split[0];
-}
+    std::string file_base = "";
 
+    for(size_t i=0; i<base_split.size()-1; ++i){
+        if (i>0)
+            file_base +='.';
+        file_base += base_split[i];
+    }
+    return file_base;
+}
 #endif 
