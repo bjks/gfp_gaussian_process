@@ -1,11 +1,9 @@
-// tested (i.e. same output as python functions)
 #include <cmath>
 #include "Faddeeva.hh"
 
 #define _USE_MATH_DEFINES
 
 // ======================================================================================================== //       
-
 // The following intergals are calculated via Dawson functions, to avoid numerical overflows
 
 double zerotauint(double a, double b, double c, double t1, double t0=0){
@@ -68,9 +66,8 @@ double treetauint(double a, double b, double c, double t_1, double t_0=0){
     return x/(16.*pow(a,3.5));
 }
 
-
 // ======================================================================================================== //
-// ======================================================================================================== //
+// MEAN ELEMENTS
 // ======================================================================================================== //       
 
 double mean_x(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
@@ -90,13 +87,12 @@ double mean_q(double t,double bx,double bg,double bl,double bq,double Cxx,double
 }
 
 // ======================================================================================================== //
-// ======================================================================================================== //
+// COVARIANCE ELEMENTS
 // ======================================================================================================== //
 
 double cov_xx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
     return Cll*pow((1-exp(-gl*t)),2)/pow(gl,2)+2*Cxl*(1-exp(-gl*t))/gl+Cxx+ sl2/(2*pow(gl,3))*(2*gl*t-3+4*exp(-gl*t)-pow(exp(-gl*t),2) ) ;
 }
-
 
 double cov_xg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b, Eigen::VectorXd nm){
 	return (bg*bx)/exp(b*t) + Cxg/exp(b*t) + (bg*bl)/(exp(b*t)*gl) + Cgl/(exp(b*t)*gl) - (bg*bl)/(exp((b + gl)*t)*gl) - \
@@ -115,7 +111,7 @@ double cov_xg(double t,double bx,double bg,double bl,double bq,double Cxx,double
            (Cxq*ml)/gl - bx*mq - Cxx*mq - (bl*mq)/gl - (Cxl*mq)/gl + (ml*mq)/gl + bq*ml*t + Cxq*ml*t - ml*mq*t)*\
          zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
         (-((bl*bq)/gl) - Clq/gl - (bq*Cxl)/gl - (bl*Cxq)/gl - (Cxl*Cxq)/gl + (bq*ml)/gl + (Cxq*ml)/gl + (bl*mq)/gl + (Cxl*mq)/gl - \
-           (ml*mq)/gl)*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t)- nm(1,0)*nm(0,0);
+           (ml*mq)/gl)*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t)- nm(1)*nm(0);
 }
 
 double cov_xl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
@@ -170,7 +166,7 @@ double cov_gg(double t,double bx,double bg,double bl,double bq,double Cxx,double
         + ((2*bq*mq)/gq + (4*Cxq*mq)/gq - (2*pow(mq,2))/gq)*\
         zerotauint(Cll/2.,b + bl + 2*Cxl - gq,2*bx + 2*Cxx - 2*b*t + gq*t,2*t,t) - \
        (sq2*zerotauint(Cll/2.,b + bl + 2*Cxl + gq,2*bx + 2*Cxx - 2*b*t - 2*gq*t,2*t,\
-           t))/(2.*pow(gq,2))-pow(nm(1,0),2);
+           t))/(2.*pow(gq,2))-pow(nm(1),2);
 }
 
 double cov_gl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
@@ -181,7 +177,7 @@ double cov_gl(double t,double bx,double bg,double bl,double bq,double Cxx,double
         (bl*mq + Cxl*mq - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gl*t,t) + \
         (bq*ml + Cxq*ml - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
         (bl*bq + Clq + bq*Cxl + bl*Cxq + Cxl*Cxq - bq*ml - Cxq*ml - bl*mq - Cxl*mq + ml*mq)*\
-         zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) - nm(1,0)*nm(2,0);
+         zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) - nm(1)*nm(2);
 }
 
 double cov_gq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
@@ -196,7 +192,7 @@ double cov_gq(double t,double bx,double bg,double bl,double bq,double Cxx,double
         (bq*mq + Cxq*mq - pow(mq,2))*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) - \
         (sq2*zerotauint(Cll/2.,b + bl + Cxl - gq,-b*t + bx + Cxx/2. - gq*t,t))/(2.*gq) + \
         (pow(bq,2) + Cqq + 2*bq*Cxq + pow(Cxq,2) - 2*bq*mq - 2*Cxq*mq + pow(mq,2))*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gq*t,t) + \
-        (sq2*zerotauint(Cll/2.,b + bl + Cxl + gq,-b*t + bx + Cxx/2. - gq*t,t))/(2.*gq)- nm(1,0)*nm(3,0);
+        (sq2*zerotauint(Cll/2.,b + bl + Cxl + gq,-b*t + bx + Cxx/2. - gq*t,t))/(2.*gq)- nm(1)*nm(3);
 }
 
 double cov_ll(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
@@ -250,12 +246,12 @@ void mean_cov_model(MOMAdata &cell,
     nC(0,3) = nC(3,0) = cov_xq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
 
     nC(1,2) = nC(2,1) = cov_gl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm);
-    nC(1,3) = nC(3,1) = cov_gq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm); // can cause nan
+    nC(1,3) = nC(3,1) = cov_gq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm); 
 
     nC(2,3) = nC(3,2) = cov_lq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
 
     nC(0,0) = cov_xx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
-    nC(1,1) = cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm); // can cause nan
+    nC(1,1) = cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm);
     nC(2,2) = cov_ll(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
     nC(3,3) = cov_qq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
     
@@ -275,4 +271,105 @@ void mean_cov_model(MOMAdata &cell,
     //     }
     // }
 
+}
+
+
+// ======================================================================================================== //
+// CROSS COVARIANCE ELEMENTS
+// ======================================================================================================== //
+
+
+// ============= //
+double cross_cxx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxx + Cxl*(1-exp(-gl*t))/gl;
+}
+
+double cross_cxg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxg + Cgl*(1-exp(-gl*t))/gl;
+}
+
+double cross_cxl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxl + Cll*(1-exp(-gl*t))/gl;
+}
+
+double cross_cxq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxq + Clq*(1-exp(-gl*t))/gl;
+}
+
+// ============= //
+double cross_cgx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+    return (bg*bx)/exp(b*t) + Cxg/exp(b*t) + 
+        Cxl*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bx*Clq + bq*Cxl + Cxl*Cxq + Clq*Cxx - Cxl*mq)* \
+        onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        Clq*Cxl*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        (bx*mq + Cxx*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bq*bx + Cxq + bx*Cxq + bq*Cxx + Cxq*Cxx - bx*mq - Cxx*mq)*\
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(0)*nm(1);
+}
+
+double cross_cgg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+    return pow(bg,2)/exp(b*t) + Cgg/exp(b*t) + \
+        Cgl*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bq*Cgl + bg*Clq + Clq*Cxg + Cgl*Cxq - Cgl*mq)* \
+        onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        Cgl*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        (bg*mq + Cxg*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bg*bq + Cgq + bq*Cxg + bg*Cxq + Cxg*Cxq - bg*mq - Cxg*mq)* \
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(1);
+}
+
+double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+    return (bg*bl)/exp(b*t) + Cgl/exp(b*t) + \
+        Cll*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bq*Cll + bl*Clq + Clq*Cxl + Cll*Cxq - Cll*mq)* \
+        onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        Cll*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        (bl*mq + Cxl*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (bl*bq + Clq + bq*Cxl + bl*Cxq + Cxl*Cxq - bl*mq - Cxl*mq)* \
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(2);
+}
+
+double cross_cgq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+    return (bg*bq)/exp(b*t) + Cgq/exp(b*t) + \
+        Clq*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (2*bq*Clq + 2*Clq*Cxq - Clq*mq)*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        pow(Clq,2)*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        (bq*mq + Cxq*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
+        (pow(bq,2) + Cqq + 2*bq*Cxq + pow(Cxq,2) - bq*mq - Cxq*mq)* \
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(3);
+}
+
+// ============= //
+double cross_clx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxl * exp(-gl*t);
+}
+
+double cross_clg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cgl * exp(-gl*t);
+}
+
+double cross_cll(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cll * exp(-gl*t);
+}
+
+double cross_clq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Clq * exp(-gl*t);
+}
+
+// ============= //
+double cross_cqx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cxq * exp(-gq*t);
+}
+
+double cross_cqg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cgq * exp(-gq*t);
+}
+
+double cross_cql(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Clq * exp(-gq*t);
+}
+
+double cross_cqq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
+    return Cqq * exp(-gq*t);
 }
