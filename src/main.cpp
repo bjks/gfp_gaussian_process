@@ -120,7 +120,8 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
 
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
-    std::vector<std::vector<std::string>> keys = {
+    std::vector<std::vector<std::string>> keys = 
+        {
         {"-h","--help", "this help message"},
         {"-i", "--infile", "(required) input data file"},
         {"-b", "--parameter_bounds", "(required) file setting the type, step, bounds of the parameters"},
@@ -129,7 +130,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-o","--outdir", "specify output direction and do not use default"},
         {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default=1e-1"},
         {"-space","--search_space", "search parameter space in 'log' or 'linear' space, default: 'linear'"},
-        {"-stat","--stationary", "indicates that the cell are not growing (much)"},
+        {"-stat","--stationary", "indicates that the cells are not growing (much)"},
+        {"-beta","--use_beta", "indicates that the initial beta will be used to initialize the cells"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"}
@@ -166,6 +168,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-stat"])
                     arguments["stationary"] = "1";
+                  else if(k==key_indices["-beta"])
+                    arguments["use_beta"] = "1";
                 else if(k==key_indices["-m"])
                     arguments["minimize"] = "1";
                 else if(k==key_indices["-s"])
@@ -254,8 +258,8 @@ int main(int argc, char** argv){
     }
 
     /* inititialize mean and cov for forward and backward direction */
-    init_cells(cells, arguments.count("stationary"));
-    init_cells_r(cells, arguments.count("stationary"));
+    init_cells(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
+    init_cells_r(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
 
 
     /* run bound_1dscan, minimization and/or prediction... */

@@ -35,7 +35,6 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 ### 2 Run
 `cd bin`
 `./gfp_gaussian [-options]` with following options:
-
 ```
 -h, --help                 this help message
 -i, --infile               (required) input data file
@@ -45,6 +44,8 @@ Run `cd src; make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well
 -o, --outdir               specify output direction and do not use default
 -t, --tolerance            absolute tolerance of maximization between optimization steps, default=1e-1
 -space, --search_space     search parameter space in 'log' or 'linear' space, default: 'linear'
+-stat, --stationary        indicates that the cells are not growing (much)
+-beta, --use_beta          indicates that the initial beta will be used to initialize the cells
 -m, --maximize             run maximization
 -s, --scan                 run 1d parameter scan
 -p, --predict              run prediction
@@ -89,7 +90,8 @@ The step value is used for the 1d scan to discretize the interval set by lower a
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 - run modes (see 2.2.2)
 - `search_space` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
-
+- `stationary` indicates that the cells growth is close to 0. Thus, the initial gfp production is calculated in this limit
+- `use_beta` indicates that the bleaching rate beta given in the parameter file as the initial value shall be used to calculate the initial gfp production estimate. Can be used with or without `--stationary`.
 
 ##### 2.2.1 Csv_config file
 The following settings define how the input file will be read. Default values in brackets.
@@ -105,7 +107,7 @@ The following settings define how the input file will be read. Default values in
 ##### 2.2.2 Run modes
 - `m (maximize), s(scan), p(predict)` will run the respective task. In case `maximize` and `predict`is set, the estimated paramters after the maximization will be used for the prediction. Those paramters that are fixed are of course not effected.
 - the 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned.
-- 
+
 ### 3 Model parameters
 The 2 OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp, beta:
 - Growth rate fluctualtions params:

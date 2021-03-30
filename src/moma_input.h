@@ -422,32 +422,32 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
         ++line_count;
         line_parts = split_string_at(line, config.delm);
         // take lines only if end_type==div or header_indices "end_type" is not in header_indices
-        if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
+        // if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
+            
             // compose the cell id of the cells using the cell_tags
-            curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
+        curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
-            if (last_cell != curr_cell){
-                data_point_cell = 0;
-                last_idx++;
-                MOMAdata next_cell;
-                // add new MOMAdata instance to vector 
-                data.push_back(next_cell); 
+        if (last_cell != curr_cell){
+            data_point_cell = 0;
+            last_idx++;
+            MOMAdata next_cell;
+            // add new MOMAdata instance to vector 
+            data.push_back(next_cell); 
 
-                data[last_idx].cell_id = curr_cell;
-                // compose the cell id of the parent using the parent_tags
-                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
-            }
-
-            append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[config.time_col]])/config.rescale_time);
-
-            if (config.length_islog)
-                append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[config.length_col]]) );
-            else
-                append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[config.length_col]])) );
-
-            append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[config.fp_col]]) );
-            last_cell = curr_cell;
+            data[last_idx].cell_id = curr_cell;
+            // compose the cell id of the parent using the parent_tags
+            data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
         }
+
+        append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[config.time_col]])/config.rescale_time);
+
+        if (config.length_islog)
+            append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[config.length_col]]) );
+        else
+            append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[config.length_col]])) );
+
+        append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[config.fp_col]]) );
+        last_cell = curr_cell;
     }
     file.close();
     std::cout << last_idx + 1 << " cells and " << line_count << " data points found in file " << filename << std::endl; 
@@ -546,16 +546,36 @@ double estimate_q(MOMAdata &cell, double lambda_est){
     return q;
 }
 
-double estimate_q_stationary(MOMAdata &cell){
-    /* For non growing cells the estimation of q via lambda is critical, hence this version for lambda -> 0 */
+double estimate_q_beta(MOMAdata &cell, double lambda_est, double beta){
+    /* Straigt-forward estimation of q taking the last and the first data point of cell, while assuming beta=0 */
     size_t t_last = cell.time.size()-1;
-    double dg = cell.fp(t_last) - cell.fp(0);
+    double dt = cell.time(t_last) - cell.time(0);
+    double dg = cell.fp(t_last) - cell.fp(0)*exp(-beta*dt);
     double v0 = exp(cell.log_length(0));
-    double q = dg/(v0* (cell.time(t_last) - cell.time(0)) ) ;
+    double q = dg*(lambda_est + beta) / (v0*(exp(lambda_est*dt) - exp(-beta*dt)));
     return q;
 }
 
-void init_cells(std::vector<MOMAdata> &cells, bool stationary){
+double estimate_q_stationary(MOMAdata &cell){
+    /* For non growing cells the estimation of q via lambda is critical, this version is for lambda -> 0, beta -> 0 */
+    size_t t_last = cell.time.size()-1;
+    double dg = cell.fp(t_last) - cell.fp(0);
+    double v0 = exp(cell.log_length(0));
+    double q = dg/(v0* (cell.time(t_last) - cell.time(0)) );
+    return q;
+}
+
+double estimate_q_stationary_beta(MOMAdata &cell, double beta){
+    /* For non growing cells the estimation of q via lambda is critical, this version is for lambda -> 0 but finite beta */
+    size_t t_last = cell.time.size()-1;
+    double dt = cell.time(t_last) - cell.time(0);
+    double dg = cell.fp(t_last) - cell.fp(0) * exp(- beta*dt);
+    double v0 = exp(cell.log_length(0));
+    double q = beta * dg / (v0 * (1-exp(- beta*dt)) );
+    return q;
+}
+
+void init_cells(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the ROOT cells estimated from 
     * the data using the FIRST time point for x and fp 
@@ -582,13 +602,24 @@ void init_cells(std::vector<MOMAdata> &cells, bool stationary){
     for(size_t i=0; i<cells.size(); ++i){
         if (cells[i].time.size()>1){
             if (stationary){
-                q0.push_back(estimate_q_stationary(cells[i]));
+                if (use_beta){
+                    q0.push_back(estimate_q_stationary_beta(cells[i], beta));
+                }
+                else{
+                    q0.push_back(estimate_q_stationary(cells[i]));
+                }
             }
             else{
-                q0.push_back(estimate_q(cells[i], mean_l0));
+                if (use_beta){
+                    q0.push_back(estimate_q_beta(cells[i], mean_l0, beta));
+                }
+                else{
+                    q0.push_back(estimate_q(cells[i], mean_l0));
+                }
             }
         }
     }
+
     double mean_q0 = vec_mean(q0);
 
     double var_x0 =  vec_var(x0);
@@ -609,7 +640,7 @@ void init_cells(std::vector<MOMAdata> &cells, bool stationary){
 }
 
 
-void init_cells_r(std::vector<MOMAdata> &cells, bool stationary){
+void init_cells_r(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the LEAF cells estimated from 
     * the data using the LAST time point for x and fp 
@@ -636,10 +667,20 @@ void init_cells_r(std::vector<MOMAdata> &cells, bool stationary){
     for(size_t i=0; i<cells.size(); ++i){
         if (cells[i].time.size()>1){
             if (stationary){
-                q0.push_back(estimate_q_stationary(cells[i]));
+                if (use_beta){
+                    q0.push_back(estimate_q_stationary_beta(cells[i], beta));
+                }
+                else{
+                    q0.push_back(estimate_q_stationary(cells[i]));
+                }
             }
             else{
-                q0.push_back(estimate_q(cells[i], mean_l0));
+                if (use_beta){
+                    q0.push_back(estimate_q_beta(cells[i], mean_l0, beta));
+                }
+                else{
+                    q0.push_back(estimate_q(cells[i], mean_l0));
+                }
             }
         }
     }
