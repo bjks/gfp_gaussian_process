@@ -209,36 +209,32 @@ Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std:
     // i,j are the indices of the matrix, less or equal in size than parameter number
     // ii, jj are the indices of the full paramter set
     for(size_t i=0; i<idx_non_fixed.size(); ++i){ 
-
         ii = idx_non_fixed[i]; // paramterer index
         for(size_t j=0; j<idx_non_fixed.size(); ++j){
             jj = idx_non_fixed[j];
-            if (!params.all[i].fixed){
-                h1 = params_vec[ii] * epsilon;
-                h2 = params_vec[jj] * epsilon;
+            h1 = params_vec[ii] * epsilon;
+            h2 = params_vec[jj] * epsilon;
 
-                xij = params_vec;
-                xij[ii] = xij[ii] + h1;
-                xij[jj] = xij[jj] + h2;
-                lij = func(xij, cells);
-                
-                xi_j = params_vec;
-                xi_j[ii] = xi_j[ii] + h1;
-                xi_j[jj] = xi_j[jj] - h2;
-                li_j = func(xi_j, cells);
+            xij = params_vec;
+            xij[ii] = xij[ii] + h1;
+            xij[jj] = xij[jj] + h2;
+            lij = func(xij, cells);
+            
+            xi_j = params_vec;
+            xi_j[ii] = xi_j[ii] + h1;
+            xi_j[jj] = xi_j[jj] - h2;
+            li_j = func(xi_j, cells);
 
-                x_ij = params_vec;
-                x_ij[ii] = x_ij[ii] - h1;
-                x_ij[jj] = x_ij[jj] + h2;
-                l_ij = func(x_ij, cells);
+            x_ij = params_vec;
+            x_ij[ii] = x_ij[ii] - h1;
+            x_ij[jj] = x_ij[jj] + h2;
+            l_ij = func(x_ij, cells);
 
-                x_i_j = params_vec;
-                x_i_j[ii] = x_i_j[ii] - h1;
-                x_i_j[jj] = x_i_j[jj] - h2;
-                l_i_j = func(x_i_j, cells);
-                hessian(i,j) = (lij - li_j - l_ij + l_i_j)/ (4*h1*h2);
-
-            }
+            x_i_j = params_vec;
+            x_i_j[ii] = x_i_j[ii] - h1;
+            x_i_j[jj] = x_i_j[jj] - h2;
+            l_i_j = func(x_i_j, cells);
+            hessian(i,j) = (lij - li_j - l_ij + l_i_j)/ (4*h1*h2);
         }
     }
     return hessian;
@@ -246,7 +242,7 @@ Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std:
 
 std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
     Eigen::MatrixXd hessian_inv = num_hessian_ll(total_likelihood, params, cells, epsilon).inverse();
-
+    
     std::vector<double> error;
     for(int i=0; i<hessian_inv.rows(); ++i){
         error.push_back(sqrt(-hessian_inv(i, i)));

@@ -153,7 +153,9 @@ Finally, asymmentric cell division is modeled via two variances of gaussians
 - [x] prepare for cluster
 - [x] write new simulation including asymmetric cell division and tree structure?
 - [ ] autocorrelation
-- [ ] use log of parameters
+- [x] use log of parameters
+- [x] add stationary option
+- [x] include beta in initializing cells
 
 ## Technical Notes
 ### Log-Likelihood maximization with multiple cell trees
