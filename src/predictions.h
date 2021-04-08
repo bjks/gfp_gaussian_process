@@ -1,6 +1,7 @@
 #include "moma_input.h"
 #include "mean_cov_model.h"
 #include "Parameters.h"
+#include "utils.h"
 
 #include <math.h>
 #include <cmath>
@@ -280,9 +281,29 @@ void combine_predictions(std::vector<MOMAdata> &cells){
 /* --------------------------------------------------------------------------
 * OUTPUT
 * -------------------------------------------------------------------------- */
-std::string outfile_name_prediction(std::map<std::string, std::string> arguments, std::string suffix=""){
+
+std::string outfile_param_code(const Parameter_set params){
+    std::string code = "_f";
+     for(size_t i=0; i < params.all.size() ;++i){
+        if (!params.all[i].bound && !params.all[i].fixed){
+            code += std::to_string(i);
+        }
+    }
+    code += "_b";
+    for(size_t i=0; i < params.all.size(); ++i){
+        if (params.all[i].bound){
+            code += std::to_string(i);
+        }
+    }
+    return code;
+}
+
+
+std::string outfile_name_prediction(std::map<std::string, std::string> arguments, 
+                                    Parameter_set params, std::string suffix=""){
+    /* Filename for a prediction file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + "_prediction" + suffix;
+    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_prediction" + suffix;
     return outfile + ".csv";
 }
 
@@ -311,7 +332,7 @@ void output_vector(std::ofstream &file, Eigen::VectorXd v){
 }
 
 
-void write_pretictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
+void write_predictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
                                 Parameter_set& params, const CSVconfig &config, std::string direction="n"){        
     params.to_csv(outfile);
 

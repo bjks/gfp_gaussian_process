@@ -48,6 +48,9 @@ int run_minimization(std::vector<MOMAdata> &cells,
                         std::stod(arguments["tolerance"]), 
                         arguments["search_space"]);
 
+    std::string outfile_params = outfile_parameter_file(arguments, params);
+    create_parameter_file(outfile_params, params);
+
     return 0;
 }
 
@@ -90,15 +93,14 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
                     std::map<std::string, std::string> arguments, const CSVconfig &config){
     std::cout << "-> prediction" << "\n";
     
-    std::string outfile = outfile_name_prediction(arguments);
-    std::string outfile_b = outfile_name_prediction(arguments, "_backward");
-    std::string outfile_f = outfile_name_prediction(arguments, "_forward");
+    std::string outfile = outfile_name_prediction(arguments, params);
+    std::string outfile_b = outfile_name_prediction(arguments, params, "_backward");
+    std::string outfile_f = outfile_name_prediction(arguments, params, "_forward");
 
 
     std::cout << "Outfile: " << outfile << "\n";
     std::cout << "Outfile forward: " << outfile_f << "\n";
     std::cout << "Outfile backward: " << outfile_b << "\n";
-
 
     std::vector<double> params_vec = params.get_final();
 
@@ -112,10 +114,10 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
     combine_predictions(cells);
 
     /* save */
-    write_pretictions_to_file(cells, outfile_b, params, config, "b");
-    write_pretictions_to_file(cells, outfile_f, params, config, "f");
+    write_predictions_to_file(cells, outfile_b, params, config, "b");
+    write_predictions_to_file(cells, outfile_f, params, config, "f");
 
-    write_pretictions_to_file(cells, outfile, params, config);
+    write_predictions_to_file(cells, outfile, params, config);
 }
 
 

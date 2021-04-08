@@ -131,21 +131,24 @@ Finally, asymmentric cell division is modeled via two variances of gaussians
     - var_dg      
 
 ### 4 Output
+All files that are generated in the maximization and the prediction step are named as follows: `example_f<free>_b<bounds>` and where `<free>` lists the variable via the index as e.g. printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129`. Then, the ending of the diffenerent files inicate what they contain.
 #### 4.1 Maximization
-- Will create 2 files: one for the maximization process and one for the final estimations
-- The files (given the input file `example.csv`) are named as follows: `example_f<free>_b<bounds>.csv` and `example_f<free>_b<bounds>_final.csv`, where `<free>` lists the variable via the index as e.g. printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129.csv`, and `example_f034_b129_final.csv`
-- The first file contains the parameter settings at the top 12 lines and all steps of the likelihood maximization
-- The second file contains the parameter settings at the top 12 line including a column with the final parameters (i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix (**beta version!!!**). The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation. Finally, the maximized log likelihood is written.
+- Will create 3 files: one for the maximization process (`_interations.csv`), one for the final estimations (`_final.csv`), and a "parameter file" (`_parameter_file.csv`) that can directly be used as an input for a prediction run 
+- The interations file contains the parameter settings at the top 12 lines and all likelihood evaluations of the likelihood maximization
+- The final file contains the parameter settings at the top 12 line including a column with the final parameters (i.e. estimated via log likelihood maximization and init value for free parameters) and the estimated error for the estimated paramters via a hessian matrix. The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation. Finally, the number of data points, the total log likelihood, the normalized log likelihood, the used optimization algorithm, the set tolerance and the search space (log/linear) is noted.
+- The parameter file is in the format of the parameter file that was submitted to the code (see Sec. 2.1.2). It only contains the final estimation of each parameter. Thus, the paramters are treated as "fixed", when the code is run with this parameter file. This file can be used to run the prediction step directly (potentially on a different input file).
  
 #### 4.2 1D scan
 - Will create a file for each parameter containing the parameter settings at the top 12 lines and all calculated likelihoods of the scan
 - The file (given the input file `example.csv`) is named as follows: `example_<parameter>.csv`, where `<parameter>` is the paramter that is scaned
 
 #### 4.3 Predictions
-- Will create a file for each parameter containing the parameter settings at the top 12 lines and ...
+- Will create 3 files: combined predictions (`_prediction.csv`), backward only (`_prediction_backward.csv`), and forward only (`_prediction_forward.csv`)
+- Each file contains the parameter settings at the top 12 lines
+- The predictions consist of:
   - the 4 mean quanties of x, g, l/lambda, q 
   - the upper triangle of the covariance matrix 
-- ... of each time point for each cell in the same order as the input file
+  - ... of each time point for each cell in the same order as the input file
 
 ---------
 ## Notes 
@@ -156,6 +159,7 @@ Finally, asymmentric cell division is modeled via two variances of gaussians
 - [x] use log of parameters
 - [x] add stationary option
 - [x] include beta in initializing cells
+- [x] create a parameter file that can be used as input 
 
 ## Technical Notes
 ### Log-Likelihood maximization with multiple cell trees
@@ -163,7 +167,7 @@ The log-likelihoods of all cell trees are added and the summed log-likelihood is
 
 ## Minimizer 
  - nlopt 
- - Note, `total_likelihood` return -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
+ - Note, `total_likelihood` returns -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
  - the wrapper ```double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells);``` meant for direct calculation without minimization returns just the log_likelihood
 
 ```cpp
@@ -173,4 +177,4 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
                         double tolerance, 
                         bool &found_min)
 ```
-### Current minimizer: LN_COBYLA
+- Current minimizer: LN_COBYLA
