@@ -278,7 +278,6 @@ void mean_cov_model(MOMAdata &cell,
 // CROSS COVARIANCE ELEMENTS
 // ======================================================================================================== //
 
-
 // ============= //
 double cross_cxx(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
     return Cxx + Cxl*(1-exp(-gl*t))/gl;
@@ -305,8 +304,9 @@ double cross_cgx(double t,double bx,double bg,double bl,double bq,double Cxx,dou
         Clq*Cxl*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
         (bx*mq + Cxx*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
         (bq*bx + Cxq + bx*Cxq + bq*Cxx + Cxq*Cxx - bx*mq - Cxx*mq)*\
-        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(0)*nm(1);
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*bx;
 }
+
 
 double cross_cgg(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
     return pow(bg,2)/exp(b*t) + Cgg/exp(b*t) + \
@@ -316,7 +316,7 @@ double cross_cgg(double t,double bx,double bg,double bl,double bq,double Cxx,dou
         Cgl*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
         (bg*mq + Cxg*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
         (bg*bq + Cgq + bq*Cxg + bg*Cxq + Cxg*Cxq - bg*mq - Cxg*mq)* \
-        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(1);
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*bg;
 }
 
 double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
@@ -327,17 +327,31 @@ double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,dou
         Cll*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
         (bl*mq + Cxl*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
         (bl*bq + Clq + bq*Cxl + bl*Cxq + Cxl*Cxq - bl*mq - Cxl*mq)* \
-        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(2);
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*bl;
 }
+
+// double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
+// 	gl = 0;
+//     ml = 0;
+//     return (bg*bl)/exp((b + gl)*t) + Cgl/exp((b + gl)*t) + (bg*ml)/exp(b*t) - (bg*ml)/exp((b + gl)*t) + \
+//         Cll*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gl*t,t) + Clq*ml*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
+//         (bq*Cll + bl*Clq + Clq*Cxl + Cll*Cxq - Clq*ml - Cll*mq)*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) + \
+//         Cll*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) + ml*mq*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t) + \
+//         (bl*mq + Cxl*mq - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gl*t,t) + \
+//         (bq*ml + Cxq*ml - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
+//         (bl*bq + Clq + bq*Cxl + bl*Cxq + Cxl*Cxq - bq*ml - Cxq*ml - bl*mq - Cxl*mq + ml*mq)*\
+//          zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) - nm(1)*nm(2);
+// }
 
 double cross_cgq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
     return (bg*bq)/exp(b*t) + Cgq/exp(b*t) + \
         Clq*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
-        (2*bq*Clq + 2*Clq*Cxq - Clq*mq)*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
+        (2*bq*Clq + 2*Clq*Cxq - Clq*mq)* \
+        onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
         pow(Clq,2)*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) + \
         (bq*mq + Cxq*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t,0) + \
         (pow(bq,2) + Cqq + 2*bq*Cxq + pow(Cxq,2) - bq*mq - Cxq*mq)* \
-        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*nm(3);
+        zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*bq;
 }
 
 // ============= //
@@ -372,4 +386,54 @@ double cross_cql(double t,double bx,double bg,double bl,double bq,double Cxx,dou
 
 double cross_cqq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b){
     return Cqq * exp(-gq*t);
+}
+
+
+Eigen::MatrixXd cross_cov_model(MOMAdata &cell, 
+                                double t, double ml, 
+                                double gl, double sl2, 
+                                double mq, double gq, 
+                                double sq2, double b){
+    Eigen::VectorXd nm(4);
+    Eigen::MatrixXd nC(4, 4);
+
+    double bx=cell.mean(0);
+    double bg=cell.mean(1);
+    double bl=cell.mean(2); 
+    double bq=cell.mean(3);
+
+    double Cxx=cell.cov(0,0);
+    double Cxg=cell.cov(0,1);
+    double Cxl=cell.cov(0,2);
+    double Cxq=cell.cov(0,3);
+    double Cgg=cell.cov(1,1);
+    double Cgl=cell.cov(1,2);
+    double Cgq=cell.cov(1,3);
+    double Cll=cell.cov(2,2);
+    double Clq=cell.cov(2,3);
+    double Cqq=cell.cov(3,3);
+
+    // Mean
+    nm(0) = mean_x(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
+    nm(1) = mean_g(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
+    nm(2) = mean_l(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
+    nm(3) = mean_q(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b);
+
+    nC <<   cross_cxx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b), // x
+            cross_cxg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_cxl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_cxq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b), 
+            cross_cgx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm), // g
+            cross_cgg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm),
+            cross_cgl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm),
+            cross_cgq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm), 
+            cross_clx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b), // l
+            cross_clg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_cll(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_clq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b), 
+            cross_cqx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b), // q
+            cross_cqg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_cql(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b),
+            cross_cqq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b); 
+    return nC;
 }

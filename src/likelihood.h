@@ -1,4 +1,4 @@
-#include "predictions.h"
+#include "correlation.h"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 #include <iomanip>
@@ -111,7 +111,7 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     std::vector<MOMAdata*> cells = *(std::vector<MOMAdata*> *) c;
 
     for(size_t i=0; i < cells.size(); ++i){
-        if (cells[i]->is_root() ){
+        if (cells[i]->is_root() ){ //this check should be redundant?!
             likelihood_recr(params_vec,  cells[i] , tl);
         }
     }

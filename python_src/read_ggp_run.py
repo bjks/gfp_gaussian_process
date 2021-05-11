@@ -152,6 +152,19 @@ def get_all_filenames(filebase, paramter_settings):
             "backward": b,
             "forward": f}
 
+def fixed_params():
+    return {'mean_lambda': 'fixed',
+            'gamma_lambda': 'fixed',
+            'var_lambda': 'fixed',
+            'mean_q': 'fixed',
+            'gamma_q': 'fixed',
+            'var_q':'fixed',
+            'beta':'fixed',
+            'var_x':'fixed',
+            'var_g':'fixed',
+            'var_dx':'fixed',
+            'var_dg':'fixed'} 
+
 # ============== READING ============== #
 def read_params_config(filename):
     df = pd.read_csv(filename, nrows=11)

@@ -121,6 +121,14 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 }
 
 
+void run_correlations(std::vector<MOMAdata> &cells, Parameter_set params, 
+                    std::map<std::string, std::string> arguments, const CSVconfig &config){
+
+    std::vector<double> params_vec = params.get_final();
+    correlation(params_vec, cells);
+}
+
+
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::vector<std::string>> keys = 
         {
@@ -136,7 +144,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-beta","--use_beta", "indicates that the initial beta will be used to initialize the cells"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
-        {"-p","--predict", "run prediction"}
+        {"-p","--predict", "run prediction"},
+        {"-a","--auto_corr", "run auto-correlation"}
         };
 
     std::map<std::string, int> key_indices; 
@@ -178,6 +187,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["scan"] = "1";
                 else if(k==key_indices["-p"])
                     arguments["predict"] = "1";
+                else if(k==key_indices["-a"])
+                    arguments["auto_corr"] = "1";
                 else if (k==key_indices["-h"]){
                     arguments["quit"] = "1";
                     std::cout << "Usage: ./gfp_gaussian [-options]\n";
@@ -226,6 +237,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
 
 int main(int argc, char** argv){
+
     /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
     _print_level = std::stoi(arguments["print_level"]);
@@ -271,11 +283,18 @@ int main(int argc, char** argv){
             return -1;
         }
     }
-    if (arguments.count("scan"))
-        run_bound_1dscan(cells, params, arguments);
 
-    if (arguments.count("predict"))
+    if (arguments.count("scan")){
+        run_bound_1dscan(cells, params, arguments);
+    }
+
+    if (arguments.count("predict") || arguments.count("auto_corr")){
         run_prediction(cells, params, arguments, config);
+    }
+    
+    if (arguments.count("auto_corr")){
+        run_correlations(cells, params, arguments, config);
+    }
 
     std::cout << "Done." << std::endl;
     return 0;
