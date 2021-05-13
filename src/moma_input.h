@@ -537,14 +537,6 @@ double estimate_lambda(MOMAdata &cell){
     return l;
 }
 
-double estimate_q(MOMAdata &cell, double lambda_est){
-    /* Straigt-forward estimation of q taking the last and the first data point of cell, while assuming beta=0 */
-    size_t t_last = cell.time.size()-1;
-    double dg = cell.fp(t_last) - cell.fp(0);
-    double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));
-    double q = dg*lambda_est/dv;
-    return q;
-}
 
 double estimate_q_beta(MOMAdata &cell, double lambda_est, double beta){
     /* Straigt-forward estimation of q taking the last and the first data point of cell, while assuming beta=0 */
@@ -562,6 +554,18 @@ double estimate_q_stationary(MOMAdata &cell){
     double dg = cell.fp(t_last) - cell.fp(0);
     double v0 = exp(cell.log_length(0));
     double q = dg/(v0* (cell.time(t_last) - cell.time(0)) );
+    return q;
+}
+
+double estimate_q(MOMAdata &cell, double lambda_est){
+    /* Straigt-forward estimation of q taking the last and the first data point of cell, while assuming beta=0 */
+    size_t t_last = cell.time.size()-1;
+    double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));
+    if (dv==0){
+        return estimate_q_stationary(cell);
+    }
+    double dg = cell.fp(t_last) - cell.fp(0);
+    double q = dg*lambda_est/dv;
     return q;
 }
 

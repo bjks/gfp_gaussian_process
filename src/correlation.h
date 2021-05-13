@@ -1,42 +1,5 @@
 #include "predictions.h"
 
-// The terms that come from joint 
-Eigen::VectorXd calc_a(Eigen::VectorXd mean_n, Eigen::VectorXd mean_n1, Eigen::MatrixXd K_nn1, Eigen::MatrixXd C_n1){
-    return mean_n - K_nn1 * C_n1.inverse() * mean_n1; 
-}
-
-Eigen::MatrixXd calc_F(Eigen::MatrixXd K_nn1, Eigen::MatrixXd C_n1){
-    return K_nn1 * C_n1.inverse();
-}
-
-Eigen::MatrixXd calc_A(Eigen::MatrixXd C_n, Eigen::MatrixXd K_nn1, Eigen::MatrixXd C_n1){
-    return C_n - K_nn1 * C_n1.inverse() * K_nn1.transpose();
-}
-
-// The terms that come from including the next data point
-Eigen::VectorXd calc_b(Eigen::MatrixXd C_n1, Eigen::MatrixXd M, Eigen::VectorXd mean_n1, Eigen::VectorXd y_n1){
-    return C_n1*(M+C_n1).inverse()*y_n1 + M*(M+C_n1).inverse()*mean_n1;
-}
-
-Eigen::MatrixXd calc_B(Eigen::MatrixXd C_n1, Eigen::MatrixXd M){
-    return M*(M+C_n1).inverse()*C_n1;
-}
-
-//
-Eigen::MatrixXd calc_x(Eigen::MatrixXd A, Eigen::MatrixXd B, Eigen::VectorXd a, Eigen::VectorXd b){
-    return A*(B+A).inverse() * b + B*(B+A).inverse()*a;
-}
-
-// The terms that come from the integration step
-Eigen::MatrixXd calc_X(Eigen::MatrixXd A, Eigen::MatrixXd B, Eigen::MatrixXd F){
-    return B*(B+A).inverse()*F;
-}
-
-Eigen::MatrixXd calc_Y(Eigen::MatrixXd A, Eigen::MatrixXd B){
-    return B*(B+A).inverse()*A;
-}
-
-
 // Matric utils
 Eigen::MatrixXd hstack(Eigen::MatrixXd A, Eigen::MatrixXd B){
     /* horizontal stack of A and B */
@@ -94,7 +57,24 @@ public:
         F = F_;
         A = A_;
     }
+    Affine_gaussian transform();
+    Gaussian transform(Eigen::VectorXd y);
 };
+
+
+Affine_gaussian Affine_gaussian::transform(){
+    Eigen::VectorXd new_a = -a*F.inverse();
+    Eigen::MatrixXd new_F = F.inverse();
+    Eigen::MatrixXd new_A = F.inverse() * A *F.inverse().transpose();
+    Affine_gaussian n(new_a, new_F, new_A);
+    return n;
+}
+
+Gaussian Affine_gaussian::transform(Eigen::VectorXd y){
+    /* transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|m,C) */
+    Gaussian n(F.inverse()*(y-a), F.inverse()*A*F.inverse().transpose());
+    return n;
+}
 
 class Seperated_gaussian{
     /*  
@@ -191,7 +171,6 @@ Gaussian include_measurement(Gaussian gaussian, double x, double g, Eigen::Matri
     return new_gaussian;
 }
 
-
 Gaussian consecutive_conditional(Gaussian joint, MOMAdata cell){
     Eigen::MatrixXd cov_inv = joint.C.inverse();
     Eigen::MatrixXd W = cov_inv.bottomRightCorner(4,4);
@@ -201,6 +180,31 @@ Gaussian consecutive_conditional(Gaussian joint, MOMAdata cell){
     return new_joint;
 }
 
+// Multiplication of conditional of P(z_n+2, y_n+2 | z_n+1, D_n+1) with marginal of P(z_n+1, z_n, D_n+1)
+Eigen::VectorXd calc_x(Gaussian n1, Affine_gaussian n2){
+    return n2.A * (n1.C + n2.A).inverse() * n1.m \
+         + n1.C * (n1.C + n2.A).inverse() * n2.a;
+}
+
+Eigen::MatrixXd calc_X(Gaussian n1, Affine_gaussian n2){
+    return n1.C * (n1.C + n2.A).inverse() * n2.F;
+}
+
+Eigen::MatrixXd calc_Y(Gaussian n1, Affine_gaussian n2){
+    return n1.C * (n1.C + n2.A).inverse() * n2.A;
+}
+
+
+//Integration / "propagation"
+
+Affine_gaussian propagation(Affine_gaussian a, Affine_gaussian x){
+    Affine_gaussian n(  a.a + a.F * x.a, 
+                        a.F*x.F, 
+                        a.A + a.F*x.F*a.F.inverse());
+    return n;
+}
+
+//Correlation
 Eigen::MatrixXd correlation_from_covariance(Eigen::MatrixXd cov){
     Eigen::MatrixXd corr(cov.rows(), cov.cols());
     for (size_t i=0; i<cov.rows(); ++i){
@@ -211,9 +215,25 @@ Eigen::MatrixXd correlation_from_covariance(Eigen::MatrixXd cov){
     return corr;
 }
 
-void correlation(const std::vector<double> &params_vec, MOMAdata &cell, size_t t1, size_t t2){
+Gaussian next_joint(Seperated_gaussian joint_sep, Seperated_gaussian conditional_sep){
+    // multiplication
+    Eigen::VectorXd x = calc_x(joint_sep.marginal, conditional_sep.conditional);
+    Eigen::MatrixXd X = calc_X(joint_sep.marginal, conditional_sep.conditional);
+    Eigen::MatrixXd Y = calc_Y(joint_sep.marginal, conditional_sep.conditional);
+
+    Affine_gaussian nx(x, X, Y);
+    Affine_gaussian n2( conditional_sep.conditional.a, 
+                        conditional_sep.conditional.F, 
+                        joint_sep.marginal.C + conditional_sep.conditional.A);
+    Gaussian n3 = n2.transform(joint_sep.marginal.m);
+    Gaussian n4 = conditional_sep.marginal;
+    return n4;
+}
+
+Eigen::MatrixXd correlation(const std::vector<double> &params_vec, MOMAdata &cell, size_t t1, size_t t2){
     cell.mean = cell.mean_forward[t1];
     cell.cov = cell.cov_forward[t1];
+
     int t=t1;
     Eigen::MatrixXd D(2,2);
     D <<  params_vec[7], 0, 0,  params_vec[8];
@@ -224,31 +244,34 @@ void correlation(const std::vector<double> &params_vec, MOMAdata &cell, size_t t
     /* P(z_n+1, z_n, D_n) / P(z_n, D_n)  */
     Gaussian conditional = consecutive_conditional(joint, cell); 
 
-
     /* -> N(x | m, C) N(y | a + F x, A) */
     Seperated_gaussian joint_sep = seperate_gaussian(joint); // 
     /* include x and g */
     joint_sep.marginal = include_measurement(joint_sep.marginal, cell.log_length(t), cell.fp(t), D); 
-    Gaussian posterior_joint = joint_sep.to_joint();
 
     Seperated_gaussian conditional_sep = seperate_gaussian(conditional); // 
     /* include x and g */
     conditional_sep.marginal = include_measurement(conditional_sep.marginal, cell.log_length(t), cell.fp(t), D); 
 
-    // std::cout << joint.C << "\n";
 
-    const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
-    std::cout << correlation_from_covariance(joint.C).format(CSVFormat) << "\n\n";
+    Gaussian posterior_joint = joint_sep.to_joint();
+    Eigen::MatrixXd corr = correlation_from_covariance(joint.C);
+
+    // std::cout << joint.C << "\n";
 
     // std::cout << conditional.C << "\n\n";
 
     // std::cout << conditional_sep.to_joint().C << "\n";
-
+    return corr;
 }
 
 /* -------------------------------------------------------------------------- */
 void sc_correlation(const std::vector<double> &params_vec, MOMAdata &cell){
-    correlation(params_vec, cell, 0, 1);
+    Eigen::MatrixXd corr = correlation(params_vec, cell, 1, 2);
+
+    // print it for the time being
+    const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
+    // std::cout << corr.format(CSVFormat) << "\n\n";
 }
 
 void correlation_recr(const std::vector<double> &params_vec, 
