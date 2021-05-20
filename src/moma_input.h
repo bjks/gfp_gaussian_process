@@ -61,6 +61,9 @@ public:
     std::vector<Eigen::Vector4d> mean_prediction;
     std::vector<Eigen::Matrix4d> cov_prediction;
 
+    // correlation function
+    std::vector<Eigen::MatrixXd> correlation;
+
     // member functions
     bool is_leaf() const;
     bool is_root() const;
@@ -562,7 +565,7 @@ double estimate_q(MOMAdata &cell, double lambda_est){
     size_t t_last = cell.time.size()-1;
     double dv = exp(cell.log_length(t_last)) - exp(cell.log_length(0));
     if (dv==0){
-        return estimate_q_stationary(cell);
+        return estimate_q_stationary(cell); // deal with cells that have equal size in the beginning and in the end
     }
     double dg = cell.fp(t_last) - cell.fp(0);
     double q = dg*lambda_est/dv;

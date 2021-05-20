@@ -211,8 +211,8 @@ Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std:
         ii = idx_non_fixed[i]; // paramterer index
         for(size_t j=0; j<idx_non_fixed.size(); ++j){
             jj = idx_non_fixed[j];
-            h1 = params_vec[ii] * epsilon;
-            h2 = params_vec[jj] * epsilon;
+            h1 = std::max(params_vec[ii] * epsilon, 1e-12);
+            h2 = std::max(params_vec[jj] * epsilon, 1e-12);
 
             xij = params_vec;
             xij[ii] = xij[ii] + h1;
@@ -240,11 +240,12 @@ Eigen::MatrixXd num_hessian_ll(double (*func)(const std::vector<double> &p, std:
 }
 
 std::vector<double> ll_error_bars(Parameter_set &params, std::vector<MOMAdata> &cells, double epsilon){
+    /* returns the squared error bars on parameters */
     Eigen::MatrixXd hessian_inv = num_hessian_ll(total_likelihood, params, cells, epsilon).inverse();
     
     std::vector<double> error;
     for(int i=0; i<hessian_inv.rows(); ++i){
-        error.push_back(sqrt(-hessian_inv(i, i)));
+        error.push_back(-hessian_inv(i, i));
     }
     return error;
 }
@@ -300,7 +301,7 @@ void save_final_likelihood(std::string outfile,
 void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOMAdata> &cells){
     /* calculates and saves the error bars on parameter estimates in outfile */
     std::ofstream file(outfile,std::ios_base::app);
-    file << "\nerrors:";
+    file << "\nerrors^2:";
     file << "\nepsilon";
 
     std::vector<double> eps {5e-2, 1e-2, 5e-3};

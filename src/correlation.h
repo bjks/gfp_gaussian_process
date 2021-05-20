@@ -15,7 +15,12 @@ Eigen::MatrixXd vstack(Eigen::MatrixXd A, Eigen::MatrixXd B){
     return C;
 }
 
-/* Gaussian classes */
+
+/* ================================================= */
+/* ================================================= */
+/* ================================================= */
+
+/* ============== Gaussian class ============== */
 class Gaussian{
     /*  
     * A class describing a gaussian: N(x | m, C)
@@ -41,7 +46,7 @@ Gaussian Gaussian::multiply(Gaussian n1, Gaussian n2){
     return n3;
 }
 
-
+/* ============== Affine_gaussian class ============== */
 class Affine_gaussian{
     /*  
     * A class describing a gaussian with a transformed mean: N(y | a + F x, A)
@@ -61,9 +66,12 @@ public:
     Gaussian transform(Eigen::VectorXd y);
 };
 
-
 Affine_gaussian Affine_gaussian::transform(){
-    Eigen::VectorXd new_a = -a*F.inverse();
+    /* 
+    * transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|a' + F' y, A')
+    * looses normalization 
+    */
+    Eigen::VectorXd new_a = -F.inverse()*a;
     Eigen::MatrixXd new_F = F.inverse();
     Eigen::MatrixXd new_A = F.inverse() * A *F.inverse().transpose();
     Affine_gaussian n(new_a, new_F, new_A);
@@ -71,14 +79,17 @@ Affine_gaussian Affine_gaussian::transform(){
 }
 
 Gaussian Affine_gaussian::transform(Eigen::VectorXd y){
-    /* transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|m,C) */
+    /* transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|m,C) for a given y , looses normalization */
     Gaussian n(F.inverse()*(y-a), F.inverse()*A*F.inverse().transpose());
     return n;
 }
 
+
+/* ============== Seperated_gaussian class ============== */
 class Seperated_gaussian{
     /*  
-    * A class describing a joint gaussian as a product of mearginal and conditional in the form: N(x | m, C) N(y | a + F x, A)
+    * A class describing a joint gaussian as a product of 
+    * mearginal and conditional in the form: N(x | m, C) N(y | a + F x, A)
     * It makes use of the Gaussian class and the 
     */
 public:
@@ -125,14 +136,55 @@ Seperated_gaussian seperate_gaussian(Gaussian joint, int n=4){
 }
 
 
-Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell, double dt){
-    /* given a P(z_n,D_n) in form of a cell with given mean and covariance, the joint P(z_n+1, z_n, D_n) is returned */
+//Correlation
+Eigen::MatrixXd correlation_from_covariance(Eigen::MatrixXd cov){
+    Eigen::MatrixXd corr(cov.rows(), cov.cols());
+    for (size_t i=0; i<cov.rows(); ++i){
+        for (size_t j=0; j<cov.cols(); ++j){
+            corr(i,j) = cov(i,j) / sqrt(cov(i,i) * cov(j,j) );
+        }
+    }
+    return corr;
+}
+/* ================================================= */
+/* ================================================= */
+/* ================================================= */
 
+Gaussian include_measurement(Gaussian distr, 
+                             Gaussian measurement_distr, 
+                             double x, double g){
+    /* include the measurements x and g, this follows the calculation of the posterior in the prediction part*/
+    Eigen::VectorXd xg(2);
+
+    xg(0) = x - measurement_distr.m(0);
+    xg(1) = g - measurement_distr.m(1);
+
+    Eigen::Matrix2d Si = measurement_distr.C.inverse();
+
+    Eigen::MatrixXd K = distr.C.block(0,0,2,distr.C.cols());
+    // Eigen::MatrixXd K = hstack(distr.C.block(0,0,2,4), Eigen::MatrixXd::Zero(2, 4));
+    // std::cout << K << "\n";
+
+
+    Gaussian new_gaussian(distr.m + K.transpose() * Si * xg, 
+                            distr.C - K.transpose() * Si * K);
+
+    // std::cout << "\nKT Si K: \n" <<  K.transpose() * Si * K;
+    return new_gaussian;
+}
+
+
+Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
+    /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n+1) is returned */
+    cell.mean = cell.mean_forward[t];
+    cell.cov = cell.cov_forward[t];
+    /* ------------ prior joint ------------*/
     // C_n (D_n)
     Eigen::VectorXd mean1 = cell.mean;
     Eigen::MatrixXd cov1 = cell.cov;
 
     // K_n+1,n (D_n), this is calculated from C_n and mu_n
+    double dt = cell.time(t+1)-cell.time(t);
     Eigen::MatrixXd cross_cov = cross_cov_model(cell, dt, params_vec[0], 
                                                 params_vec[1], params_vec[2], params_vec[3], 
                                                 params_vec[4], params_vec[5], params_vec[6]); 
@@ -144,41 +196,49 @@ Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell,
     Eigen::VectorXd mean2 = cell.mean;    
     Eigen::MatrixXd cov2 = cell.cov;
 
+    // construct the joint over [z_n+1, z_n]
     Eigen::VectorXd mean_joint(8); 
     mean_joint << mean2, mean1;
     
     Eigen::MatrixXd cov_joint(8, 8); 
-    cov_joint << vstack(hstack(cov2, cross_cov), hstack(cross_cov.transpose(), cov1));
+    cov_joint << vstack(hstack(cov2,                    cross_cov), 
+                        hstack(cross_cov.transpose(),   cov1));
 
     Gaussian joint(mean_joint, cov_joint);
+
+    /* ------------ include next x and g ------------*/
+    Eigen::MatrixXd D(2,2);
+    D <<  params_vec[7], 0, 0,  params_vec[8];
+
+    Gaussian measurement_distr(joint.m.head(2), joint.C.block(0,0,2,2) + D);
+    // std::cout << "\ncov prior \n" << joint.C;
+
+    joint = include_measurement(joint, measurement_distr, cell.log_length(t+1), cell.fp(t+1)); 
+    // std::cout << "\ncov post:\n" << joint.C ;
+
     return joint;
 }
 
 
-Gaussian include_measurement(Gaussian gaussian, double x, double g, Eigen::MatrixXd D){
-    /* include the measurements x and g, this follows the calcul*/
-    Eigen::VectorXd xg(2);
+Affine_gaussian consecutive_conditional(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
+    Gaussian joint = consecutive_joint(params_vec, cell, t);
 
-    xg(0) = x - gaussian.m(0);
-    xg(1) = g - gaussian.m(1);
+    // write joint P(z_n+1, z_n | D_n) as a gaussian over the vector (z_n, z_n+1) instead of (z_n+1, z_n)
+    Eigen::VectorXd mean_joint(8); 
+    mean_joint << joint.m.tail(4), joint.m.head(4);
 
-    Eigen::Matrix2d S = gaussian.C.block(0,0,2,2) + D;
-    Eigen::Matrix2d Si = S.inverse();
+    // flip C_n+1 with C_n and transpose K_n+1,n and K_n,n+1
+    Eigen::MatrixXd cov_joint(8, 8); 
+    cov_joint << vstack(hstack(joint.C.block(4,4,4,4),              joint.C.block(0,4,4,4).transpose() ), 
+                        hstack(joint.C.block(4,0,4,4).transpose(),  joint.C.block(0,0,4,4)));
 
-    Eigen::MatrixXd K = gaussian.C.block(0,0,2,4);
-    Gaussian new_gaussian(gaussian.m + K.transpose() * Si * xg, 
-                            gaussian.C - K.transpose() * Si * K);
-    return new_gaussian;
+    Gaussian flipped_joint(mean_joint, cov_joint);
+
+    // get conditional P (z_n+1, z_n) writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
+    Affine_gaussian conditional = seperate_gaussian(flipped_joint).conditional.transform();
+    return conditional;
 }
 
-Gaussian consecutive_conditional(Gaussian joint, MOMAdata cell){
-    Eigen::MatrixXd cov_inv = joint.C.inverse();
-    Eigen::MatrixXd W = cov_inv.bottomRightCorner(4,4);
-    cov_inv.bottomRightCorner(4,4) = W - cell.cov.inverse();
-
-    Gaussian new_joint(joint.m, cov_inv.inverse());
-    return new_joint;
-}
 
 // Multiplication of conditional of P(z_n+2, y_n+2 | z_n+1, D_n+1) with marginal of P(z_n+1, z_n, D_n+1)
 Eigen::VectorXd calc_x(Gaussian n1, Affine_gaussian n2){
@@ -196,82 +256,72 @@ Eigen::MatrixXd calc_Y(Gaussian n1, Affine_gaussian n2){
 
 
 //Integration / "propagation"
-
 Affine_gaussian propagation(Affine_gaussian a, Affine_gaussian x){
     Affine_gaussian n(  a.a + a.F * x.a, 
                         a.F*x.F, 
-                        a.A + a.F*x.F*a.F.inverse());
+                        a.A + a.F * x.A * a.F.transpose());
     return n;
 }
 
-//Correlation
-Eigen::MatrixXd correlation_from_covariance(Eigen::MatrixXd cov){
-    Eigen::MatrixXd corr(cov.rows(), cov.cols());
-    for (size_t i=0; i<cov.rows(); ++i){
-        for (size_t j=0; j<cov.cols(); ++j){
-            corr(i,j) = cov(i,j) / sqrt(cov(i,i) * cov(j,j) );
-        }
-    }
-    return corr;
-}
 
-Gaussian next_joint(Seperated_gaussian joint_sep, Seperated_gaussian conditional_sep){
+Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
+    Seperated_gaussian joint_sep =seperate_gaussian(joint);
     // multiplication
-    Eigen::VectorXd x = calc_x(joint_sep.marginal, conditional_sep.conditional);
-    Eigen::MatrixXd X = calc_X(joint_sep.marginal, conditional_sep.conditional);
-    Eigen::MatrixXd Y = calc_Y(joint_sep.marginal, conditional_sep.conditional);
+    // first factor after multiplication
+    Eigen::VectorXd x = calc_x(joint_sep.marginal, conditional);
+    Eigen::MatrixXd X = calc_X(joint_sep.marginal, conditional);
+    Eigen::MatrixXd Y = calc_Y(joint_sep.marginal, conditional);
 
-    Affine_gaussian nx(x, X, Y);
-    Affine_gaussian n2( conditional_sep.conditional.a, 
-                        conditional_sep.conditional.F, 
-                        joint_sep.marginal.C + conditional_sep.conditional.A);
-    Gaussian n3 = n2.transform(joint_sep.marginal.m);
-    Gaussian n4 = conditional_sep.marginal;
-    return n4;
+    Affine_gaussian NX(x, X, Y);
+
+    // second factor after multiplication
+    Affine_gaussian G(  conditional.a, 
+                        conditional.F, 
+                        joint_sep.marginal.C + conditional.A);
+
+    // transform and evaluate at mean mu_n+1 (D_n+1)
+    Gaussian next_marginal = G.transform(joint_sep.marginal.m);
+
+    // Integration over z_n+1
+    Affine_gaussian next_conditional = propagation(joint_sep.conditional, NX);
+
+    Seperated_gaussian next_joint(next_marginal, next_conditional);
+
+    return next_joint.to_joint();
 }
 
-Eigen::MatrixXd correlation(const std::vector<double> &params_vec, MOMAdata &cell, size_t t1, size_t t2){
-    cell.mean = cell.mean_forward[t1];
-    cell.cov = cell.cov_forward[t1];
 
-    int t=t1;
-    Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
+/*
+* ===============================================================
+* ===============================================================
+* ===============================================================
+*/
+void calc_correlation_matrix(const std::vector<double> &params_vec, MOMAdata &cell, size_t n1, size_t n2){
 
-    /* P(z_n+1, z_n, D_n) */
-    Gaussian joint = consecutive_joint(params_vec, cell, cell.time(t+1)-cell.time(t)); 
+    /* P(z_n+1, z_n | D_n+1) */
+    Gaussian joint = consecutive_joint(params_vec, cell, n1); 
+    cell.correlation.push_back(correlation_from_covariance(joint.C));
+    // cell.correlation.push_back(joint.C);
 
-    /* P(z_n+1, z_n, D_n) / P(z_n, D_n)  */
-    Gaussian conditional = consecutive_conditional(joint, cell); 
+   
+    for (size_t t=n1+1; t<n2-1; ++t){
+        /* P(z_n+2 | z_n+1 , D_n+2) */
+        Affine_gaussian conditional = consecutive_conditional(params_vec, cell, t);
 
-    /* -> N(x | m, C) N(y | a + F x, A) */
-    Seperated_gaussian joint_sep = seperate_gaussian(joint); // 
-    /* include x and g */
-    joint_sep.marginal = include_measurement(joint_sep.marginal, cell.log_length(t), cell.fp(t), D); 
+        // move to P(z_n+2, z_n | D_n+2)
+        joint = next_joint(joint, conditional);
+    
+        // append the correlation matrix for (n, n+2)
+        cell.correlation.push_back(correlation_from_covariance(joint.C));
+        // cell.correlation.push_back(joint.C);
 
-    Seperated_gaussian conditional_sep = seperate_gaussian(conditional); // 
-    /* include x and g */
-    conditional_sep.marginal = include_measurement(conditional_sep.marginal, cell.log_length(t), cell.fp(t), D); 
-
-
-    Gaussian posterior_joint = joint_sep.to_joint();
-    Eigen::MatrixXd corr = correlation_from_covariance(joint.C);
-
-    // std::cout << joint.C << "\n";
-
-    // std::cout << conditional.C << "\n\n";
-
-    // std::cout << conditional_sep.to_joint().C << "\n";
-    return corr;
+    }
 }
 
 /* -------------------------------------------------------------------------- */
 void sc_correlation(const std::vector<double> &params_vec, MOMAdata &cell){
-    Eigen::MatrixXd corr = correlation(params_vec, cell, 1, 2);
-
-    // print it for the time being
-    const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
-    // std::cout << corr.format(CSVFormat) << "\n\n";
+    
+    calc_correlation_matrix(params_vec, cell, 0, cell.time.size());
 }
 
 void correlation_recr(const std::vector<double> &params_vec, 
@@ -292,5 +342,43 @@ void correlation(const std::vector<double> &params_vec, std::vector<MOMAdata> &c
 
     for(size_t i=0; i<p_roots.size(); ++i){
         correlation_recr(params_vec,  p_roots[i]);
+    }
+}
+
+/* --------------------------------------------------------------------------
+* OUTPUT
+* -------------------------------------------------------------------------- */
+
+std::string outfile_name_correlation(std::map<std::string, std::string> arguments, Parameter_set params){
+    /* Filename for a prediction file */
+    std::string outfile = out_dir(arguments);
+    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_correlation";
+    return outfile + ".csv";
+}
+
+void write_correlations_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
+                                Parameter_set& params, const CSVconfig &config){    
+    params.to_csv(outfile);
+    Eigen::IOFormat CommaFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "\n");
+
+    std::vector<std::string> string_entries = {"x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"};
+
+    std::ofstream file(outfile, std::ios_base::app);
+    file << "\ncell_id,parent_id,time";
+    for(size_t m=0; m<string_entries.size(); ++m){
+        for(size_t n=0; n<string_entries.size(); ++n){
+            if (m<=n)
+                file << ",R(" << string_entries[m] << string_entries[n] << ")";
+        }
+    }
+    file << "\n";
+    for(size_t i=0; i<cells.size();++i){
+        for (size_t j=0; j<cells[i].correlation.size();++j ){
+            file << cells[i].cell_id << "," << cells[i].parent_id << "," 
+                 << cells[i].time[j] * config.rescale_time << ","; 
+
+            output_upper_triangle(file, cells[i].correlation[j]);
+            file << "\n";
+        }
     }
 }

@@ -308,18 +308,17 @@ std::string outfile_name_prediction(std::map<std::string, std::string> arguments
 }
 
 
-void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd m){
-    /* Comma seperated output of upper triangle of 4x4 Eigen::matrix*/
-    std::vector<std::vector<int>> upper_triangle {{0,0}, {0,1}, {0,2}, {0,3},
-                                                         {1,1}, {1,2}, {1,3},
-                                                                {2,2}, {2,3},
-                                                                       {3,3}};
-                                                                       
-    for (size_t k=0; k<upper_triangle.size(); ++k){
-        if (k>0)
-            file << ",";
-        file << m(upper_triangle[k][0], upper_triangle[k][1]);
-    }
+void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd mat){
+    /* Comma seperated output of upper triangle of Eigen::matrix*/
+    for(size_t m=0; m<mat.rows();++m){
+        for(size_t n=0; n<mat.cols();++n){
+            if (m<=n){
+                if (n+m>0)
+                    file << ",";
+                file << mat(m, n);
+            }
+        }    
+    }                     
 }
 
 void output_vector(std::ofstream &file, Eigen::VectorXd v){

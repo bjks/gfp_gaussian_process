@@ -264,7 +264,7 @@ std::vector<int> Parameter_set::non_fixed(){
 }
 
 std::ostream& operator<<(std::ostream& os, const Parameter_set& params){
-    std::vector<int> column_widths {4, 15, 8, 10, 10, 10, 10};
+    std::vector<int> column_widths {4, 15, 8, 20, 20, 15, 15};
 
     os  << pad_str("No", column_widths[0]) << pad_str("Name", column_widths[1])<< pad_str("Type", column_widths[2])
         << pad_str("Init", column_widths[3]) << pad_str("Step", column_widths[4]) << pad_str("Bounds", column_widths[5]) << "\n";

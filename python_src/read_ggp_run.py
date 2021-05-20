@@ -185,6 +185,9 @@ def read_iteration_process(filename):
     df = pd.read_csv(filename, skiprows=14)    
     return df[["iteration", 'log_likelihood']]
 
+def read_correlation(filename):
+    return pd.read_csv(filename, skiprows=12)
+
 def read_minimization(filename, last_n=0):
     df = pd.read_csv(filename, skiprows=14)    
     if last_n != 0:
@@ -371,7 +374,7 @@ def plot_noisy_param_run(filenames, params_config, skip=0, cols=3, width=14):
 # Prediction #
 # ==================================================== #
 def plot_predictions(filename, start=None, stop=None, step=None):
-    """ needs a prediction file """
+    """ needs a prediction file, start, stop, step refers to cells """
     _, axes = plt.subplots(4, 1, figsize=(10,13), sharex=True)
     ax = axes.ravel()
 

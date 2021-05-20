@@ -93,7 +93,7 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
                     std::map<std::string, std::string> arguments, const CSVconfig &config){
     std::cout << "-> prediction" << "\n";
     
-    std::string outfile = outfile_name_prediction(arguments, params);
+    std::string outfile   = outfile_name_prediction(arguments, params);
     std::string outfile_b = outfile_name_prediction(arguments, params, "_backward");
     std::string outfile_f = outfile_name_prediction(arguments, params, "_forward");
 
@@ -123,9 +123,15 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
 void run_correlations(std::vector<MOMAdata> &cells, Parameter_set params, 
                     std::map<std::string, std::string> arguments, const CSVconfig &config){
+    std::cout << "-> correlation" << "\n";
 
     std::vector<double> params_vec = params.get_final();
     correlation(params_vec, cells);
+
+    std::string outfile_corr = outfile_name_correlation(arguments, params);
+    std::cout << "Outfile: " << outfile_corr << "\n";
+
+    write_correlations_to_file(cells, outfile_corr, params, config);
 }
 
 
