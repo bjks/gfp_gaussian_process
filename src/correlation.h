@@ -1,154 +1,31 @@
 #include "predictions.h"
+#include "Gaussians.h"
 
-// Matric utils
-Eigen::MatrixXd hstack(Eigen::MatrixXd A, Eigen::MatrixXd B){
-    /* horizontal stack of A and B */
-    Eigen::MatrixXd C(A.rows(), A.cols()+B.cols());
-    C << A, B;
-    return C;
-}
+/*
+* This header relies on the Gaussian classes in contrast to the rest of the code, 
+* which just handles mean and covariances seperately
+*/
 
-Eigen::MatrixXd vstack(Eigen::MatrixXd A, Eigen::MatrixXd B){
-    /* vertical stack of A and B */
-    Eigen::MatrixXd C(A.rows()+B.rows(), A.cols()); 
-    C << A, B;
-    return C;
-}
-
-
-/* ================================================= */
-/* ================================================= */
-/* ================================================= */
-
-/* ============== Gaussian class ============== */
-class Gaussian{
-    /*  
-    * A class describing a gaussian: N(x | m, C)
+std::vector<std::vector<Gaussian>> init_joint_matrix(std::vector<MOMAdata> &cells){
+    /*
+    * inits a vector of vectors of Gaussians, 
+    * which size is chosen such that joints 
+    * P(z_n+1, z_n) ... P(z_n+N, z_n) corresponding to the columns 
+    * fit for the largest possible N 
     */
-public:
-    Eigen::VectorXd m;
-    Eigen::MatrixXd C;
-    Gaussian() = default;
-    Gaussian(Eigen::VectorXd m_, Eigen::MatrixXd C_) {
-        m = m_;
-        C = C_;
-    }
-    
-    Gaussian multiply(Gaussian n1, Gaussian n2);
-};
-
-Gaussian Gaussian::multiply(Gaussian n1, Gaussian n2){
-    /* multipication ignoring normalization (!) */
-    m = n2.C*(n1.C + n2.C).inverse()*n1.m \
-      + n1.C*(n1.C + n2.C).inverse()*n2.m;
-    C = n1.C*(n1.C+n2.C).inverse()*n2.C;
-    Gaussian n3(m, C);
-    return n3;
-}
-
-/* ============== Affine_gaussian class ============== */
-class Affine_gaussian{
-    /*  
-    * A class describing a gaussian with a transformed mean: N(y | a + F x, A)
-    */
-public:
-    Eigen::VectorXd a;
-    Eigen::MatrixXd F;
-    Eigen::MatrixXd A;
-
-    Affine_gaussian() = default;
-    Affine_gaussian(Eigen::VectorXd a_, Eigen::MatrixXd F_, Eigen::MatrixXd A_){
-        a = a_;
-        F = F_;
-        A = A_;
-    }
-    Affine_gaussian transform();
-    Gaussian transform(Eigen::VectorXd y);
-};
-
-Affine_gaussian Affine_gaussian::transform(){
-    /* 
-    * transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|a' + F' y, A')
-    * looses normalization 
-    */
-    Eigen::VectorXd new_a = -F.inverse()*a;
-    Eigen::MatrixXd new_F = F.inverse();
-    Eigen::MatrixXd new_A = F.inverse() * A *F.inverse().transpose();
-    Affine_gaussian n(new_a, new_F, new_A);
-    return n;
-}
-
-Gaussian Affine_gaussian::transform(Eigen::VectorXd y){
-    /* transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|m,C) for a given y , looses normalization */
-    Gaussian n(F.inverse()*(y-a), F.inverse()*A*F.inverse().transpose());
-    return n;
-}
-
-
-/* ============== Seperated_gaussian class ============== */
-class Seperated_gaussian{
-    /*  
-    * A class describing a joint gaussian as a product of 
-    * mearginal and conditional in the form: N(x | m, C) N(y | a + F x, A)
-    * It makes use of the Gaussian class and the 
-    */
-public:
-    Gaussian marginal;
-    Affine_gaussian conditional; 
-
-    Seperated_gaussian(Gaussian marginal_, Affine_gaussian conditional_){
-        marginal = marginal_;
-        conditional = conditional_;
-    }
-
-    Gaussian to_joint(int n=8);
-};
-
-Gaussian Seperated_gaussian::to_joint(int n){
-    /* rewrites the sperated gaussian (N(x | m, C) N(y | a + F x, A)) as N([x y]| m, C) whith matching m and C  */
-    Eigen::VectorXd mean_joint(n); 
-    mean_joint << marginal.m, conditional.a + conditional.F * marginal.m;
-
-    Eigen::MatrixXd cov_joint(n, n); 
-    cov_joint << vstack(hstack(marginal.C , 
-                                marginal.C.transpose()*conditional.F.transpose()) , 
-                        hstack(conditional.F * marginal.C, 
-                                conditional.A + conditional.F * marginal.C.transpose() * conditional.F.transpose()));
-    Gaussian joint(mean_joint, cov_joint);
-    return joint;   
-}
-
-
-Seperated_gaussian seperate_gaussian(Gaussian joint, int n=4){
-    Eigen::MatrixXd B = joint.C.bottomRightCorner(n,n);
-    Eigen::MatrixXd K = joint.C.topRightCorner(n,n);
-    Eigen::MatrixXd A = joint.C.topLeftCorner(n,n);
-
-    Eigen::VectorXd a = joint.m.head(n);
-    Eigen::VectorXd b = joint.m.tail(n);
-
-    Gaussian n1(a, A);
-    Affine_gaussian n2(b - K.transpose()*A.inverse()*a, 
-                                K.transpose()*A.inverse(), 
-                                B- K.transpose()*A.inverse()*K);
-    Seperated_gaussian sep(n1, n2);
-    return sep;
-}
-
-
-//Correlation
-Eigen::MatrixXd correlation_from_covariance(Eigen::MatrixXd cov){
-    Eigen::MatrixXd corr(cov.rows(), cov.cols());
-    for (size_t i=0; i<cov.rows(); ++i){
-        for (size_t j=0; j<cov.cols(); ++j){
-            corr(i,j) = cov(i,j) / sqrt(cov(i,i) * cov(j,j) );
+    size_t maxt = 0;
+    for (size_t i=0; i<cells.size(); ++i){
+        if (cells[i].time.size() > maxt){
+            maxt = cells[i].time.size();
         }
     }
-    return corr;
+    std::vector<std::vector<Gaussian>> joint_matrix(maxt-1);
+    return joint_matrix;
 }
-/* ================================================= */
-/* ================================================= */
-/* ================================================= */
+
+/* =========================================================== */
+/* Calculation of a single joint over arbitrarily spaced point */
+/* =========================================================== */
 
 Gaussian include_measurement(Gaussian distr, 
                              Gaussian measurement_distr, 
@@ -291,18 +168,18 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
 }
 
 
-/*
-* ===============================================================
-* ===============================================================
-* ===============================================================
-*/
-void calc_correlation_matrix(const std::vector<double> &params_vec, MOMAdata &cell, size_t n1, size_t n2){
+/* =========================================================== */
+/* "Main" of the joint_distribution calculation */
+/* =========================================================== */
 
+void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell, 
+                             size_t n1, size_t n2, std::vector<std::vector<Gaussian>> &joint_matrix){
+    if (n1==n2){
+        return;
+    }
     /* P(z_n+1, z_n | D_n+1) */
     Gaussian joint = consecutive_joint(params_vec, cell, n1); 
-    cell.correlation.push_back(correlation_from_covariance(joint.C));
-    // cell.correlation.push_back(joint.C);
-
+    joint_matrix[0].push_back(joint);
    
     for (size_t t=n1+1; t<n2-1; ++t){
         /* P(z_n+2 | z_n+1 , D_n+2) */
@@ -312,51 +189,90 @@ void calc_correlation_matrix(const std::vector<double> &params_vec, MOMAdata &ce
         joint = next_joint(joint, conditional);
     
         // append the correlation matrix for (n, n+2)
-        cell.correlation.push_back(correlation_from_covariance(joint.C));
-        // cell.correlation.push_back(joint.C);
-
+        joint_matrix[t-n1].push_back(joint);
     }
 }
+
+
+/* ======================================================== */
+/* Looping over pairs of points for joint distr calculation */
+/* ======================================================== */
+
+void sc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell,
+                    std::vector<std::vector<Gaussian>> &joint_matrix){
+    for (size_t t=0; t<cell.time.size()-1; ++t){
+        calc_joint_distributions(params_vec, cell, t, cell.time.size(), joint_matrix);
+    }
+}
+
+
+std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+    /* 
+    * has to be run after the prediction is run !!!
+    */
+    std::vector<std::vector<Gaussian>> joint_matrix = init_joint_matrix(cells);
+
+    for (size_t i=0; i< cells.size(); ++i){
+        sc_joint_distributions(params_vec, cells[i], joint_matrix);
+    }
+
+    return joint_matrix;
+}
+
 
 /* -------------------------------------------------------------------------- */
-void sc_correlation(const std::vector<double> &params_vec, MOMAdata &cell){
-    
-    calc_correlation_matrix(params_vec, cell, 0, cell.time.size());
-}
+Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints){
+    int n = joints[0].C.cols();
+    Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
+    for (size_t i=0; i<n; ++i){
+        for (size_t j=0; j<n; ++j){
 
-void correlation_recr(const std::vector<double> &params_vec, 
-                    MOMAdata *cell){
-    /*  
-    * 
-    */
-    if (cell == nullptr)
-        return;
-    sc_correlation(params_vec, *cell);
-    correlation_recr(params_vec, cell->daughter1);
-    correlation_recr(params_vec, cell->daughter2);
-}
-
-void correlation(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
-    /* has be run after the prediction is run */
-    std::vector<MOMAdata *> p_roots = get_roots(cells);
-
-    for(size_t i=0; i<p_roots.size(); ++i){
-        correlation_recr(params_vec,  p_roots[i]);
+            // calculate covariance element <C_ij + m_i *m_j> - <m_i> * <m_j>
+            double mimj = 0;
+            double mi = 0;
+            double mj = 0;
+            for(size_t k=0; k<joints.size(); ++k){
+                mimj += joints[k].C(i,j) + joints[k].m(i)*joints[k].m(j); // sum over all C_ij + m_i *m_j
+                mi += joints[k].m(i);
+                mj += joints[k].m(j);
+            }
+            cov(i,j) = mimj/joints.size() -  mi/joints.size() * mj/joints.size();
+            // move to the next entry
+        }
     }
+    return cov;
 }
+
+std::vector<size_t> count_joints(std::vector<std::vector<Gaussian>> joint_matrix){
+    std::vector<size_t> n;
+    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
+        n.push_back(joint_matrix[dt].size());
+    }
+    return n;
+}
+
+
+std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussian>> joint_matrix){
+    std::vector<Eigen::MatrixXd> covariances;
+    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
+        covariances.push_back(covariance_from_joint(joint_matrix[dt]));
+    }
+    return covariances;
+}
+
+
 
 /* --------------------------------------------------------------------------
 * OUTPUT
 * -------------------------------------------------------------------------- */
-
-std::string outfile_name_correlation(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_covariances(std::map<std::string, std::string> arguments, Parameter_set params){
     /* Filename for a prediction file */
     std::string outfile = out_dir(arguments);
     outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_correlation";
     return outfile + ".csv";
 }
 
-void write_correlations_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
+void write_covariances_to_file(std::vector<Eigen::MatrixXd> covariances, double dt, std::vector<size_t> joint_number, std::string outfile, 
                                 Parameter_set& params, const CSVconfig &config){    
     params.to_csv(outfile);
     Eigen::IOFormat CommaFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "\n");
@@ -364,7 +280,7 @@ void write_correlations_to_file(const std::vector<MOMAdata> &cells, std::string 
     std::vector<std::string> string_entries = {"x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"};
 
     std::ofstream file(outfile, std::ios_base::app);
-    file << "\ncell_id,parent_id,time";
+    file << "dt,joint_number";
     for(size_t m=0; m<string_entries.size(); ++m){
         for(size_t n=0; n<string_entries.size(); ++n){
             if (m<=n)
@@ -372,13 +288,9 @@ void write_correlations_to_file(const std::vector<MOMAdata> &cells, std::string 
         }
     }
     file << "\n";
-    for(size_t i=0; i<cells.size();++i){
-        for (size_t j=0; j<cells[i].correlation.size();++j ){
-            file << cells[i].cell_id << "," << cells[i].parent_id << "," 
-                 << cells[i].time[j] * config.rescale_time << ","; 
-
-            output_upper_triangle(file, cells[i].correlation[j]);
-            file << "\n";
-        }
+    for(size_t i=0; i<covariances.size();++i){
+        file << (i+1.)*dt << "," << joint_number[i] << ",";
+        output_upper_triangle(file, covariances[i]);
+        file << "\n";
     }
 }

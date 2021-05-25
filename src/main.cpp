@@ -8,6 +8,10 @@
 #include <iomanip> 
 
 
+/* ======================================== */
+/* Routines for the different running modes */
+/* ======================================== */
+
 int run_minimization(std::vector<MOMAdata> &cells, 
                     Parameter_set &params, 
                     std::map<std::string, std::string> arguments){
@@ -121,20 +125,25 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 }
 
 
-void run_correlations(std::vector<MOMAdata> &cells, Parameter_set params, 
+void run_covariance(std::vector<MOMAdata> &cells, Parameter_set params, 
                     std::map<std::string, std::string> arguments, const CSVconfig &config){
-    std::cout << "-> correlation" << "\n";
+    std::cout << "-> auto co-variance" << "\n";
 
     std::vector<double> params_vec = params.get_final();
-    correlation(params_vec, cells);
 
-    std::string outfile_corr = outfile_name_correlation(arguments, params);
-    std::cout << "Outfile: " << outfile_corr << "\n";
+    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vec, cells);
+    std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
+    std::vector<size_t> joint_number = count_joints(joint_matrix);
 
-    write_correlations_to_file(cells, outfile_corr, params, config);
+    std::string outfile_cov = outfile_name_covariances(arguments, params);
+    std::cout << "Outfile: " << outfile_cov << "\n";
+
+    write_covariances_to_file(covariances, cells[0].time[1] - cells[0].time[0], joint_number, outfile_cov, params, config);
 }
 
 
+
+/* =============================================================================== */
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::vector<std::string>> keys = 
         {
@@ -151,7 +160,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"},
-        {"-a","--auto_corr", "run auto-correlation"}
+        {"-a","--auto_cov", "run auto co-variance"}
         };
 
     std::map<std::string, int> key_indices; 
@@ -193,8 +202,10 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["scan"] = "1";
                 else if(k==key_indices["-p"])
                     arguments["predict"] = "1";
-                else if(k==key_indices["-a"])
-                    arguments["auto_corr"] = "1";
+                else if(k==key_indices["-a"]){
+                    arguments["auto_cov"] = "1";
+                    arguments["predict"] = "1"; // needs to be run prior to the auto covariance calculation
+                }
                 else if (k==key_indices["-h"]){
                     arguments["quit"] = "1";
                     std::cout << "Usage: ./gfp_gaussian [-options]\n";
@@ -242,8 +253,11 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 }
 
 
-int main(int argc, char** argv){
+/* =============================================================================== */
+/*                                  MAIN                                           */
+/* =============================================================================== */
 
+int main(int argc, char** argv){
     /* process command line arguments */
     std::map<std::string, std::string> arguments = arg_parser(argc, argv);
     _print_level = std::stoi(arguments["print_level"]);
@@ -294,12 +308,12 @@ int main(int argc, char** argv){
         run_bound_1dscan(cells, params, arguments);
     }
 
-    if (arguments.count("predict") || arguments.count("auto_corr")){
+    if (arguments.count("predict")){
         run_prediction(cells, params, arguments, config);
     }
     
-    if (arguments.count("auto_corr")){
-        run_correlations(cells, params, arguments, config);
+    if (arguments.count("auto_cov")){
+        run_covariance(cells, params, arguments, config);
     }
 
     std::cout << "Done." << std::endl;
