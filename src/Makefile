@@ -9,6 +9,9 @@ EIGENFLAG = -I ~/eigen
 local: 
 	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(BOOSTFLAG) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian
 
+variation:
+	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(BOOSTFLAG) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian_variation
+
 cluster:
 	ml GCC/8.3.0; ml Eigen/3.3.7; g++ main.cpp $(CFLAGS) $(NLOPTLAGS64) $(BOOSTFLAG) $(EIGENFLAG) $(FADFLAG) -static-libstdc++ -lstdc++fs -o ../bin/gfp_gaussian
 

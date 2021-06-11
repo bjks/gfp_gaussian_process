@@ -330,18 +330,6 @@ double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,dou
         zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t,0) - nm(1)*bl;
 }
 
-// double cross_cgl(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
-// 	gl = 0;
-//     ml = 0;
-//     return (bg*bl)/exp((b + gl)*t) + Cgl/exp((b + gl)*t) + (bg*ml)/exp(b*t) - (bg*ml)/exp((b + gl)*t) + \
-//         Cll*mq*onetauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gl*t,t) + Clq*ml*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
-//         (bq*Cll + bl*Clq + Clq*Cxl + Cll*Cxq - Clq*ml - Cll*mq)*onetauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) + \
-//         Cll*Clq*twotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) + ml*mq*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t,t) + \
-//         (bl*mq + Cxl*mq - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl,bx + Cxx/2. - b*t - gl*t,t) + \
-//         (bq*ml + Cxq*ml - ml*mq)*zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t,t) + \
-//         (bl*bq + Clq + bq*Cxl + bl*Cxq + Cxl*Cxq - bq*ml - Cxq*ml - bl*mq - Cxl*mq + ml*mq)*\
-//          zerotauint(Cll/2.,b + bl + Cxl - gq,bx + Cxx/2. - b*t - gl*t,t) - nm(1)*nm(2);
-// }
 
 double cross_cgq(double t,double bx,double bg,double bl,double bq,double Cxx,double Cxg,double Cxl,double Cxq,double Cgg,double Cgl,double Cgq,double Cll,double Clq,double Cqq,double ml,double gl,double sl2,double mq,double gq,double sq2,double b,Eigen::VectorXd nm){
     return (bg*bq)/exp(b*t) + Cgq/exp(b*t) + \

@@ -55,6 +55,7 @@ Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell,
     /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n+1) is returned */
     cell.mean = cell.mean_forward[t];
     cell.cov = cell.cov_forward[t];
+
     /* ------------ prior joint ------------*/
     // C_n (D_n)
     Eigen::VectorXd mean1 = cell.mean;
@@ -162,11 +163,18 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
     // Integration over z_n+1
     Affine_gaussian next_conditional = propagation(joint_sep.conditional, NX);
 
-    Seperated_gaussian next_joint(next_marginal, next_conditional);
+    Seperated_gaussian new_joint(next_marginal, next_conditional);
 
-    return next_joint.to_joint();
+    return new_joint.to_joint();
 }
 
+
+Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mean_backward, Eigen::MatrixXd cov_backward){
+    Gaussian backward(mean_backward, cov_backward);
+    Gaussian marginal = Gaussian::multiply(joint.marginal, backward);
+    Seperated_gaussian new_joint(marginal, joint.conditional);
+    return new_joint.to_joint();
+}
 
 /* =========================================================== */
 /* "Main" of the joint_distribution calculation */
@@ -179,8 +187,10 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     }
     /* P(z_n+1, z_n | D_n+1) */
     Gaussian joint = consecutive_joint(params_vec, cell, n1); 
+
+    // joint_matrix[0].push_back(incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]));
     joint_matrix[0].push_back(joint);
-   
+
     for (size_t t=n1+1; t<n2-1; ++t){
         /* P(z_n+2 | z_n+1 , D_n+2) */
         Affine_gaussian conditional = consecutive_conditional(params_vec, cell, t);
@@ -189,7 +199,15 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
         joint = next_joint(joint, conditional);
     
         // append the correlation matrix for (n, n+2)
+
+        // joint_matrix[t-n1].push_back(incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]));
         joint_matrix[t-n1].push_back(joint);
+
+        if (n1==0){
+            Seperated_gaussian sep_joint = seperate_gaussian(joint_matrix[t-n1].back());
+            cell.mean_prediction[t+1] = sep_joint.marginal.m;
+            cell.cov_prediction[t+1] = sep_joint.marginal.C;
+        }
     }
 }
 
@@ -221,7 +239,7 @@ std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector
 
 
 /* -------------------------------------------------------------------------- */
-Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints){
+Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, bool naive=false){
     int n = joints[0].C.cols();
     Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
     for (size_t i=0; i<n; ++i){
@@ -231,13 +249,32 @@ Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints){
             double mimj = 0;
             double mi = 0;
             double mj = 0;
+
+            double mimi = 0;
+            double mjmj = 0;
+
             for(size_t k=0; k<joints.size(); ++k){
-                mimj += joints[k].C(i,j) + joints[k].m(i)*joints[k].m(j); // sum over all C_ij + m_i *m_j
+                if (naive){
+                    mimj += joints[k].m(i)*joints[k].m(j);
+
+                    mimi += pow(joints[k].m(i),2);
+                    mjmj += pow(joints[k].m(j),2);
+                }
+                else{
+                    mimj += joints[k].C(i,j) + joints[k].m(i)*joints[k].m(j); // sum over all C_ij + m_i * m_j
+                    mimi += pow(joints[k].m(i),2) + joints[k].C(i,i);
+                    mjmj += pow(joints[k].m(j),2) + joints[k].C(j,j);
+                }
                 mi += joints[k].m(i);
                 mj += joints[k].m(j);
             }
             cov(i,j) = mimj/joints.size() -  mi/joints.size() * mj/joints.size();
-            // move to the next entry
+
+            // Normalization
+            cov(i,j) /= sqrt((mimi/joints.size() - pow(mi/joints.size(),2)) * \
+                             (mjmj/joints.size() - pow(mj/joints.size(),2))); 
+            
+            // ...move to the next entry
         }
     }
     return cov;
@@ -261,14 +298,13 @@ std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussia
 }
 
 
-
 /* --------------------------------------------------------------------------
 * OUTPUT
 * -------------------------------------------------------------------------- */
 std::string outfile_name_covariances(std::map<std::string, std::string> arguments, Parameter_set params){
     /* Filename for a prediction file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_correlation";
+    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_covariance";
     return outfile + ".csv";
 }
 

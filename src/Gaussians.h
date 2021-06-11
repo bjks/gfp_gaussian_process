@@ -34,14 +34,14 @@ public:
         C = C_;
     }
     
-    Gaussian multiply(Gaussian n1, Gaussian n2);
+    static Gaussian multiply(Gaussian n1, Gaussian n2);
 };
 
 Gaussian Gaussian::multiply(Gaussian n1, Gaussian n2){
     /* multipication ignoring normalization (!) */
-    m = n2.C*(n1.C + n2.C).inverse()*n1.m \
+    Eigen::VectorXd m = n2.C*(n1.C + n2.C).inverse()*n1.m \
       + n1.C*(n1.C + n2.C).inverse()*n2.m;
-    C = n1.C*(n1.C+n2.C).inverse()*n2.C;
+    Eigen::MatrixXd C = n1.C*(n1.C+n2.C).inverse()*n2.C;
     Gaussian n3(m, C);
     return n3;
 }

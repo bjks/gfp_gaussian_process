@@ -71,7 +71,7 @@ void sc_prediction_forward(const std::vector<double> &params_vec,
         Si = S.inverse();
         posterior(xg, cell, S, Si); // updates mean/cov
 
-        // save current mean/cov before (!) those are set for the next time point
+        // save current mean/cov before (!) those they are changed again
         cell.mean_forward.push_back(cell.mean);
         cell.cov_forward.push_back(cell.cov);
 
@@ -222,11 +222,11 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 
-        posterior(xg, cell, S, Si); // updates mean/cov
-
         // save current mean/cov before (!) those are set for the next time point
         append_reversed_mean(cell);
         append_reversed_cov(cell);
+
+        posterior(xg, cell, S, Si); // updates mean/cov
 
         // previous time point:
         if (t>0) {

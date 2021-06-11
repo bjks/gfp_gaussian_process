@@ -414,7 +414,7 @@ def write_param_file(filename, parameters,
                                                                             v*bound_scales[0], 
                                                                             v*bound_scales[1]))
             else:            
-                fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, v*init_scale))
+                fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-7])))
 
 def write_csv_config(filename):
     with open(filename, "w") as fin:
@@ -456,8 +456,9 @@ def suggest_run_command(directory, filename,
                         out_dir=None, 
                         t=1e-1, 
                         param_file = "parameters.txt", 
-                        add_flag=''):
-    cmd = "../bin/gfp_gaussian -c " + os.path.join(directory, "csv_config.txt") + \
+                        add_flag='', 
+                        binary = "../bin/gfp_gaussian" ):
+    cmd = binary + " -c " + os.path.join(directory, "csv_config.txt") + \
         " -b " + os.path.join(directory, param_file) + \
         " -t " + str(t) +  " -i " + filename + " -l 0 " + ' ' + add_flag + ' '
     if out_dir==None:
@@ -502,4 +503,148 @@ def plot_cells(cells, n_steps=1):
     plt.show()
 
 
-   
+
+
+# =================== Stand alone simulation =================== #
+
+def get_final_files(directory):
+    entries = os.listdir(directory)
+    final_files = []
+    for e in entries:
+        if e.endswith("_final.csv"):
+            final_files.append(os.path.join(directory,e))
+    return final_files
+
+
+def get_final_parameter_set(filename, return_type=str):
+
+    parameter_names =  ["mean_lambda", 
+                        "gamma_lambda",
+                        "var_lambda",
+                        "mean_q",
+                        "gamma_q",
+                        "var_q",
+                        "beta",
+                        "var_x",
+                        "var_g",
+                        "var_dx",
+                        "var_dg"]
+
+    final_set = []
+    with open(filename) as fin:
+        next(fin)
+        for k in parameter_names:
+            line = fin.readline()
+            final_set.append(float(line.split(',')[-1].strip()))
+    return dict(zip(parameter_names, final_set))
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Simulate cells with OU processes')
+
+    parser.add_argument('--i',
+                        dest='infile',
+                        help='input file, final file from gfp_gaussian run or directory with final file(s) from gfp_gaussian run',
+                        required=False,
+                        default=None)
+    parser.add_argument('--o',
+                        dest="outdir",
+                        help="output dir",
+                        required=True)
+    parser.add_argument('--l',
+                        dest="lanes",
+                        help="simulate lineages instead of a random tree of cells",
+                        required=False,
+                        default=1,
+                        type=int)
+    parser.add_argument('--n',
+                        dest="n_cells",
+                        help="number of cells per lane",
+                        required=False,
+                        default=250,
+                        type=int)
+    parser.add_argument('--m',
+                        dest="div_mode",
+                        help="division mode",
+                        required=False,
+                        default="sizer")
+    parser.add_argument('--d',
+                        dest="discard_cells",
+                        help="discard first n cells",
+                        required=False,
+                        default=0, 
+                        type=int)
+    parser.add_argument('--g',
+                        dest="genealogy",
+                        help="genealogy: 't' = tree (default) or 's' = single lineage",
+                        required=False,
+                        default="t")
+    parser.add_argument('--t',
+                        dest="dt",
+                        help="dt between measurment points",
+                        required=False,
+                        default=1e-3,
+                        type=float)
+
+    args = parser.parse_args()
+
+
+    # ========== Simulation parameters ========== #
+
+    dt = 1e-2
+    dt_measument = 3 # in minutes
+
+    overwrite_params = { 
+                    "var_x": 0.0,
+                    "var_g": 0.0,
+                    "var_dx": 0.0,
+                    "var_dg": 0.0}
+
+    n_cells = args.n_cells # number of cells that will be simulated
+
+    div_mode = args.div_mode
+
+    division_log_length = 1+np.log(2)   # for sizer: division, when log_length hits division_log_length
+    division_time = 60 - 1e-10          # for timer: division, when cell cycle time hits division_time
+    division_addition = np.log(2)       # for adder: divsion, when division_addition in log_length was added in cell cycle
+
+
+    if os.path.isfile(args.infile):
+        files = [args.infile]
+    else:
+        files = get_final_files(args.infile)
+
+    print("Found final files:", *files)
+
+    for file in files:
+        mk_mising_dir(args.outdir)
+        outfile = os.path.join(args.outdir, file.split("/")[-1][:-len("_final.csv")] ) + "_simulation.csv"
+        print("New simulation will be saved in:", outfile)
+        parameter_set = get_final_parameter_set(file)
+
+        for k in overwrite_params.keys():
+            parameter_set[k] = overwrite_params[k]
+
+        if args.genealogy[0] == "s":
+            tree = False
+        else:
+            tree = True
+
+        dataset = pd.DataFrame()
+        for i in np.arange(args.lanes):
+            cells_simulated = simulate_cells(dt, n_cells, parameter_set, div_mode,
+                            division_log_length, 
+                            division_time, 
+                            division_addition, tree=tree)[args.discard_cells+1:]
+            temp_dataset = build_data_set(cells_simulated, parameter_set['var_x'], parameter_set['var_g'], int(dt_measument/dt))
+            temp_dataset['lane'] = i+1
+            # add the last "lane" to the data frame
+            dataset = dataset.append(temp_dataset)
+
+        # finally save the data
+        dataset.to_csv( outfile )
+
+if __name__ == "__main__":
+    main()
