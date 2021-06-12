@@ -4,11 +4,12 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4G
 
-#SBATCH --time=04:00:00
-#SBATCH --qos=6hours
+#SBATCH --time=23:00:00
+#SBATCH --qos=1day
 
 #SBATCH --output=std.out
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=bjoern.kscheschinski@unibas.ch
 
-python3 cells_simulation.py --o test --n 110 --l 20 --d 10 --i /scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitexpr/20210401_constitexpr_inference --g s
+module load matplotlib
+python3 cells_simulation.py --o /scicore/home/nimwegen/ksches0000/simulation_data/inference_output_1/ --n 20 --l 50 --d 10 --i /scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitexpr/20$
