@@ -73,14 +73,14 @@ Affine_gaussian Affine_gaussian::transform(){
     */
     Eigen::VectorXd new_a = -F.inverse()*a;
     Eigen::MatrixXd new_F = F.inverse();
-    Eigen::MatrixXd new_A = F.inverse() * A *F.inverse().transpose();
+    Eigen::MatrixXd new_A = F.inverse() * A * F.inverse().transpose();
     Affine_gaussian n(new_a, new_F, new_A);
     return n;
 }
 
 Gaussian Affine_gaussian::transform(Eigen::VectorXd y){
     /* transforms affine gaussian N(y|a+Fx,A)=N(a+Fx|y,A) -> N(x|m,C) for a given y , looses normalization */
-    Gaussian n(F.inverse()*(y-a), F.inverse()*A*F.inverse().transpose());
+    Gaussian n(F.inverse()*(y-a), F.inverse() * A *F.inverse().transpose());
     return n;
 }
 

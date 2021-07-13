@@ -125,7 +125,12 @@ def get_minimization_file(filebase, paramter_settings):
     return minimization_iter_file, minimization_final_file
 
 
-def get_prediction_files(filebase, paramter_settings):
+def get_prediction_files(filebase, paramter_settings=None):
+    if paramter_settings==None:
+        return (filebase + '_prediction_forward.csv',
+            filebase + '_prediction_backward.csv',
+            filebase + '_prediction.csv')
+
     return (filebase + get_param_code(paramter_settings) + '_prediction_forward.csv',
             filebase + get_param_code(paramter_settings) + '_prediction_backward.csv',
             filebase + get_param_code(paramter_settings) + '_prediction.csv')
@@ -429,3 +434,39 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
     plt.show()
 
 # ==================================================== #
+
+def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60)):
+    """ needs a prediction file, start, stop, step refers to cells """
+    _, axes = plt.subplots(2, 1, figsize=(8,5))
+    ax = axes.ravel()
+
+    data = pd.read_csv(filename, skiprows=13)
+    cells_data = df2ggp_cells(data)[start: stop: step]
+     
+
+    norm = mpl.colors.Normalize(vmin=-len(cells_data)/2, vmax=len(cells_data))
+    cmap_data = mpl.cm.ScalarMappable(cmap='Oranges', norm=norm)
+    cmap_data.set_array([])
+
+    cmap_prediction = mpl.cm.ScalarMappable(cmap='Blues', norm=norm)
+    cmap_prediction.set_array([])
+
+    for i, cell in enumerate(cells_data):
+        time = np.array(cell.time) / time_unit[1]
+        data_color = cmap_data.to_rgba(i)
+
+        ax[0].scatter(time, cell.log_length, color=data_color, s=10)
+        ax[1].scatter(time, cell.gfp, color=data_color, s=10)
+
+
+    ax[0].set_ylabel("log lentgh")   
+    ax[1].set_ylabel("fl. protein")   
+
+    ax[0].set_xlabel("time ({:s})".format(time_unit[0]))  
+    ax[1].set_xlabel("time ({:s})".format(time_unit[0]))  
+
+
+    for i in range(len(ax)):
+        # ax[i].legend()
+        ax[i].grid(True)
+    plt.show()

@@ -39,10 +39,7 @@ Gaussian include_measurement(Gaussian distr,
     Eigen::Matrix2d Si = measurement_distr.C.inverse();
 
     Eigen::MatrixXd K = distr.C.block(0,0,2,distr.C.cols());
-    // Eigen::MatrixXd K = hstack(distr.C.block(0,0,2,4), Eigen::MatrixXd::Zero(2, 4));
-    // std::cout << K << "\n";
-
-
+    
     Gaussian new_gaussian(distr.m + K.transpose() * Si * xg, 
                             distr.C - K.transpose() * Si * K);
 
@@ -164,6 +161,8 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
     Affine_gaussian next_conditional = propagation(joint_sep.conditional, NX);
 
     Seperated_gaussian new_joint(next_marginal, next_conditional);
+    // Seperated_gaussian new_joint(marg, next_conditional);
+
 
     return new_joint.to_joint();
 }
@@ -185,29 +184,36 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     if (n1==n2){
         return;
     }
-    /* P(z_n+1, z_n | D_n+1) */
+    Affine_gaussian conditional;
+    Gaussian combined_joint; 
+    /* P(z_n+1, z_n | D_n1+1) */
     Gaussian joint = consecutive_joint(params_vec, cell, n1); 
 
-    // joint_matrix[0].push_back(incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]));
-    joint_matrix[0].push_back(joint);
+
+    // conditional = consecutive_conditional(params_vec, cell, n1);
+    // for (int i=0; i<60; ++i){
+    //     joint = next_joint(joint, conditional);
+
+    // }
+    combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]);
+    joint_matrix[0].push_back(combined_joint);
 
     for (size_t t=n1+1; t<n2-1; ++t){
-        /* P(z_n+2 | z_n+1 , D_n+2) */
-        Affine_gaussian conditional = consecutive_conditional(params_vec, cell, t);
+        /* P(z_t+1 | z_t , D_t+1) */
+        conditional = consecutive_conditional(params_vec, cell, t);
 
-        // move to P(z_n+2, z_n | D_n+2)
+        // move to P(z_t+1, z_n | D_t+1)
         joint = next_joint(joint, conditional);
     
-        // append the correlation matrix for (n, n+2)
-
-        // joint_matrix[t-n1].push_back(incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]));
-        joint_matrix[t-n1].push_back(joint);
-
-        if (n1==0){
-            Seperated_gaussian sep_joint = seperate_gaussian(joint_matrix[t-n1].back());
-            cell.mean_prediction[t+1] = sep_joint.marginal.m;
-            cell.cov_prediction[t+1] = sep_joint.marginal.C;
-        }
+        // append the joint for (n, t+1)
+        combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]);
+        joint_matrix[t-n1].push_back(combined_joint);
+    
+        // int dt=20; // variation
+        // if (t-n1==dt){
+        //     cell.mean_prediction[n1] = joint.m.tail(4);
+        //     cell.cov_prediction[n1] = joint.C.block(4,4,4,4);
+        // }
     }
 }
 
