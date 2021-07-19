@@ -114,10 +114,9 @@ bool MOMAdata :: is_root() const {
 // GENEALOGY
 // ============================================================================= //
 
-bool build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
+void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
     /*  
-    * Assign respective pointers to parent, daughter1 and daughter2 for each cell.
-    * Returns true when each parent was assigned to max. 2 daughters. false otherwise
+    * Assign respective pointers to parent, daughter1 and daughter2 for each cell
     */
     for(size_t k = 0; k < cell_vector.size(); ++k) {
         for(size_t j = 0; j < cell_vector.size(); ++j) {
@@ -132,16 +131,15 @@ bool build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                     cell_vector[j].daughter2 = &cell_vector[k];
                 }
                 else{
-                    std::cerr   << "(build_cell_genealogy) ERROR: both daughter pointers are set!" 
+                    std::cerr   << "(build_cell_genealogy) ERROR: Both daughter pointers are set" 
                                 << cell_vector[j].cell_id << "\n";
                     std::cerr << "-> daughter1 " << cell_vector[j].daughter1->cell_id << "\n";
                     std::cerr << "-> daughter2 " << cell_vector[j].daughter2->cell_id << "\n";
-                    return false;   
+                    throw std::invalid_argument("Invalid argument");
                 }
             }
         }
     }
-    return true;
 }
 
 void print_cells(std::vector<MOMAdata> const &cell_vector){
@@ -371,6 +369,9 @@ void append_vec(Eigen::VectorXd &v, double elem){
     v[v.size()-1] = elem;
 }
 
+double last_element(Eigen::VectorXd &v){
+    return v[v.size()-1];
+}
 
 std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     /* 
@@ -391,25 +392,30 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     // check if the columns that are set actually exist in header 
     if (!header_indices.count(config.time_col)){
         std::cerr << "(get_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
+        throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.length_col)){
         std::cerr << "(get_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
+        throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.fp_col)){
         std::cerr << "(get_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
+        throw std::invalid_argument("Invalid argument");
         return data;
     }
     for(size_t i=0; i<config.cell_tags.size(); ++i){
         if (!header_indices.count(config.cell_tags[i])){
             std::cerr << "(get_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
+            throw std::invalid_argument("Invalid argument");   
             return data;
         }
     }
     for(size_t i=0; i<config.parent_tags.size(); ++i){
         if (!header_indices.count(config.parent_tags[i])){
             std::cerr << "(get_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
+            throw std::invalid_argument("Invalid argument");
             return data;
         }
     }
@@ -423,34 +429,38 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     long data_point_cell;
     while (getline(file, line)) {
         ++line_count;
-        line_parts = split_string_at(line, config.delm);
-        // take lines only if end_type==div or header_indices "end_type" is not in header_indices
-        // if (header_indices.count("end_type") == 0 || line_parts[header_indices["end_type"]] == "div" ){
-            
+        try{
+            line_parts = split_string_at(line, config.delm);
+
             // compose the cell id of the cells using the cell_tags
-        curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
+            curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
-        if (last_cell != curr_cell){
-            data_point_cell = 0;
-            last_idx++;
-            MOMAdata next_cell;
-            // add new MOMAdata instance to vector 
-            data.push_back(next_cell); 
+            if (last_cell != curr_cell){
+                data_point_cell = 0;
+                last_idx++;
+                MOMAdata next_cell;
+                // add new MOMAdata instance to vector 
+                data.push_back(next_cell); 
 
-            data[last_idx].cell_id = curr_cell;
-            // compose the cell id of the parent using the parent_tags
-            data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
+                data[last_idx].cell_id = curr_cell;
+                // compose the cell id of the parent using the parent_tags
+                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
+            }
+
+            append_vec(data[last_idx].time,  stod_reject_nan(line_parts[header_indices[config.time_col]])/config.rescale_time);
+
+            if (config.length_islog)
+                append_vec(data[last_idx].log_length,  stod_reject_nan(line_parts[header_indices[config.length_col]]) );
+            else
+                append_vec(data[last_idx].log_length,  log(stod_reject_nan(line_parts[header_indices[config.length_col]])) );
+
+            append_vec(data[last_idx].fp,  stod_reject_nan(line_parts[header_indices[config.fp_col]]) );
+            last_cell = curr_cell;
         }
-
-        append_vec(data[last_idx].time,  std::stod(line_parts[header_indices[config.time_col]])/config.rescale_time);
-
-        if (config.length_islog)
-            append_vec(data[last_idx].log_length,  std::stod(line_parts[header_indices[config.length_col]]) );
-        else
-            append_vec(data[last_idx].log_length,  log(std::stod(line_parts[header_indices[config.length_col]])) );
-
-        append_vec(data[last_idx].fp,  std::stod(line_parts[header_indices[config.fp_col]]) );
-        last_cell = curr_cell;
+        catch(std::exception &e){
+            std::cerr << "(get_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
+            throw;
+        }
     }
     file.close();
     std::cout << last_idx + 1 << " cells and " << line_count << " data points found in file " << filename << std::endl; 

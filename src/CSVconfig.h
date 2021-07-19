@@ -40,13 +40,19 @@ public:
                     time_col = parts[1];
                 }
                 else if (parts[0] == "rescale_time"){
-                    rescale_time = std::stod(parts[1]);
+                    try{
+                        rescale_time = std::stod(parts[1]);
+                    }
+                    catch(std::exception &e){
+                        std::cerr << "(CSVconfig) ERROR: rescale_time in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
+                        throw;
+                    }
                 }
                 else if (parts[0] == "length_col"){
                     length_col = parts[1];
                 }
                 else if (parts[0] == "length_islog"){
-                    if ( parts[1] == "true")
+                    if (parts[1] == "true" || parts[1] == "True" )
                         length_islog = true;
                 }
                 else if (parts[0] == "fp_col"){

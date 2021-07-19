@@ -72,11 +72,8 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
         if (std::isnan(tl)){
-            // for (size_t i=0; i<params_vec.size(); ++i){
-            //         std::cout << params_vec[i]  << ", ";
-            // }
-            // std::cout << " " << cell.cell_id << "\n";
-            break;
+            std::cerr << "(sc_likelihood) ERROR: Log likelihood is Nan\n";
+            throw std::domain_error("Likelihood is Nan");
         }
     }
 }

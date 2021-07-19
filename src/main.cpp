@@ -12,7 +12,7 @@
 /* Routines for the different running modes */
 /* ======================================== */
 
-int run_minimization(std::vector<MOMAdata> &cells, 
+void run_minimization(std::vector<MOMAdata> &cells, 
                     Parameter_set &params, 
                     std::map<std::string, std::string> arguments){
 
@@ -24,23 +24,19 @@ int run_minimization(std::vector<MOMAdata> &cells,
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    bool found_min = false;
     std::string min_algo = "LN_COBYLA";
     double ll_max;
     if (arguments["search_space"] == "log"){
         ll_max = minimize_wrapper_log_params(&total_likelihood_log_params, cells, 
                                         params, std::stod(arguments["tolerance"]), 
-                                        found_min, min_algo);
+                                        min_algo);
     }
     else{
         ll_max = minimize_wrapper(&total_likelihood, cells, 
                                         params, std::stod(arguments["tolerance"]), 
-                                        found_min, min_algo);
+                                        min_algo);
     }
 
-    if (!found_min){
-        return -1;
-    }
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
     std::string outfile_estim = outfile_name_minimization_final(arguments, params);
@@ -55,7 +51,6 @@ int run_minimization(std::vector<MOMAdata> &cells,
     std::string outfile_params = outfile_parameter_file(arguments, params);
     create_parameter_file(outfile_params, params);
 
-    return 0;
 }
 
 
@@ -154,16 +149,16 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-i", "--infile", "(required) input data file"},
         {"-b", "--parameter_bounds", "(required) file setting the type, step, bounds of the parameters"},
         {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
-        {"-l","--print_level", "print level >=0, default=0"},
+        {"-l","--print_level", "print level >=0, default: 0"},
         {"-o","--outdir", "specify output direction and do not use default"},
-        {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default=1e-1"},
-        {"-space","--search_space", "search parameter space in 'log' or 'linear' space, default: 'linear'"},
-        {"-stat","--stationary", "indicates that the cells are not growing (much)"},
+        {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default: 1e-1"},
+        {"-space","--search_space", "search parameter space in {'log'|'linear'} space, default: 'linear'"},
+        {"-stat","--stationary", "indicates that the cells are not growing much"},
         {"-beta","--use_beta", "indicates that the initial beta will be used to initialize the cells"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"},
-        {"-a","--auto_cov", "run auto co-variance"}
+        {"-a","--auto_correlation", "run auto_correlation"}
         };
 
     std::map<std::string, int> key_indices; 
@@ -210,7 +205,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["predict"] = "1"; // needs to be run prior to the auto covariance calculation
                 }
                 else if (k==key_indices["-h"]){
-                    arguments["quit"] = "1";
+                    arguments["help"] = "1";
                     std::cout << "Usage: ./gfp_gaussian [-options]\n";
                     for(size_t j=0; j<keys.size(); ++j)
                         std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 27) << keys[j][2] <<"\n";
@@ -218,39 +213,39 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
             }
         }
     }
-    if (arguments.count("quit")){
+    if (arguments.count("help")){
         return arguments;
     }
 
     /* Check if meaningfull search space argument */
     if (arguments["search_space"] != "log" && arguments["search_space"] != "linear"){
-        std::cerr << "search_space must be either 'log' or 'linear', not " << arguments["search_space"];
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
+        throw std::invalid_argument("Invalide argument");
     }
 
     /* Check is required filenames are parsed and files exist */
     if (!arguments.count("infile")){
-        std::cerr << "Required infile flag not set!\n";
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: Required infile flag not set!\n";
+        throw std::invalid_argument("Invalide argument");
     }
     else if(! std::filesystem::exists(arguments["infile"])){
-        std::cerr << "Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
+        throw std::invalid_argument("Invalide argument");
     }
 
     if (!arguments.count("parameter_bounds")){
-        std::cerr << "Required parameter_bounds flag not set!\n";
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
+        throw std::invalid_argument("Invalide argument");
     }
     else if(! std::filesystem::exists(arguments["parameter_bounds"])){   
-        std::cerr << "Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
+        throw std::invalid_argument("Invalide argument");
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
     if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
-        std::cerr << "csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
-        arguments["quit"] = "1";
+        std::cerr << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
+        throw std::invalid_argument("Invalide argument");
     }
     return arguments;
 }
@@ -261,66 +256,60 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 /* =============================================================================== */
 
 int main(int argc, char** argv){
-    /* process command line arguments */
-    std::map<std::string, std::string> arguments = arg_parser(argc, argv);
-    _print_level = std::stoi(arguments["print_level"]);
+    try{
+        /* process command line arguments */
+        std::map<std::string, std::string> arguments = arg_parser(argc, argv);
+        _print_level = std::stoi(arguments["print_level"]);
 
-    if (arguments.count("quit")){
-        std::cout << "Quit\n";
-        return 0;    
-    }
-
-    /* get parameter and csv config file */
-    Parameter_set params(arguments["parameter_bounds"]);
-    if (!params.is_complete()){
-        std::cout << "Quit\n";
-        return -1;    
-    }
-    std::cout << params << "\n";
-
-    CSVconfig config(arguments["csv_config"]);
-    std::cout << config << "\n";
-
-    /* Read data from input file */
-    std::cout << "-> Reading" << "\n";
-    std::vector<MOMAdata> cells =  get_data(arguments["infile"], config);
-    if (!cells.size()){
-        std::cout << "Quit\n";
-        return -1;    
-    }
-    /* genealogy built via the parent_id (string) given in data file */
-    bool valid_genealogy = build_cell_genealogy(cells);
-    if (!valid_genealogy){
-        return -1;
-    }
-
-    /* inititialize mean and cov for forward and backward direction */
-    init_cells(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
-    init_cells_r(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
-
-
-    /* run bound_1dscan, minimization and/or prediction... */
-    if (arguments.count("minimize")){
-        int min_message = run_minimization(cells, params, arguments);
-        if (min_message  == -1){
-            return -1;
+        if (arguments.count("help")){
+            return EXIT_SUCCESS;    
         }
-    }
 
-    if (arguments.count("scan")){
-        run_bound_1dscan(cells, params, arguments);
-    }
+        /* get parameter and csv config file */
+        Parameter_set params(arguments["parameter_bounds"]);
+        params.check_if_complete();
 
-    if (arguments.count("predict")){
-        run_prediction(cells, params, arguments, config);
-    }
-    
-    if (arguments.count("auto_cov")){
-        run_covariance(cells, params, arguments, config);
-    }
+        std::cout << params << "\n";
 
-    std::cout << "Done." << std::endl;
-    return 0;
+        CSVconfig config(arguments["csv_config"]);
+        std::cout << config << "\n";
+
+        /* Read data from input file */
+        std::cout << "-> Reading" << "\n";
+        std::vector<MOMAdata> cells =  get_data(arguments["infile"], config);
+
+        /* genealogy built via the parent_id (string) given in data file */
+        build_cell_genealogy(cells);
+
+        /* inititialize mean and cov for forward and backward direction */
+        init_cells(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
+        init_cells_r(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
+
+
+        /* run bound_1dscan, minimization and/or prediction... */
+        if (arguments.count("minimize")){
+            run_minimization(cells, params, arguments);
+        }
+
+        if (arguments.count("scan")){
+            run_bound_1dscan(cells, params, arguments);
+        }
+
+        if (arguments.count("predict")){
+            run_prediction(cells, params, arguments, config);
+        }
+        
+        if (arguments.count("auto_cov")){
+            run_covariance(cells, params, arguments, config);
+        }
+
+        std::cout << "Done." << std::endl;
+        return EXIT_SUCCESS;
+    }
+    catch (...) {
+        std::cout << "Quit because of an error\n";
+        return EXIT_FAILURE;
+    }
 }
 
 

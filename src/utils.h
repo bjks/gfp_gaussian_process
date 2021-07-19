@@ -9,6 +9,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+double stod_reject_nan(std::string s){
+    double d = std::stod(s);
+    if (std::isnan(d)){
+        throw std::invalid_argument("String is Nan");
+    }
+    return d;
+}
+
 std::string pad_str(std::string s, const size_t num, const char paddingChar = ' '){
     /* pads string with paddingChar to match desired length */
     if(num > s.size())

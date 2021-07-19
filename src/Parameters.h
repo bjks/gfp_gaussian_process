@@ -54,27 +54,33 @@ public:
             val_split[i] = trim(val_split[i]);
         }
 
-        if (val_split.size() == 4){
-            init =  std::stod(val_split[0]);
-            step =  std::stod(val_split[1]);
-            lower =  std::stod(val_split[2]);
-            upper =  std::stod(val_split[3]);
-            bound = true;
-            set = true;
+        try{
+            if (val_split.size() == 4){
+                init =  stod_reject_nan(val_split[0]);
+                step =  stod_reject_nan(val_split[1]);
+                lower =  stod_reject_nan(val_split[2]);
+                upper =  stod_reject_nan(val_split[3]);
+                bound = true;
+                set = true;
 
-        } else if (val_split.size() == 1){
-            init =  std::stod(val_split[0]);
-            fixed = true;
-            set = true;
+            } else if (val_split.size() == 1){
+                init =  stod_reject_nan(val_split[0]);
+                fixed = true;
+                set = true;
 
-        }  else if (val_split.size() == 2){
-            init =  std::stod(val_split[0]);
-            step =  std::stod(val_split[1]);
-            free = true;
-            set = true;
+            }  else if (val_split.size() == 2){
+                init =  stod_reject_nan(val_split[0]);
+                step =  stod_reject_nan(val_split[1]);
+                free = true;
+                set = true;
 
-        } else{
-            std::cout << "Warning number of vaues in parameter file, paramter not set " << name << std::endl;
+            } else{
+                throw std::invalid_argument("Invalide number of arguments");
+            }
+        }
+        catch(std::exception &e){
+            std::cerr << "(set_paramter) ERROR: Parameter settings of '" << parts[0] << "' cannot be processed (" << e.what() <<")" << std::endl;
+            throw;
         }
     }
 };
@@ -171,7 +177,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
 
-    bool is_complete();
+    bool check_if_complete();
     void set_final(std::vector<double> vals);
     std::vector<double> get_final();
     std::vector<double> get_init();
@@ -182,10 +188,11 @@ public:
 };
 
 
-bool Parameter_set::is_complete(){
+bool Parameter_set::check_if_complete(){
     for (size_t i=0; i<all.size(); ++i){
         if (!all[i].set){
-            std::cerr << "ERROR: parameter " << all[i].name << " not found in parameter file\n";
+            std::cerr << "(check_if_complete) ERROR: Parameter " << all[i].name << " not found in parameter file\n";
+            throw std::invalid_argument("Invalide argument");
             return false;
         }
     }

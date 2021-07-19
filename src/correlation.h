@@ -27,21 +27,26 @@ std::vector<std::vector<Gaussian>> init_joint_matrix(std::vector<MOMAdata> &cell
 /* Calculation of a single joint over arbitrarily spaced point */
 /* =========================================================== */
 
-Gaussian include_measurement(Gaussian distr, 
-                             Gaussian measurement_distr, 
+Gaussian include_measurement(Gaussian joint, 
+                             Eigen::MatrixXd D, 
                              double x, double g){
-    /* include the measurements x and g, this follows the calculation of the posterior in the prediction part*/
+    /* 
+    * include the measurements x and g into the joint distrubtion, D is the diag matrix with the measurment variances
+    * it follows the calculation of the posterior in the prediction part
+    */
+
+    Gaussian measurement_distr(joint.m.head(2), joint.C.block(0,0,2,2) + D);
+
     Eigen::VectorXd xg(2);
 
     xg(0) = x - measurement_distr.m(0);
     xg(1) = g - measurement_distr.m(1);
 
     Eigen::Matrix2d Si = measurement_distr.C.inverse();
-
-    Eigen::MatrixXd K = distr.C.block(0,0,2,distr.C.cols());
+    Eigen::MatrixXd K = joint.C.block(0,0,2,joint.C.cols());
     
-    Gaussian new_gaussian(distr.m + K.transpose() * Si * xg, 
-                            distr.C - K.transpose() * Si * K);
+    Gaussian new_gaussian(joint.m + K.transpose() * Si * xg, 
+                            joint.C - K.transpose() * Si * K);
 
     // std::cout << "\nKT Si K: \n" <<  K.transpose() * Si * K;
     return new_gaussian;
@@ -49,11 +54,10 @@ Gaussian include_measurement(Gaussian distr,
 
 
 Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
-    /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n+1) is returned */
+    /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n) is returned */
     cell.mean = cell.mean_forward[t];
     cell.cov = cell.cov_forward[t];
 
-    /* ------------ prior joint ------------*/
     // C_n (D_n)
     Eigen::VectorXd mean1 = cell.mean;
     Eigen::MatrixXd cov1 = cell.cov;
@@ -80,37 +84,45 @@ Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell,
                         hstack(cross_cov.transpose(),   cov1));
 
     Gaussian joint(mean_joint, cov_joint);
-
-    /* ------------ include next x and g ------------*/
-    Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
-
-    Gaussian measurement_distr(joint.m.head(2), joint.C.block(0,0,2,2) + D);
-    // std::cout << "\ncov prior \n" << joint.C;
-
-    joint = include_measurement(joint, measurement_distr, cell.log_length(t+1), cell.fp(t+1)); 
-    // std::cout << "\ncov post:\n" << joint.C ;
-
     return joint;
 }
 
 
 Affine_gaussian consecutive_conditional(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
-    Gaussian joint = consecutive_joint(params_vec, cell, t);
+    /* given a P(z_n | D_n) the conditional P(z_n+1 | z_n D_n+1) is returned */
+    cell.mean = cell.mean_forward[t];
+    cell.cov = cell.cov_forward[t];
 
-    // write joint P(z_n+1, z_n | D_n) as a gaussian over the vector (z_n, z_n+1) instead of (z_n+1, z_n)
+    /* ------------ prior joint ------------*/
+    // C_n (D_n)
+    Eigen::VectorXd mean1 = cell.mean;
+    Eigen::MatrixXd cov1 = cell.cov;
+
+    // K_n+1,n (D_n), this is calculated from C_n and mu_n
+    double dt = cell.time(t+1)-cell.time(t);
+    Eigen::MatrixXd cross_cov = cross_cov_model(cell, dt, params_vec[0], 
+                                                params_vec[1], params_vec[2], params_vec[3], 
+                                                params_vec[4], params_vec[5], params_vec[6]); 
+
+    // C_n+1 (D_n), calculated from C_n and mu_n
+    mean_cov_model(cell, dt, params_vec[0], 
+                        params_vec[1], params_vec[2], params_vec[3], 
+                        params_vec[4], params_vec[5], params_vec[6]);
+    Eigen::VectorXd mean2 = cell.mean;    
+    Eigen::MatrixXd cov2 = cell.cov;
+
+    // construct the joint over [z_n, z_n+1]
     Eigen::VectorXd mean_joint(8); 
-    mean_joint << joint.m.tail(4), joint.m.head(4);
-
-    // flip C_n+1 with C_n and transpose K_n+1,n and K_n,n+1
+    mean_joint << mean1, mean2;
+    
     Eigen::MatrixXd cov_joint(8, 8); 
-    cov_joint << vstack(hstack(joint.C.block(4,4,4,4),              joint.C.block(0,4,4,4).transpose() ), 
-                        hstack(joint.C.block(4,0,4,4).transpose(),  joint.C.block(0,0,4,4)));
+    cov_joint << vstack(hstack(cov1,                    cross_cov.transpose()), 
+                        hstack(cross_cov,   cov2));
 
-    Gaussian flipped_joint(mean_joint, cov_joint);
+    Gaussian joint(mean_joint, cov_joint);
 
     // get conditional P (z_n+1, z_n) writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
-    Affine_gaussian conditional = seperate_gaussian(flipped_joint).conditional.transform();
+    Affine_gaussian conditional = seperate_gaussian(joint).conditional.transform();
     return conditional;
 }
 
@@ -140,6 +152,10 @@ Affine_gaussian propagation(Affine_gaussian a, Affine_gaussian x){
 
 
 Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
+    /* 
+    * given the joint P(z_n+1, z_n | D_n+1) as well as the conditional P(z_n+2 | z_n+1, D_n+1) 
+    * the posterior P(z_n+2, z_n | D_n+1) is returned
+    */
     Seperated_gaussian joint_sep =seperate_gaussian(joint);
     // multiplication
     // first factor after multiplication
@@ -163,6 +179,7 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
     Seperated_gaussian new_joint(next_marginal, next_conditional);
     // Seperated_gaussian new_joint(marg, next_conditional);
 
+    /* ------------ include next x and g ------------*/
 
     return new_joint.to_joint();
 }
@@ -186,15 +203,15 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     }
     Affine_gaussian conditional;
     Gaussian combined_joint; 
-    /* P(z_n+1, z_n | D_n1+1) */
+
+    Eigen::MatrixXd D(2,2);
+    D <<  params_vec[7], 0, 0,  params_vec[8];
+
+    /* P(z_n | D_n) -> P(z_n+1, z_n | D_n1) */
     Gaussian joint = consecutive_joint(params_vec, cell, n1); 
-
-
-    // conditional = consecutive_conditional(params_vec, cell, n1);
-    // for (int i=0; i<60; ++i){
-    //     joint = next_joint(joint, conditional);
-
-    // }
+    /* include x and g -> P(z_n+1, z_n | D_n1+1) */
+    joint = include_measurement(joint, D, cell.log_length(n1+1), cell.fp(n1+1)); 
+    
     combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]);
     joint_matrix[0].push_back(combined_joint);
 
@@ -202,17 +219,23 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
         /* P(z_t+1 | z_t , D_t+1) */
         conditional = consecutive_conditional(params_vec, cell, t);
 
-        // move to P(z_t+1, z_n | D_t+1)
+        /* move to P(z_t+1, z_n | D_t) */
         joint = next_joint(joint, conditional);
+        /* move to P(z_t+1, z_n | D_t+1) */
+        joint = include_measurement(joint, D, cell.log_length(t+1), cell.fp(t+1)); 
     
         // append the joint for (n, t+1)
         combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]);
         joint_matrix[t-n1].push_back(combined_joint);
     
-        // int dt=20; // variation
+        int dt=10; 
+        if (t-n1==dt){
+            cell.mean_prediction[n1] = combined_joint.m.tail(4);
+            cell.cov_prediction[n1] = combined_joint.C.block(4,4,4,4);
+        }
         // if (t-n1==dt){
-        //     cell.mean_prediction[n1] = joint.m.tail(4);
-        //     cell.cov_prediction[n1] = joint.C.block(4,4,4,4);
+        //     cell.mean_prediction[t+1] = joint.m.head(4);
+        //     cell.cov_prediction[t+1] = joint.C.block(0,0,4,4);
         // }
     }
 }
@@ -310,7 +333,7 @@ std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussia
 std::string outfile_name_covariances(std::map<std::string, std::string> arguments, Parameter_set params){
     /* Filename for a prediction file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_covariance";
+    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_correlation";
     return outfile + ".csv";
 }
 
@@ -322,7 +345,7 @@ void write_covariances_to_file(std::vector<Eigen::MatrixXd> covariances, double 
     std::vector<std::string> string_entries = {"x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"};
 
     std::ofstream file(outfile, std::ios_base::app);
-    file << "dt,joint_number";
+    file << "\ndt,joint_number";
     for(size_t m=0; m<string_entries.size(); ++m){
         for(size_t n=0; n<string_entries.size(); ++n){
             if (m<=n)
