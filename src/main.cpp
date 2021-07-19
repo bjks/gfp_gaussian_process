@@ -134,9 +134,6 @@ void run_covariance(std::vector<MOMAdata> &cells, Parameter_set params,
     std::cout << "Outfile: " << outfile_cov << "\n";
 
     write_covariances_to_file(covariances, cells[0].time[1] - cells[0].time[0], joint_number, outfile_cov, params, config);
-
-    std::string outfile_prediction = outfile_name_prediction(arguments, params, "_joint_mean");
-    write_predictions_to_file(cells, outfile_prediction, params, config, "n");
 }
 
 

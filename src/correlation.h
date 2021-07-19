@@ -227,16 +227,6 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
         // append the joint for (n, t+1)
         combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]);
         joint_matrix[t-n1].push_back(combined_joint);
-    
-        int dt=10; 
-        if (t-n1==dt){
-            cell.mean_prediction[n1] = combined_joint.m.tail(4);
-            cell.cov_prediction[n1] = combined_joint.C.block(4,4,4,4);
-        }
-        // if (t-n1==dt){
-        //     cell.mean_prediction[t+1] = joint.m.head(4);
-        //     cell.cov_prediction[t+1] = joint.C.block(0,0,4,4);
-        // }
     }
 }
 
