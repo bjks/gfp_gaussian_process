@@ -164,9 +164,9 @@ Each file generated starts with a table with the parameter settings that were us
   - ... of each time point for each cell in the same order as the input file
 
 #### 4.4 auto_correlation
-- The auto-correlation is calculated over _dt_ that are equidistant. The incremenent are determined as the 30th pecentile of all the time increments between measurements in the data set. Measuremnt pairs with time differences that do not match any _dt_ are ignored (and a warning is printed). 
+- The auto-correlation function _R(dt)_ is calculated over values of _dt_ that are equidistant. The incremenent is determined as the 30th pecentile of all the time increments between measurements in the data set. Measuremnt pairs with time differences that do not match any of the _dt_ are ignored (and a warning is printed). 
 - Running the auto-correlation part also runs the prediction part and generates those files, too. Setting both flags is therefore redundant but also not harmful.
-- In addition a correlation file(`_correlation.csv`) is generated:
+- A correlation file(`_correlation.csv`) is created:
   - The file contains the upper-triangle of the correlation matrix for each `dt`. The largest `dt` corresponds to the largest distance of time points within any cell cycle in the data set, i.e. the time of the longest cell cycle. The correlation entries are labeled `R(zi(...),zj(...))` where `zi` and `zj` are one of `x`, `g`, `l`, and `q`.
   - The file also includes the number of joint probablilties `joint_number` the calculation of each correlation matrix is based on. Thus, the very last correlation matrix might only be based on a single joint, in case the maximal cell cylce time is unique in the data set. Of course, the last correlation matrices are much less reliable.
 
