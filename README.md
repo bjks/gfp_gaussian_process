@@ -1,5 +1,4 @@
 # gfp_gaussian_process
-Likelihood calculation and predictions of 1 dimensional genealogy is re-implementaion of the python code: https://github.com/fioriathos/new_protein_project.
 
 ---
 ## Usage 
@@ -8,9 +7,9 @@ Likelihood calculation and predictions of 1 dimensional genealogy is re-implemen
 #### 1.1 Compile locally
 The following two libraries are needed:
 - nlopt (for minimization)
-  - see https://nlopt.readthedocs.io/en/latest/#download-and-installation
+  - see [nlopt documentation](https://nlopt.readthedocs.io/en/latest/#download-and-installation) for installation details
 - Eigen (for linear algebra)
-  - see http://eigen.tuxfamily.org/index.php?title=Main_Page
+  - see [Eigen documentation](http://eigen.tuxfamily.org/index.php?title=Main_Page) for installation details
   
 Make sure the correct paths to the two libraries are set in the `Makefile`. Currently both are assumed to be located in the home directory. Then, compile with:
 
@@ -165,7 +164,7 @@ Each file generated starts with a table with the parameter settings that were us
   - ... of each time point for each cell in the same order as the input file
 
 #### 4.4 auto_correlation
-**The calculation of the correlation function assumes equidistant data points at the moment!**
+- The auto-correlation is calculated over _dt_ that are equidistant. The incremenent are determined as the 30th pecentile of all the time increments between measurements in the data set. Measuremnt pairs with time differences that do not match any _dt_ are ignored (and a warning is printed). 
 - Running the auto-correlation part also runs the prediction part and generates those files, too. Setting both flags is therefore redundant but also not harmful.
 - In addition a correlation file(`_correlation.csv`) is generated:
   - The file contains the upper-triangle of the correlation matrix for each `dt`. The largest `dt` corresponds to the largest distance of time points within any cell cycle in the data set, i.e. the time of the longest cell cycle. The correlation entries are labeled `R(zi(...),zj(...))` where `zi` and `zj` are one of `x`, `g`, `l`, and `q`.
@@ -184,6 +183,7 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 
 ---------
 ## Notes 
+Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
 ### TODO: 
 - [x] prepare for cluster
 - [x] write new simulation including asymmetric cell division and tree structure?
@@ -202,16 +202,8 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 The log-likelihoods of all cell trees are added and the summed log-likelihood is then maximized. This of course implies that the parameters are the same for all cell trees. 
 
 ## Minimizer 
- - nlopt 
+ - Using nlopt library
  - Note, `total_likelihood` returns -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
  - the wrapper ```double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells);``` meant for direct calculation without minimization returns just the log_likelihood
-
-```cpp
-double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std::vector<double> &grad, void *p),
-                        std::vector<MOMAdata> &cells,
-                        Parameter_set &params, 
-                        double tolerance, 
-                        bool &found_min)
-```
-- Current minimizer: LN_COBYLA
+- Current minimizer is _LN_COBYLA_
 

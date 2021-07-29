@@ -25,6 +25,18 @@ plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
 
 
+LATEX_LABEL = {'mean_lambda': r'$\bar{\lambda}$',
+            'gamma_lambda': r'$\gamma_\lambda$',
+            'var_lambda': r'$\sigma^2_\lambda$',
+            'mean_q': r'$\bar{q}$',
+            'gamma_q': r'$\gamma_q$',
+            'var_q': r'$\sigma^2_q$',
+            'beta': r'$\beta$',
+            'var_x': r'$\sigma^2_x$',
+            'var_g': r'$\sigma^2_g$',
+            'var_dx': r'$\sigma^2_{dx}$',
+            'var_dg': r'$\sigma^2_{dg}$'} 
+
 class GGP_cell:
     def __init__(self, cell_id = 0, parent_id=-1):
         self.parent_id = parent_id

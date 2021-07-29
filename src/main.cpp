@@ -1,6 +1,5 @@
 #include "likelihood.h"
 #include "minimizer_nlopt.h"
-
 #include "tests.h"
 #include <filesystem>
 #include <iostream> 
@@ -103,13 +102,13 @@ void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params,
 
     std::vector<double> params_vec = params.get_final();
 
-    /* forward...*/
+    // forward...
     prediction_forward(params_vec, cells);
 
-    /* backward...*/
+    // backward...
     prediction_backward(params_vec, cells);
 
-    /* combine the two */
+    // combine the two 
     combine_predictions(cells);
 
     /* save */
@@ -126,14 +125,21 @@ void run_covariance(std::vector<MOMAdata> &cells, Parameter_set params,
 
     std::vector<double> params_vec = params.get_final();
 
-    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vec, cells);
-    std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
+    // defines the dts over which the correlation function will be calculated
+    double dt = base_dt(cells); 
+
+    // calculate all possible joints
+    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vec, cells, dt);
     std::vector<size_t> joint_number = count_joints(joint_matrix);
 
+    // calculate (normalized) covariance from the joints
+    std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
+
+    /* Output */
     std::string outfile_cov = outfile_name_covariances(arguments, params);
     std::cout << "Outfile: " << outfile_cov << "\n";
 
-    write_covariances_to_file(covariances, cells[0].time[1] - cells[0].time[0], joint_number, outfile_cov, params, config);
+    write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params, config);
 }
 
 

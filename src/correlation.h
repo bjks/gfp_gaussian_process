@@ -1,26 +1,58 @@
 #include "predictions.h"
 #include "Gaussians.h"
-
 /*
 * This header relies on the Gaussian classes in contrast to the rest of the code, 
 * which just handles mean and covariances seperately
 */
 
-std::vector<std::vector<Gaussian>> init_joint_matrix(std::vector<MOMAdata> &cells){
+std::vector<std::vector<Gaussian>> init_joint_matrix(std::vector<MOMAdata> &cells, size_t dt){
     /*
     * inits a vector of vectors of Gaussians, 
     * which size is chosen such that joints 
     * P(z_n+1, z_n) ... P(z_n+N, z_n) corresponding to the columns 
-    * fit for the largest possible N 
+    * fit for the largest possible N which is the ceil of the max cell cycle time / dt
     */
     size_t maxt = 0;
     for (size_t i=0; i<cells.size(); ++i){
-        if (cells[i].time.size() > maxt){
-            maxt = cells[i].time.size();
+        if ( cells[i].time[cells[i].time.size()-1] - cells[i].time[0]  > maxt){
+            maxt = cells[i].time[cells[i].time.size()-1] - cells[i].time[0];
         }
     }
-    std::vector<std::vector<Gaussian>> joint_matrix(maxt-1);
+    std::vector<std::vector<Gaussian>> joint_matrix( (int) std::ceil(maxt/dt) );
     return joint_matrix;
+}
+
+double percentile(std::vector<double> vec, double percent){
+    std::nth_element(vec.begin(), vec.begin() + (percent*vec.size())/100, vec.end());
+    return vec[(percent*vec.size())/100];
+}  
+
+double base_dt(std::vector<MOMAdata> &cells, double perc=30){
+    /*
+    * determine the base_dt as the 30th percentile
+    */
+    std::vector<double> dts;
+
+    for (size_t i=0; i<cells.size(); ++i){
+        for(size_t t=0; t<cells[i].time.size()-1; ++t){
+            dts.push_back(cells[i].time[t+1] - cells[i].time[t]);
+        }
+    }
+    return percentile(dts, perc);
+}
+
+int assign2index(double base, double val, double tolerance){
+    /* 
+    * returns index of value within an array, if the value is not in the array (up to a tolerance) -1 is returned 
+    */
+    int i=0;
+    while( i*base < val + 2*tolerance ){
+        if ( abs(i*base-val) < tolerance ){
+            return i-1;
+        }
+        ++i;
+    }
+    return -1;
 }
 
 /* =========================================================== */
@@ -186,6 +218,7 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
 
 
 Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mean_backward, Eigen::MatrixXd cov_backward){
+    /* Incorporates backward distribution to the joint distribtion */
     Gaussian backward(mean_backward, cov_backward);
     Gaussian marginal = Gaussian::multiply(joint.marginal, backward);
     Seperated_gaussian new_joint(marginal, joint.conditional);
@@ -197,7 +230,7 @@ Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mea
 /* =========================================================== */
 
 void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell, 
-                             size_t n1, size_t n2, std::vector<std::vector<Gaussian>> &joint_matrix){
+                             size_t n1, size_t n2, std::vector<std::vector<Gaussian>> &joint_matrix, double dt){
     if (n1==n2){
         return;
     }
@@ -213,7 +246,19 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     joint = include_measurement(joint, D, cell.log_length(n1+1), cell.fp(n1+1)); 
     
     combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]);
-    joint_matrix[0].push_back(combined_joint);
+
+    int idx = assign2index(dt, cell.time[n1+1] - cell.time[n1] , dt*1e-5);
+    if (idx != -1){
+        joint_matrix[idx].push_back(combined_joint);
+    }
+
+    else{
+        std::cerr   << "(calc_joint_distributions) WARNING: joint skipped due to miss-matching dt: cell: " 
+                    << cell.cell_id << ", time points: (" 
+                    << cell.time[n1+1] << "," << cell.time[n1] << "), dn: 1\n";
+    }
+
+    /* --------------- */
 
     for (size_t t=n1+1; t<n2-1; ++t){
         /* P(z_t+1 | z_t , D_t+1) */
@@ -226,7 +271,16 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     
         // append the joint for (n, t+1)
         combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[t+1], cell.cov_backward[t+1]);
-        joint_matrix[t-n1].push_back(combined_joint);
+
+        int idx = assign2index(dt, cell.time[t+1] - cell.time[n1] , dt*1e-5);
+        if (idx != -1){
+            joint_matrix[idx].push_back(combined_joint);
+        }
+        else{
+            std::cerr   << "(calc_joint_distributions) WARNING: joint skipped due to miss-matching dt: cell: " 
+                        << cell.cell_id << ", time points: (" 
+                        << cell.time[t+1] << "," << cell.time[n1] << "), dn: 1\n";
+        }
     }
 }
 
@@ -236,21 +290,25 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
 /* ======================================================== */
 
 void sc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell,
-                    std::vector<std::vector<Gaussian>> &joint_matrix){
+                    std::vector<std::vector<Gaussian>> &joint_matrix, double dt){
+    /* Appends joints that are given by the cell to joint_matrix */
     for (size_t t=0; t<cell.time.size()-1; ++t){
-        calc_joint_distributions(params_vec, cell, t, cell.time.size(), joint_matrix);
+        calc_joint_distributions(params_vec, cell, t, cell.time.size(), joint_matrix, dt);
     }
 }
 
 
-std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<double> &params_vec, 
+                                                                std::vector<MOMAdata> &cells, 
+                                                                double dt){
     /* 
     * has to be run after the prediction is run !!!
+    * returns joints as a vector of vectors, where the "outer" vector corresponds to dt, 2*dt, 3*dt, ....
     */
-    std::vector<std::vector<Gaussian>> joint_matrix = init_joint_matrix(cells);
+    std::vector<std::vector<Gaussian>> joint_matrix = init_joint_matrix(cells, dt);
 
     for (size_t i=0; i< cells.size(); ++i){
-        sc_joint_distributions(params_vec, cells[i], joint_matrix);
+        sc_joint_distributions(params_vec, cells[i], joint_matrix, dt);
     }
 
     return joint_matrix;
@@ -258,9 +316,25 @@ std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector
 
 
 /* -------------------------------------------------------------------------- */
-Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, bool naive=false){
-    int n = joints[0].C.cols();
+Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, size_t n, bool naive=false){
+    /* 
+    * Calculates the (normalized) covariance matrix R(zi, zj) from joints P(zi, zj | D) 
+    * If no joints are in vector, Nans are returned
+    */
+
     Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
+
+    // Handle empty vectors
+    if (joints.size()==0){
+        for (size_t i=0; i<n; ++i){
+            for (size_t j=0; j<n; ++j){
+                cov(i,j) = std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+        return cov;
+    }
+
+    // Compute C for non-empty vectors
     for (size_t i=0; i<n; ++i){
         for (size_t j=0; j<n; ++j){
 
@@ -299,23 +373,23 @@ Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, bool naive=f
     return cov;
 }
 
+std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussian>> joint_matrix){
+    /* returns (normalized) correaltion matrices from vector of vector joints */
+    std::vector<Eigen::MatrixXd> covariances;
+    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
+        covariances.push_back(covariance_from_joint(joint_matrix[dt], 8));
+    }
+    return covariances;
+}
+
 std::vector<size_t> count_joints(std::vector<std::vector<Gaussian>> joint_matrix){
+    /* Counts the number of joints (number of pairs of data points) for each dt */
     std::vector<size_t> n;
     for(size_t dt=0; dt<joint_matrix.size(); ++dt){
         n.push_back(joint_matrix[dt].size());
     }
     return n;
 }
-
-
-std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussian>> joint_matrix){
-    std::vector<Eigen::MatrixXd> covariances;
-    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
-        covariances.push_back(covariance_from_joint(joint_matrix[dt]));
-    }
-    return covariances;
-}
-
 
 /* --------------------------------------------------------------------------
 * OUTPUT
@@ -329,6 +403,7 @@ std::string outfile_name_covariances(std::map<std::string, std::string> argument
 
 void write_covariances_to_file(std::vector<Eigen::MatrixXd> covariances, double dt, std::vector<size_t> joint_number, std::string outfile, 
                                 Parameter_set& params, const CSVconfig &config){    
+    // same formating as prediction files
     params.to_csv(outfile);
     Eigen::IOFormat CommaFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "\n");
 
@@ -339,7 +414,7 @@ void write_covariances_to_file(std::vector<Eigen::MatrixXd> covariances, double 
     for(size_t m=0; m<string_entries.size(); ++m){
         for(size_t n=0; n<string_entries.size(); ++n){
             if (m<=n)
-                file << ",R(" << string_entries[m] << string_entries[n] << ")";
+                file << ",R(" << string_entries[m] << string_entries[n] << ")"; // calling the correlation R to avoid confusion
         }
     }
     file << "\n";
