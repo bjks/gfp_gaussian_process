@@ -18,15 +18,19 @@ class Cell:
         self.lt = [lambda0]
         self.qt = [q0]
         self.time = [time0]
+        self.segment = []
 
     def to_df(self, n=1):
-        return pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[::n],
+        df = pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[::n],
                                 "time_min": self.time[::n],
                                 "parent_id": ([self.parent_id]*len(self.time))[::n],
                                 "log_length": self.log_length[::n], 
                                 "gfp": self.gfp[::n],
                                 "lt": self.lt[::n],
                                 "qt": self.qt[::n]})
+        if len(self.segment)>0:
+            df['segment']=self.segment[::n]
+        return df
 
 # =============== pd dataframe to cells =============== #
 
@@ -228,7 +232,6 @@ def cell_divsion(cell, var_dx, var_dg, no_cells):
                     np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1],
                     time0 = cell.time[-1],
                     cell_id = no_cells + 1, parent_id=cell.cell_id)
-
     cell2 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
                     np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1], 
                     time0 = cell.time[-1],
@@ -338,6 +341,100 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
     print('')
     return cells_simulated
 
+def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
+                    division_log_length=None, 
+                    division_time=None, 
+                    division_addition=None, 
+                    log_length0=None,
+                    gfp0=None, 
+                    tree=True,
+                    tmax=np.inf):
+    parameter_set = parameter_sets[0]
+
+    if gfp0 == None:
+        gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
+    if log_length0 == None:
+        log_length0 = division_log_length-np.log(2)
+
+    cell_queue = [Cell(log_length0, gfp0, parameter_set['mean_lambda'], parameter_set['mean_q'])]
+
+    cells_simulated = []
+    no_cells = 0   # total number of cells (in queue and calculated)
+    t_total = 0    # the largest t in the current set of cells
+
+    segment=0
+
+    while len(cells_simulated) < n_cells and t_total < tmax:
+
+        if len(cells_simulated)>0:
+            idx = get_current_leafs_idx(cell_queue, cells_simulated)
+            cell_index = np.random.choice(idx)
+        else:
+            cell_index = 0
+
+        # print_simulated(cells_simulated)
+        # print_queue(cell_queue,cell_index)
+
+        # simulate a random cell in queue
+        cell = copy.deepcopy(cell_queue[cell_index])
+
+        # --------------------------------------------------------------- #
+        # Simulation on single cell level
+        # --------------------------------------------------------------- #
+        while True:
+            cell.time.append(cell.time[-1]+dt)
+
+            if cell.time[-1]>t_segment:
+                segment=1
+            else:
+                segment=0
+
+            parameter_set = parameter_sets[segment]
+
+            cell.segment.append(segment)
+
+            t_total = np.max([t_total, cell.time[-1]])
+            if t_total > tmax:
+                break
+
+            q_ou = single_ou_step(dt,   parameter_set['mean_q'], 
+                                        parameter_set['gamma_q'], 
+                                        parameter_set['var_q'], 
+                                        cell.qt[-1]) 
+
+            cell = gfp_production(cell, dt, q_ou, parameter_set['beta'])
+
+            lambda_ou = single_ou_step(dt,  parameter_set['mean_lambda'], 
+                                            parameter_set['gamma_lambda'], 
+                                            parameter_set['var_lambda'], 
+                                            cell.lt[-1]) 
+            cell = growth(cell, dt, lambda_ou)
+
+            if is_cell_division(cell, div_mode, division_log_length, division_time, division_addition):
+                # save the simulated cell
+                cells_simulated.append(cell)
+                
+                # calc. new init conditions for 2 daugter cells
+                cell1, cell2, no_cells = cell_divsion(cell, parameter_set['var_dx'], 
+                                                            parameter_set['var_dg'], 
+                                                            no_cells)
+                cell1.segment.append(segment)
+                cell2.segment.append(segment)
+
+                # remove the simulated cell from queue and add the new ones 
+                cell_queue.pop(cell_index)
+                cell_queue.append(cell1)
+                if tree:
+                    cell_queue.append(cell2)
+                break
+            else:
+                pass
+        progress_bar_n = np.around(len(cells_simulated)/n_cells*20).astype(int)
+        progress_bar = '='*progress_bar_n + ' '*(20-progress_bar_n)
+
+        print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
+    print('')
+    return cells_simulated
 
 # =============== Helper functions ===============#
 
@@ -413,9 +510,9 @@ def write_param_file(filename, parameters,
                                                                             v*bound_scales[0], 
                                                                             v*bound_scales[1]))
             else:            
-                fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-7])))
+                fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-11])))
 
-def write_csv_config(filename):
+def write_csv_config(filename, segment=None):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data\n")
         fin.write("time_col = time_min  \n")
@@ -425,6 +522,9 @@ def write_csv_config(filename):
         fin.write("parent_tags = parent_id \n")
         fin.write("cell_tags = cell_id \n")
         fin.write("rescale_time = 1 \n")
+        if segment!=None:
+            fin.write("segment_col = " + segment + " \n")
+
 
 def build_data_set(cells_simulated, var_x, var_g, n):
     print("Every", n, "th datapoint is saved")

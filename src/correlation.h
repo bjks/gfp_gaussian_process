@@ -229,7 +229,7 @@ Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mea
 /* "Main" of the joint_distribution calculation */
 /* =========================================================== */
 
-void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell, 
+void calc_joint_distributions(const std::vector<std::vector<double>> &params_vecs, MOMAdata &cell, 
                              size_t n1, size_t n2, std::vector<std::vector<Gaussian>> &joint_matrix, double dt){
     if (n1==n2){
         return;
@@ -238,11 +238,12 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     Gaussian combined_joint; 
 
     Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
 
+    std::vector<double> params_vec = params_vecs[cell.segment[n1]];
     /* P(z_n | D_n) -> P(z_n+1, z_n | D_n1) */
     Gaussian joint = consecutive_joint(params_vec, cell, n1); 
     /* include x and g -> P(z_n+1, z_n | D_n1+1) */
+    D <<  params_vec[7], 0, 0,  params_vec[8];
     joint = include_measurement(joint, D, cell.log_length(n1+1), cell.fp(n1+1)); 
     
     combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]);
@@ -261,6 +262,8 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
     /* --------------- */
 
     for (size_t t=n1+1; t<n2-1; ++t){
+        params_vec = params_vecs[cell.segment[t]];
+
         /* P(z_t+1 | z_t , D_t+1) */
         conditional = consecutive_conditional(params_vec, cell, t);
 
@@ -289,16 +292,17 @@ void calc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &c
 /* Looping over pairs of points for joint distr calculation */
 /* ======================================================== */
 
-void sc_joint_distributions(const std::vector<double> &params_vec, MOMAdata &cell,
-                    std::vector<std::vector<Gaussian>> &joint_matrix, double dt){
+void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs, MOMAdata &cell,
+                            std::vector<std::vector<Gaussian>> &joint_matrix, 
+                            double dt){
     /* Appends joints that are given by the cell to joint_matrix */
     for (size_t t=0; t<cell.time.size()-1; ++t){
-        calc_joint_distributions(params_vec, cell, t, cell.time.size(), joint_matrix, dt);
+        calc_joint_distributions(params_vecs, cell, t, cell.time.size(), joint_matrix, dt);
     }
 }
 
 
-std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<double> &params_vec, 
+std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 
                                                                 std::vector<MOMAdata> &cells, 
                                                                 double dt){
     /* 
@@ -308,7 +312,7 @@ std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector
     std::vector<std::vector<Gaussian>> joint_matrix = init_joint_matrix(cells, dt);
 
     for (size_t i=0; i< cells.size(); ++i){
-        sc_joint_distributions(params_vec, cells[i], joint_matrix, dt);
+        sc_joint_distributions(params_vecs, cells[i], joint_matrix, dt);
     }
 
     return joint_matrix;
@@ -394,17 +398,26 @@ std::vector<size_t> count_joints(std::vector<std::vector<Gaussian>> joint_matrix
 /* --------------------------------------------------------------------------
 * OUTPUT
 * -------------------------------------------------------------------------- */
-std::string outfile_name_covariances(std::map<std::string, std::string> arguments, Parameter_set params){
-    /* Filename for a prediction file */
+std::string outfile_name_covariances(std::map<std::string, std::string> arguments, std::vector<Parameter_set>& params_list){
+    /* Filename for a covariance file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_correlation";
-    return outfile + ".csv";
+    outfile += file_base(arguments["infile"]);
+    for (size_t i=0; i<params_list.size(); ++i){
+        outfile += outfile_param_code(params_list[i]);
+    }
+    return outfile  + "_correlation" + ".csv";
 }
 
 void write_covariances_to_file(std::vector<Eigen::MatrixXd> covariances, double dt, std::vector<size_t> joint_number, std::string outfile, 
-                                Parameter_set& params, const CSVconfig &config){    
+                                std::vector<Parameter_set>& params_list, const CSVconfig &config){    
     // same formating as prediction files
-    params.to_csv(outfile);
+    for(size_t i=0; i<params_list.size(); ++i){
+    if (i==0)
+        params_list[i].to_csv(outfile);
+    else
+        params_list[i].to_csv(outfile, std::ios_base::app);
+}     
+
     Eigen::IOFormat CommaFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "\n");
 
     std::vector<std::string> string_entries = {"x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"};

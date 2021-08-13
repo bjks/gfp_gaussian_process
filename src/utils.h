@@ -43,6 +43,15 @@ void pvector(std::vector <std::string> const &a) {
     std::cout << std::endl;
 }
 
+void pvector(std::vector <int> const &a) {
+    for(size_t i=0; i < a.size(); i++){
+        if (i>0)
+            std::cout << " , ";
+        std::cout << a[i];
+    }
+    std::cout << std::endl;
+}
+
 void pvector(std::vector <double> const &a) {
     for(size_t i=0; i < a.size(); i++){
         if (i>0)
@@ -52,7 +61,7 @@ void pvector(std::vector <double> const &a) {
     std::cout << std::endl;
 }
 
-std::vector<std::string>  split_string_at(std::string s, std::string delimiter=","){
+std::vector<std::string> split_string_at(std::string s, std::string delimiter=","){
     int pos = 0;
     std::vector<std::string> splitted;
     while ((pos = s.find(delimiter)) != std::string::npos) {
@@ -113,6 +122,15 @@ std::string out_dir(std::map<std::string, std::string> arguments){
     }
     std::filesystem::create_directory(out_dir);
     return out_dir;
+}
+
+std::string add_segment_to_filename(std::string file_name, int segment){
+    if (segment == -1){
+        return file_name;
+    }
+    else{
+        return file_name + "_segment" + std::to_string(segment);
+    }
 }
 
 

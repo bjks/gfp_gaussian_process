@@ -89,7 +89,6 @@ The step value is used for the 1d scan to discretize the interval set by lower a
 - `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the maximization/scan/error bar calculation. This is purely meant for debugging!
 - `tolerance` sets the stopping critirium by setting the tolerance of maximization: Stop when an optimization step changes the function value by less than tolerance. By setting very low tolerances one might encounder rounding issues, in that case the last valid step is taken and a warning is printed to stderr.
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
-- run modes (see 2.2.2)
 - `search_space` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
 - `stationary` indicates that the cells growth is close to 0. Thus, the initial gfp production is calculated in this limit
 - `use_beta` indicates that the bleaching rate beta given in the parameter file as the initial value shall be used to calculate the initial gfp production estimate. Can be used with or without `--stationary`.

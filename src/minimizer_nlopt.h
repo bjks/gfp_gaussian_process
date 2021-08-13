@@ -80,6 +80,7 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
     _save_ll = true;
 
     std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
+    _iteration = 0;
 
     // actual minimization
     try{
@@ -100,7 +101,6 @@ Although the tolerance criterium was not met, the last valid step is used for pa
     std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
     params.set_final(parameter_state);
     std::cout << params << std::endl;
-
     return -ll_min;
 }
 
@@ -185,6 +185,7 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
     _save_ll = true;
 
     std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
+    _iteration = 0;
 
    // actual minimization
     try{
@@ -210,7 +211,6 @@ Although the tolerance criterium was not met, the last valid step is used for pa
     }
     params.set_final(parameter_state);
     std::cout << params << std::endl;
-
     return -ll_min;
 }
 

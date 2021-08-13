@@ -17,6 +17,7 @@ public:
     std::string fp_col = "gfp_nb";
     std::string delm = ",";
     int step = 1;
+    std::string segment_col = "";
 
     std::vector<std::string> cell_tags {"date", "pos", "gl", "id"};
     std::vector<std::string> parent_tags {"date", "pos", "gl", "parent_id"};
@@ -80,6 +81,9 @@ public:
                         parent_tags.push_back(trim(val_split[i]));
                     }
                 }
+                else if (parts[0] == "segment_col"){
+                    segment_col = parts[1];
+                }
             }
         }
     }
@@ -97,9 +101,13 @@ std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
                 << pad_str("length_col:", col) <<  config.length_col << "\n" 
                 << pad_str("length_islog:", col) <<  config.length_islog << "\n" 
                 << pad_str("fp_col:", col) << config.fp_col << "\n" 
-                << pad_str("delm:", col) << config.delm << "\n" 
-                << pad_str("step:", col) << config.step << "\n" 
-                << pad_str("cell_tags:", col) ;
+                << pad_str("delm:", col) << config.delm << "\n"; 
+    os          << pad_str("step:", col) << config.step << "\n";
+
+    if (!config.segment_col.empty())
+        os << pad_str("segment_col:", col) << config.segment_col << "\n";
+    
+    os          << pad_str("cell_tags:", col) ;
     for(size_t i=0; i < config.cell_tags.size(); i++){
         os << config.cell_tags[i] << ' ';
     }

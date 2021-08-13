@@ -72,6 +72,12 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
         if (std::isnan(tl)){
+            std::cout << _iteration << ": ";
+            for (size_t i=0; i<params_vec.size(); ++i){
+                std::cout << params_vec[i]  << ", ";
+            }
+            std::cout << "ll=" <<  std::setprecision(10) << tl  << "\n";
+
             std::cerr << "(sc_likelihood) ERROR: Log likelihood is Nan\n";
             throw std::domain_error("Likelihood is Nan");
         }
@@ -264,15 +270,17 @@ void setup_outfile_likelihood(std::string outfile, Parameter_set params){
 
 /* -------------------------------------------------------------------------- */
 
-std::string outfile_name_minimization_process(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_minimization_process(std::map<std::string, std::string> arguments, 
+                                                Parameter_set params, int segment){
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params);
+    outfile += add_segment_to_filename(file_base(arguments["infile"]), segment) + outfile_param_code(params);
     return outfile + "_iterations.csv";
 }
 
-std::string outfile_name_minimization_final(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_minimization_final(std::map<std::string, std::string> arguments, 
+                                            Parameter_set params, int segment){
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params);
+    outfile +=  add_segment_to_filename(file_base(arguments["infile"]), segment) + outfile_param_code(params);
     return outfile + "_final.csv";
 }
 
@@ -323,17 +331,18 @@ void save_error_bars(std::string outfile, Parameter_set &params, std::vector<MOM
 
 // ================================================================================================ //
 
-std::string outfile_name_scan(std::map<std::string, std::string> arguments, std::string var){
+std::string outfile_name_scan(std::map<std::string, std::string> arguments, std::string var, int segment){
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + "_scan_" + var;
+    outfile += add_segment_to_filename(file_base(arguments["infile"]), segment) + "_scan_" + var;
     return outfile + ".csv";
 }
 
 // ================================================================================================ //
-std::string outfile_parameter_file(std::map<std::string, std::string> arguments, Parameter_set params){
+std::string outfile_name_parameter_file(std::map<std::string, std::string> arguments, 
+                                        Parameter_set params, int segment){
     /* Filename for a parameter file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_parameter_file";
+    outfile +=  add_segment_to_filename(file_base(arguments["infile"]), segment) + outfile_param_code(params) + "_parameter_file";
     return outfile + ".csv";
 }
 

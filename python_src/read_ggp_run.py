@@ -143,9 +143,12 @@ def get_prediction_files(filebase, paramter_settings=None):
             filebase + '_prediction_backward.csv',
             filebase + '_prediction.csv')
 
-    return (filebase + get_param_code(paramter_settings) + '_prediction_forward.csv',
-            filebase + get_param_code(paramter_settings) + '_prediction_backward.csv',
-            filebase + get_param_code(paramter_settings) + '_prediction.csv')
+    param_code = ''
+    for p in paramter_settings:
+        param_code += get_param_code(p) 
+    return (filebase + param_code + '_prediction_forward.csv',
+            filebase + param_code + '_prediction_backward.csv',
+            filebase + param_code + '_prediction.csv')
 
 
 def get_scan_files(filebase, paramter_settings):
@@ -202,8 +205,8 @@ def read_iteration_process(filename):
     df = pd.read_csv(filename, skiprows=14)    
     return df[["iteration", 'log_likelihood']]
 
-def read_correlation(filename):
-    return pd.read_csv(filename, skiprows=12)
+def read_correlation(filename, n=12):
+    return pd.read_csv(filename, skiprows=n)
 
 def read_minimization(filename, last_n=0):
     df = pd.read_csv(filename, skiprows=14)    

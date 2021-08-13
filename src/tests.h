@@ -291,7 +291,7 @@ void test_prediction(){
 void run_likelihood(CSVconfig config, Parameter_set params, std::string infile){
 
     std::cout << "-> Reading" << "\n";
-    std::vector<MOMAdata> cells =  get_data(infile, config);
+    std::vector<MOMAdata> cells =  read_data(infile, config);
 
     /* genealogy */
     build_cell_genealogy(cells);
@@ -308,7 +308,7 @@ void run_likelihood(CSVconfig config, Parameter_set params, std::string infile){
             3.42444314e-06, -3.88680250e-01,  4.47368172e-06,  5.05127089e-05,
             -4.90827026e-04,  1.42591667e+02,  5.05127089e-05,  2.38674307e+00;
 
-    init_cells(cells, mean, cov);
+    init_cells_f(cells, mean, cov);
 
     double tl = 0;
     pvector(params.get_init());

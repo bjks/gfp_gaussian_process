@@ -1,6 +1,5 @@
 #include "likelihood.h"
 #include "minimizer_nlopt.h"
-#include "tests.h"
 #include <filesystem>
 #include <iostream> 
 #include <iterator> 
@@ -13,12 +12,14 @@
 
 void run_minimization(std::vector<MOMAdata> &cells, 
                     Parameter_set &params, 
-                    std::map<std::string, std::string> arguments){
+                    std::map<std::string, 
+                    std::string> arguments, 
+                    int segment){
 
     std::cout << "-> Minimizaton" << "\n";
 
     /* set and setup (global) output file */
-    _outfile_ll = outfile_name_minimization_process(arguments, params);
+    _outfile_ll = outfile_name_minimization_process(arguments, params, segment);
     setup_outfile_likelihood(_outfile_ll, params);
     std::cout << "Outfile: " << _outfile_ll << "\n";
 
@@ -38,7 +39,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
 
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
-    std::string outfile_estim = outfile_name_minimization_final(arguments, params);
+    std::string outfile_estim = outfile_name_minimization_final(arguments, params, segment);
     std::cout << "Outfile: " << outfile_estim << "\n";
 
     params.to_csv(outfile_estim);
@@ -47,14 +48,16 @@ void run_minimization(std::vector<MOMAdata> &cells,
                         std::stod(arguments["tolerance"]), 
                         arguments["search_space"]);
 
-    std::string outfile_params = outfile_parameter_file(arguments, params);
+    std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);
     create_parameter_file(outfile_params, params);
 
 }
 
 
-void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
-                      std::map<std::string, std::string> arguments){
+void run_bound_1dscan(std::vector<MOMAdata> &cells, 
+                    Parameter_set params,
+                    std::map<std::string, std::string> arguments, 
+                    int segment){
     std::cout << "-> 1d Scan" << "\n";
     _save_ll = true;
     for(size_t i=0; i<params.all.size(); ++i){
@@ -69,7 +72,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
             set and setup new (global) output file, for each scan, 
             filename containing the parameter name that is varied
             */
-            _outfile_ll = outfile_name_scan(arguments, params.all[i].name);
+            _outfile_ll = outfile_name_scan(arguments, params.all[i].name, segment);
             setup_outfile_likelihood(_outfile_ll, params);
             std::cout << "Outfile: " << _outfile_ll << "\n";
 
@@ -87,59 +90,69 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells, Parameter_set params,
 }
 
 
-void run_prediction(std::vector<MOMAdata> &cells, Parameter_set params, 
-                    std::map<std::string, std::string> arguments, const CSVconfig &config){
+void run_prediction_segments(std::vector<MOMAdata> &cells, 
+                            std::vector<Parameter_set> params_list, 
+                            std::map<std::string, std::string> arguments,
+                            const CSVconfig &config){
     std::cout << "-> prediction" << "\n";
     
-    std::string outfile   = outfile_name_prediction(arguments, params);
-    std::string outfile_b = outfile_name_prediction(arguments, params, "_backward");
-    std::string outfile_f = outfile_name_prediction(arguments, params, "_forward");
+    std::string outfile   = outfile_name_prediction(arguments, params_list);
+    std::string outfile_b = outfile_name_prediction(arguments, params_list, "_backward");
+    std::string outfile_f = outfile_name_prediction(arguments, params_list, "_forward");
 
 
     std::cout << "Outfile: " << outfile << "\n";
     std::cout << "Outfile forward: " << outfile_f << "\n";
     std::cout << "Outfile backward: " << outfile_b << "\n";
 
-    std::vector<double> params_vec = params.get_final();
+    std::vector<std::vector<double>> params_vecs;
+    for (size_t i=0; i<params_list.size(); ++i){
+        params_vecs.push_back(params_list[i].get_final());
+    }
 
     // forward...
-    prediction_forward(params_vec, cells);
+    prediction_forward(params_vecs, cells);
 
     // backward...
-    prediction_backward(params_vec, cells);
+    prediction_backward(params_vecs, cells);
 
     // combine the two 
     combine_predictions(cells);
 
     /* save */
-    write_predictions_to_file(cells, outfile_b, params, config, "b");
-    write_predictions_to_file(cells, outfile_f, params, config, "f");
+    write_predictions_to_file(cells, outfile_f, params_list, config, "f");
+    write_predictions_to_file(cells, outfile_b, params_list, config, "b");
 
-    write_predictions_to_file(cells, outfile, params, config);
+    write_predictions_to_file(cells, outfile, params_list, config);
 }
 
 
-void run_covariance(std::vector<MOMAdata> &cells, Parameter_set params, 
-                    std::map<std::string, std::string> arguments, const CSVconfig &config){
+void run_covariance(std::vector<MOMAdata> &cells, 
+                    std::vector<Parameter_set> params_list, 
+                    std::map<std::string, std::string> arguments, 
+                    const CSVconfig &config){
     std::cout << "-> auto co-variance" << "\n";
 
-    std::vector<double> params_vec = params.get_final();
+    std::vector<std::vector<double>> params_vecs;
+    for (size_t i=0; i<params_list.size(); ++i){
+        params_vecs.push_back(params_list[i].get_final());
+    }
 
     // defines the dts over which the correlation function will be calculated
     double dt = base_dt(cells); 
 
     // calculate all possible joints
-    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vec, cells, dt);
+    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt);
     std::vector<size_t> joint_number = count_joints(joint_matrix);
 
     // calculate (normalized) covariance from the joints
     std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
 
     /* Output */
-    std::string outfile_cov = outfile_name_covariances(arguments, params);
+    std::string outfile_cov = outfile_name_covariances(arguments, params_list);
     std::cout << "Outfile: " << outfile_cov << "\n";
 
-    write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params, config);
+    write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params_list, config);
 }
 
 
@@ -181,8 +194,16 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
             if (argv[i] == keys[k][0] || argv[i] == keys[k][1]){
                  if(k==key_indices["-i"]) 
                     arguments["infile"] = argv[i+1];
-                else if(k==key_indices["-b"]) 
-                    arguments["parameter_bounds"] = argv[i+1];
+                else if(k==key_indices["-b"]){
+                    for(int j=i+1; j<argc ; ++j){
+                        std::string argj = argv[j];
+                        if (argj.rfind("-", 0) == 0 ){
+                            break;
+                        }
+                        arguments["parameter_bounds"] += argj + " ";
+                    }
+                    arguments["parameter_bounds"] = trim(arguments["parameter_bounds"]);
+                }
                 else if(k==key_indices["-c"]) 
                     arguments["csv_config"] = argv[i+1];
 				else if(k==key_indices["-l"])
@@ -240,9 +261,14 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cerr << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
-    else if(! std::filesystem::exists(arguments["parameter_bounds"])){   
-        std::cerr << "(arg_parser) ERROR: Paramters bound file " << arguments["parameter_bounds"] << " not found (use '-h' for help)!" << std::endl;
-        throw std::invalid_argument("Invalide argument");
+
+
+    std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
+    for (size_t i=0; i<param_files.size(); ++i){
+        if(!std::filesystem::exists(param_files[i])){   
+            std::cerr << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
+            throw std::invalid_argument("Invalide argument");
+        }
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
@@ -268,42 +294,79 @@ int main(int argc, char** argv){
             return EXIT_SUCCESS;    
         }
 
-        /* get parameter and csv config file */
-        Parameter_set params(arguments["parameter_bounds"]);
-        params.check_if_complete();
+        /* Read parameters */
+        std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
+        std::vector<Parameter_set> params_list;
+        for (size_t i=0; i<param_files.size(); ++i){
+            Parameter_set params(param_files[i]);
+            params.check_if_complete();
+            std::cout << params << "\n";
 
-        std::cout << params << "\n";
+            params_list.push_back(params);
+        }
 
+        /* Read csv config file */
         CSVconfig config(arguments["csv_config"]);
         std::cout << config << "\n";
 
         /* Read data from input file */
         std::cout << "-> Reading" << "\n";
-        std::vector<MOMAdata> cells =  get_data(arguments["infile"], config);
+        std::vector<MOMAdata> cells =  read_data(arguments["infile"], config);
 
-        /* genealogy built via the parent_id (string) given in data file */
-        build_cell_genealogy(cells);
+        /* Count segments and check if we have enough parameter files */
+        std::vector<int> segment_indices = get_segment_indices(cells);
+        if (segment_indices.size() != param_files.size()){
+            std::cerr   << "(main) ERROR: There are " << segment_indices.size() 
+                        << " segments, but " << param_files.size() << " parameter files!\n";
+            throw std::invalid_argument("Invalide argument");
+        }
 
-        /* inititialize mean and cov for forward and backward direction */
-        init_cells(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
-        init_cells_r(cells, arguments.count("stationary"), arguments.count("use_beta"), params.all[6].init);
 
+        /* ============================================================== */
 
         /* run bound_1dscan, minimization and/or prediction... */
         if (arguments.count("minimize")){
-            run_minimization(cells, params, arguments);
+            for(size_t i=0; i<segment_indices.size(); ++i){
+                std::vector<MOMAdata> cells_in_segment = get_segment(cells, segment_indices[i]);
+
+                /* genealogy built via the parent_id (string) given in data file */
+                build_cell_genealogy(cells_in_segment);
+
+                /* inititialize mean and cov for forward and backward direction */
+                init_cells(cells_in_segment, arguments.count("stationary"), 
+                            arguments.count("use_beta"), params_list[i].all[6].init);
+
+                /* Run actual minimization */
+                run_minimization(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
+            }
         }
 
         if (arguments.count("scan")){
-            run_bound_1dscan(cells, params, arguments);
+            for(size_t i=0; i<segment_indices.size(); ++i){
+                std::vector<MOMAdata> cells_in_segment = get_segment(cells, segment_indices[i]);
+
+                /* genealogy built via the parent_id (string) given in data file */
+                build_cell_genealogy(cells_in_segment);
+
+                /* inititialize mean and cov for forward and backward direction */
+                init_cells(cells_in_segment, arguments.count("stationary"), 
+                            arguments.count("use_beta"), params_list[i].all[6].init);
+
+                /* Run scan*/
+                run_bound_1dscan(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
+            }
         }
 
         if (arguments.count("predict")){
-            run_prediction(cells, params, arguments, config);
+            build_cell_genealogy(cells);
+            init_cells(cells, arguments.count("stationary"), 
+                            arguments.count("use_beta"), params_list[0].all[6].init);
+            run_prediction_segments(cells, params_list, arguments, config);
         }
         
         if (arguments.count("auto_cov")){
-            run_covariance(cells, params, arguments, config);
+            /* Run covariance*/
+            run_covariance(cells, params_list, arguments, config);
         }
 
         std::cout << "Done." << std::endl;

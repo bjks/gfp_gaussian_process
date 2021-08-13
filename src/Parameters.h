@@ -182,9 +182,8 @@ public:
     std::vector<double> get_final();
     std::vector<double> get_init();
     std::vector<int> non_fixed();
-
     
-    void const to_csv(std::string outfile);
+    void const to_csv(std::string outfile, std::ios_base::openmode mode = std::ios_base::out);
 };
 
 
@@ -200,8 +199,8 @@ bool Parameter_set::check_if_complete(){
 }
 
 
-void const Parameter_set::to_csv(const std::string outfile){
-    std::ofstream file(outfile);
+void const Parameter_set::to_csv(const std::string outfile, std::ios_base::openmode mode){
+    std::ofstream file(outfile, mode);
     file << "no,name,type,init,step,lower_bound,upper_bound,final\n";
     for (size_t i=0; i<all.size(); ++i){
         file <<  i << "," ;

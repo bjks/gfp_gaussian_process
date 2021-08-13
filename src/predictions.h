@@ -40,32 +40,39 @@ void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Ma
 }
 
 /* -------------------------------------------------------------------------- */
-void sc_prediction_forward(const std::vector<double> &params_vec, 
+void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs, 
                     MOMAdata &cell){
 /* 
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
+
+// I think here I will just change "params_vec" to "params_vecs[cell.segment[t]]"
     if (cell.is_root()){
         cell.mean = cell.mean_init_forward;
         cell.cov = cell.cov_init_forward;
     }
     else{
+        int segment = cell.parent->segment[cell.parent->segment.size()-1];
         // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-        mean_cov_after_division(cell, params_vec[9], params_vec[10]);
+        mean_cov_after_division(cell, params_vecs[segment][9], params_vecs[segment][10]);
     }
 
     Eigen::VectorXd xg(2);
 
     Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
 
     Eigen::Matrix2d S;
     Eigen::Matrix2d Si;
+    std::vector<double> params_vec;
 
-    for (long t=0; t<cell.time.size(); ++t ){
+    for (long t=0; t<cell.time.size(); ++t){
+        params_vec = params_vecs[cell.segment[t]];
+
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
+
+        D <<  params_vec[7], 0, 0,  params_vec[8];
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
@@ -85,7 +92,7 @@ void sc_prediction_forward(const std::vector<double> &params_vec,
 }
 
 
-void prediction_forward_recr(const std::vector<double> &params_vec, 
+void prediction_forward_recr(const std::vector<std::vector<double>> &params_vecs, 
                     MOMAdata *cell){
     /*  
     * Recursive implementation that applies the function sc_prediction_forward to every cell in the genealogy
@@ -93,17 +100,17 @@ void prediction_forward_recr(const std::vector<double> &params_vec,
     */
     if (cell == nullptr)
         return;
-    sc_prediction_forward(params_vec, *cell);
-    prediction_forward_recr(params_vec, cell->daughter1);
-    prediction_forward_recr(params_vec, cell->daughter2);
+    sc_prediction_forward(params_vecs, *cell);
+    prediction_forward_recr(params_vecs, cell->daughter1);
+    prediction_forward_recr(params_vecs, cell->daughter2);
 }
 
-void prediction_forward(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+void prediction_forward(const std::vector<std::vector<double>> &params_vecs, std::vector<MOMAdata> &cells){
     /* applies prediction to each cell going down the tree starting from all root cells */
     std::vector<MOMAdata *> p_roots = get_roots(cells);
 
     for(size_t i=0; i<p_roots.size(); ++i){
-        prediction_forward_recr(params_vec,  p_roots[i]);
+        prediction_forward_recr(params_vecs,  p_roots[i]);
     }
 }
 
@@ -192,33 +199,38 @@ void append_reversed_cov(MOMAdata &cell){
 
 /* -------------------------------------------------------------------------- */
 
-void sc_prediction_backward(const std::vector<double> &params_vec, 
+void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs, 
                     MOMAdata &cell){
 /* 
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
+
     if (cell.is_leaf()){
         cell.mean = cell.mean_init_backward;
         cell.cov = cell.cov_init_backward;
     }
     else{
+        int segment = cell.segment[cell.segment.size()-1];
         // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-        mean_cov_after_division_r(cell, params_vec[9], params_vec[10]);
+        mean_cov_after_division_r(cell, params_vecs[segment][9], params_vecs[segment][10]);
     }
 
     Eigen::VectorXd xg(2);
 
     Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
 
     Eigen::Matrix2d S;
     Eigen::Matrix2d Si;
+    std::vector<double> params_vec;
 
     for (long t=cell.time.size()-1; t>-1; --t ){
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
+        
+        params_vec = params_vecs[cell.segment[t]];
 
+        D <<  params_vec[7], 0, 0,  params_vec[8];
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 
@@ -230,6 +242,7 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
 
         // previous time point:
         if (t>0) {
+            params_vec = params_vecs[cell.segment[t-1]];
             mean_cov_model_r(cell, cell.time(t)-cell.time(t-1) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
@@ -238,7 +251,7 @@ void sc_prediction_backward(const std::vector<double> &params_vec,
 }
 
 
-void prediction_backward_recr(const std::vector<double> &params_vec, 
+void prediction_backward_recr(const std::vector<std::vector<double>> &params_vecs, 
                     MOMAdata *cell){
     /*  
     * Recursive implementation that applies the function sc_prediction_backward to every cell in the genealogy
@@ -246,16 +259,16 @@ void prediction_backward_recr(const std::vector<double> &params_vec,
     */
     if (cell == nullptr)
         return;
-    prediction_backward_recr(params_vec, cell->daughter1);
-    prediction_backward_recr(params_vec, cell->daughter2);
-    sc_prediction_backward(params_vec, *cell);
+    prediction_backward_recr(params_vecs, cell->daughter1);
+    prediction_backward_recr(params_vecs, cell->daughter2);
+    sc_prediction_backward(params_vecs, *cell);
 }
 
-void prediction_backward(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells){
+void prediction_backward(const std::vector<std::vector<double>> &params_vecs, std::vector<MOMAdata> &cells){
     std::vector<MOMAdata *> p_roots = get_roots(cells);
 
     for(size_t i=0; i<p_roots.size(); ++i){
-        prediction_backward_recr(params_vec,  p_roots[i]);
+        prediction_backward_recr(params_vecs,  p_roots[i]);
     }
 }
 
@@ -300,13 +313,22 @@ std::string outfile_param_code(const Parameter_set params){
 
 
 std::string outfile_name_prediction(std::map<std::string, std::string> arguments, 
-                                    Parameter_set params, std::string suffix=""){
+                                    std::vector<Parameter_set> params_list, std::string suffix=""){
     /* Filename for a prediction file */
     std::string outfile = out_dir(arguments);
-    outfile += file_base(arguments["infile"]) + outfile_param_code(params) + "_prediction" + suffix;
-    return outfile + ".csv";
+    outfile += file_base(arguments["infile"]);
+    for (size_t i=0; i<params_list.size(); ++i){
+        outfile += outfile_param_code(params_list[i]);
+    }
+    return outfile  + "_prediction" + suffix + ".csv";
 }
 
+std::string outfile_name_prediction_segments(std::map<std::string, std::string> arguments, std::string suffix=""){
+    /* Filename for a prediction file */
+    std::string outfile = out_dir(arguments);
+    outfile += file_base(arguments["infile"]) + + "segments_prediction" + suffix;
+    return outfile + ".csv";
+}
 
 void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd mat){
     /* Comma seperated output of upper triangle of Eigen::matrix*/
@@ -332,8 +354,13 @@ void output_vector(std::ofstream &file, Eigen::VectorXd v){
 
 
 void write_predictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
-                                Parameter_set& params, const CSVconfig &config, std::string direction="n"){        
-    params.to_csv(outfile);
+                                std::vector<Parameter_set> &params_list, const CSVconfig &config, std::string direction="n"){   
+    for(size_t i=0; i<params_list.size(); ++i){
+        if (i==0)
+            params_list[i].to_csv(outfile);
+        else
+            params_list[i].to_csv(outfile, std::ios_base::app);
+    }     
 
     std::ofstream file(outfile, std::ios_base::app);
     file << "\ncell_id,parent_id,time,log_length,fp,";

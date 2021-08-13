@@ -37,8 +37,7 @@ public:
     Eigen::VectorXd time;
     Eigen::VectorXd log_length;
     Eigen::VectorXd fp;
-
-    int generation;
+    Eigen::VectorXi segment;
 
     // initial guess for mean and cov, to avoid recalculation
     Eigen::VectorXd mean_init_forward = Eigen::VectorXd::Zero(4);
@@ -352,8 +351,15 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
     * Create a map containing the header tags and the corresponding index
     */
     std::map<std::string, int> header_indices; 
+    std::string stri;
     for (size_t i = 0; i < str_vec.size(); ++i){
-        header_indices.insert(std::pair<std::string, int>(str_vec[i], i)); 
+        stri = trim(str_vec[i], ' ');
+        stri = trim(str_vec[i], '\t');
+        stri = trim(str_vec[i], '\n');
+        stri = trim(str_vec[i], '\v');
+        stri = trim(str_vec[i], '\f');
+        stri = trim(str_vec[i], '\r');
+        header_indices.insert(std::pair<std::string, int>(stri, i)); 
     }
     return header_indices;
 }
@@ -369,11 +375,21 @@ void append_vec(Eigen::VectorXd &v, double elem){
     v[v.size()-1] = elem;
 }
 
+void append_vec(Eigen::VectorXi &v, int elem){
+    /*  
+    * push_back alternative for non std vector (with resize() and size()), 
+    * probaly slow and should only be used to read the csv 
+    * and create vector with data with unknow length
+    */
+    v.conservativeResize(v.size()+1);
+    v[v.size()-1] = elem;
+}
+
 double last_element(Eigen::VectorXd &v){
     return v[v.size()-1];
 }
 
-std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
+std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config){
     /* 
     * Parses csv file line by line and returns the data as a vector of MOMAdata instances.
     * Returns data as vector of MOMAdata instances. Pointers for genealogy are not set yet!
@@ -388,33 +404,40 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
     getline(file, line);
     line_parts = split_string_at(line, config.delm);
     std::map<std::string, int> header_indices = get_header_indices(line_parts);
-
+    
     // check if the columns that are set actually exist in header 
     if (!header_indices.count(config.time_col)){
-        std::cerr << "(get_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
+        std::cerr << "(read_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.length_col)){
-        std::cerr << "(get_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
+        std::cerr << "(read_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.fp_col)){
-        std::cerr << "(get_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
+        std::cerr << "(read_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
+    if (!config.segment_col.empty()){
+        if (!header_indices.count(config.segment_col)){
+            std::cerr << "(read_data) ERROR: (segment_col) is not an column in input file: " << config.segment_col << "\n";
+            throw std::invalid_argument("Invalid argument");
+            return data;
+        }
+    }
     for(size_t i=0; i<config.cell_tags.size(); ++i){
         if (!header_indices.count(config.cell_tags[i])){
-            std::cerr << "(get_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
+            std::cerr << "(read_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
             throw std::invalid_argument("Invalid argument");   
             return data;
         }
     }
     for(size_t i=0; i<config.parent_tags.size(); ++i){
         if (!header_indices.count(config.parent_tags[i])){
-            std::cerr << "(get_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
+            std::cerr << "(read_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
             throw std::invalid_argument("Invalid argument");
             return data;
         }
@@ -426,7 +449,6 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
 
     int last_idx = -1;
     long line_count = 0;
-    long data_point_cell;
     while (getline(file, line)) {
         ++line_count;
         try{
@@ -436,7 +458,6 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
             curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
             if (last_cell != curr_cell){
-                data_point_cell = 0;
                 last_idx++;
                 MOMAdata next_cell;
                 // add new MOMAdata instance to vector 
@@ -455,10 +476,19 @@ std::vector<MOMAdata> get_data(std::string filename, CSVconfig &config){
                 append_vec(data[last_idx].log_length,  log(stod_reject_nan(line_parts[header_indices[config.length_col]])) );
 
             append_vec(data[last_idx].fp,  stod_reject_nan(line_parts[header_indices[config.fp_col]]) );
+
+            if (config.segment_col.empty()){
+                append_vec(data[last_idx].segment, 0); //in case there is only one segment, assign a dummy segment index
+            }
+            else{
+                append_vec(data[last_idx].segment,  std::stoi(line_parts[header_indices[config.segment_col]]) );
+            }
+
+            /* ============ */
             last_cell = curr_cell;
         }
         catch(std::exception &e){
-            std::cerr << "(get_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
+            std::cerr << "(read_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
             throw;
         }
     }
@@ -474,6 +504,87 @@ long count_data_points(std::vector<MOMAdata> const &cells){
         ndata_points += cells[i].time.size();
     }
     return ndata_points;
+}
+
+std::vector<int> get_segment_indices(std::vector<MOMAdata> cells){
+    /* 
+    * Checks if the segment indices are consecutive and start at 0, 
+    * Also returns the indices in order of occurence in the data set which deterines in which order the segments are run, 
+    * (although this does not matter)
+    */
+    std::vector<int> segs;
+    for(size_t i=0; i<cells.size(); ++i){
+        for(size_t t=0; t<cells[i].time.size(); ++t){
+            if( !(std::find(segs.begin(), segs.end(), cells[i].segment[t]) != segs.end()) ){
+                segs.push_back(cells[i].segment[t]);
+            }
+        }
+    }
+    if (*std::min_element(segs.begin(), segs.end()) != 0){
+        std::cerr << "(get_segment_indices) ERROR: The segment indices do not start at 0:";
+        for (size_t i=0; i<segs.size(); ++i){
+            std::cerr << " " << segs[i];
+        }
+        std::cerr << "\n";
+        throw std::invalid_argument("Invalid argument");
+    }
+
+    if (segs.size()-1 != *std::max_element(segs.begin(), segs.end())){
+        std::cerr << "(get_segment_indices) ERROR: The segment indices are not consecutive:";
+        for (size_t i=0; i<segs.size(); ++i){
+            std::cerr << " " << segs[i];
+        }
+        std::cerr << "\n";
+        throw std::invalid_argument("Invalid argument");
+    }
+    return segs;
+}
+
+int get_segment_file_number(std::vector<int> segment_indices, int i){
+    /* check if multi-segment mode is run, just for file naming */
+    if (segment_indices.size()>1)
+        return i;
+    else
+        return -1;
+}
+
+std::vector<MOMAdata> get_segment(std::vector<MOMAdata> cells, int segment){
+    /* 
+    * Returns a vector of those cells that are in the requested segment, 
+    * note that this functio does not respect any pointers to other cells and the genealogy of pointers needs to be build afterwards
+    */
+    std::vector<MOMAdata> cells_in_segment;
+    for(size_t i=0; i<cells.size(); ++i){
+        MOMAdata cell;
+        cell.cell_id = cells[i].cell_id;
+        cell.parent_id = cells[i].parent_id;
+
+        for(size_t t=0; t<cells[i].time.size(); ++t){
+            if(cells[i].segment[t] == segment){
+                append_vec(cell.time, cells[i].time[t]);
+                append_vec(cell.log_length, cells[i].log_length[t]);
+                append_vec(cell.fp, cells[i].fp[t]);
+                append_vec(cell.segment, cells[i].segment[t]);
+
+                /* in case the prediction part is already run, keep those */
+                if (cells[i].mean_forward.size()){ //note all "prediction" vectors are the same size always
+                    cell.mean_forward.push_back(cells[i].mean_forward[t]);
+                    cell.cov_forward.push_back(cells[i].cov_forward[t]);
+
+                    cell.mean_backward.push_back(cells[i].mean_backward[t]);
+                    cell.cov_backward.push_back(cells[i].cov_backward[t]);
+
+                    cell.mean_prediction.push_back(cells[i].mean_prediction[t]);
+                    cell.cov_prediction.push_back(cells[i].cov_prediction[t]);
+                }
+            }
+        }
+        /* only keep the cell if it has any data points in the segments */
+        if (cell.time.size()){
+            cells_in_segment.push_back(cell);
+        }
+    }
+    return cells_in_segment;
 }
 
 // ============================================================================= //
@@ -592,7 +703,8 @@ double estimate_q_stationary_beta(MOMAdata &cell, double beta){
     return q;
 }
 
-void init_cells(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
+
+void init_cells_f(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the ROOT cells estimated from 
     * the data using the FIRST time point for x and fp 
@@ -722,7 +834,12 @@ void init_cells_r(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, 
 }
 
 
-void init_cells(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
+void init_cells(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
+    init_cells_f(cells, stationary, use_beta, beta);
+    init_cells_r(cells, stationary, use_beta, beta);
+}
+
+void init_cells_f(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
     /* 
     * Inititalizes the mean vector and the covariance matrix of the root cells with
     * pre-defined values
