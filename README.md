@@ -21,7 +21,7 @@
     - [4.3 predict](#43-predict)
     - [4.4 auto_correlation](#44-auto_correlation)
   - [5 Error messages](#5-error-messages)
-  - [TODO:](#todo)
+  - [TODO](#todo)
 
 ---
 
@@ -221,7 +221,7 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 ---------
 Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
 
-## TODO: 
+## TODO
 - [x] prepare for cluster
 - [x] write new simulation including asymmetric cell division and tree structure?
 - [x] use log of parameters
@@ -232,4 +232,5 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
 - [x] consistent output files 
 - [x] check input and give precise error messages
 - [x] catch all Nans in optimisation
-- [ ] autocorrelation
+- [x] autocorrelation
+- [ ] segments
