@@ -1,10 +1,29 @@
 # gfp_gaussian_process
 
 ---
-## Usage 
+## Table of Content
+- 1 Compile
+  - 1.1 Compile locally
+  - 1.2 Compile on cluster
+- 2 Run
+  - 2.1 Required arguments
+    - 2.1.1 Input file
+    - 2.1.2 Parameter file
+  - 2.2 Optional arguments
+    - 2.2.1 Csv_config file
+  - 2.3 Using segments
+- 3 Model parameters
+- 4 Output
+  - 4.1 maximize
+  - 4.2 scan
+  - 4.3 predict
+  - 4.4 auto_correlation
+-  5 Error messages
+[1 Compile](#Run)
+---
 
-### 1 Compile
-#### 1.1 Compile locally
+## 1 Compile 
+### 1.1 Compile locally
 The following two libraries are needed:
 - nlopt (for minimization)
   - see [nlopt documentation](https://nlopt.readthedocs.io/en/latest/#download-and-installation) for installation details
@@ -15,7 +34,7 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 
 `cd src; make local`
 
-#### 1.2 Compile on cluster
+### 1.2 Compile on cluster
 1. Install nlopt
 - Will install nlopt in home-directory with static linking. You can change that via `DCMAKE_INSTALL_PREFIX`, but make sure to adjust the makefile accordingly!
 ```
@@ -32,13 +51,13 @@ make install
 - Run `make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command! Note, that the modules remain loaded after compilation.
 
 
-### 2 Run
+## 2 Run <a name="Run"></a>
 `cd bin`
 `./gfp_gaussian [-options]` with following options:
 ```
 -h, --help                 this help message
 -i, --infile               (required) input data file
--b, --parameter_bounds     (required) file setting the type, step, bounds of the parameters
+-b, --parameter_bounds     (required) file(s) setting the type, step, bounds of the parameters
 -c, --csv_config           file that sets the colums that will be used from the input file
 -l, --print_level          print level >=0, default: 0
 -o, --outdir               specify output direction and do not use default
@@ -53,19 +72,20 @@ make install
 ```
 Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -t 1e-2  -m -p`
 
-#### 2.1 Required arguments
+### 2.1 Required arguments
 - `infile` sets the input file that contains the data, eg as given by MOMA (see 2.1.1)
 - `parameter_bounds` sets the file that defines the parameter space (see 2.1.2)
 
-##### 2.1.1 Input file
+#### 2.1.1 Input file
 The input file is assumed to fullfil the following:
 - the data points of a cell appear as consecutive rows and are in the correct order with repect to time
 - the data set has to include all columns that are set via the `csv_config` file, i.e. time_col, length_col, fp_col
 - the cells can be uniquely identified via the tags provided via `parent_tags` and `cell_tags` and each mother cell has at most 2 daughter cells. If that is not the case, the `parent_tags` and `cell_tags` are not sufficient and a warning will be printed.
 - In order to estimate the initial covariance matrix, the data set needs to contain at least (!) 2 cells.
+- An optional column are the usage of segments, see below for more information
 
 
-##### 2.1.2 Parameter file
+#### 2.1.2 Parameter file
 Syntax for free, bound, fixed (in that order) parameters
 - parameter = init, step
 - parameter = init, step, lower, upper
@@ -82,9 +102,19 @@ ALL parameters are restricted to positive numbers by default avoiding unphysical
 The step value is used for the 1d scan to discretize the interval set by lower and upper. During the maximization this will be the initial step size. From nlopt doc: 
 "For derivative-free local-optimization algorithms, the optimizer must somehow decide on some initial step size to perturb x by when it begins the optimization. This step size should be big enough that the value of the objective changes significantly, but not too big if you want to find the local optimum nearest to x."
 
+### 2.2 Using segments
+To analyse data sets that contain data points that shall be described by a different set of underlying parameters can be run using segments. For that, a `segment_col` in the `csv_config` file can be specified. This column should contain the _segemnt index_ specifying for each data point to which segment it belongs. The segment indices are require to be consecutive and start at index 0. 
 
+The likelihood maximization that determines the parameter estimates are run independently for each segment. That means there is no difference between running different segments in sperate runs or as part of the same data set. The same behavior is used for 1d scans. However, the predictions as well as the calculation of the joint probablities that are used for the correlation functions are calculated by iterating through the entire data set. For that, the following scheme is used, which defines which set of parameters is used for which calculation in the forward and in the backward direction:
+![](Segments_scheme.png)
 
-#### 2.2 Optional arguments
+For each segment in the data set one parameter file is required submitted in the order of the segment indices. For example:
+```
+./gfp_gaussian -b parametersA.txt parametersB.txt ... 
+```
+will use the parameters in the file `parametersA.txt` for the segment with index 0 and the parameters in the file `parametersB.txt` for the segment with index 1, etc...
+
+### 2.2.3 Optional arguments
 - `csv_config` sets the file that contains information on which columns will be used from the input file (see 2.2.1)
 - `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the maximization/scan/error bar calculation. This is purely meant for debugging!
 - `tolerance` sets the stopping critirium by setting the tolerance of maximization: Stop when an optimization step changes the function value by less than tolerance. By setting very low tolerances one might encounder rounding issues, in that case the last valid step is taken and a warning is printed to stderr.
@@ -93,19 +123,20 @@ The step value is used for the 1d scan to discretize the interval set by lower a
 - `stationary` indicates that the cells growth is close to 0. Thus, the initial gfp production is calculated in this limit
 - `use_beta` indicates that the bleaching rate beta given in the parameter file as the initial value shall be used to calculate the initial gfp production estimate. Can be used with or without `--stationary`.
 
-##### 2.2.1 Csv_config file
+#### 2.3.1 Csv_config file
 The following settings define how the input file will be read. Default values in brackets.
 - time_col (time_sec): column from which the time is read
 - rescale_time (60): factor by which time will be devided before the anything is run. This can be used to use a different time unit for the input than for the model paramters.
 - length_col (length_um): column from which the length of the cell is read
 - length_islog (false): indicates if the cell length in the data file is in logscale (true) of not (false)
 - fp_col (gfp_nb): column from which the intensity is read
-- delm (,): delimiter between columns, probably ',' or ';' 
+- delm (,): delimiter between columns, probably ',' or ';'
+- segment_col (): column from which the segment index is read. Empty `segment_col` (which is the default) indicats that segment indeces will not be used 
 - cell_tag (date, pos, gl, id): columns that will make up the unique cell id, endings like .0 .00 etc of numeric values will be removed
 - parent_tags (date, pos, gl, parent_id): columns that will make up the unique cell id of the parent cell, endings like .0 .00 etc of numeric values will be removed
 
 
-### 3 Model parameters
+## 3 Model parameters
 The 2 OU processes are descibed with a mean value (thus the mean growth/production rate), a gamma parameter determining how fast the process is driven towards its mean after a deviation, and a variance that scales the noise term. Thus we have the following parameters including the bleaching rate of the fp, beta:
 - Growth rate fluctualtions params:
     - mean_lambda
@@ -128,7 +159,7 @@ Finally, asymmentric cell division is modeled via two variances of gaussians
     - var_dg      
 
 
-### 4 Output
+## 4 Output
 The following run modes can be set:
 -m, --maximize 
 -s, --scan 
@@ -136,25 +167,29 @@ The following run modes can be set:
 -a, --auto_covariance
 The respective output is explained below.
 
-All files that are generated in the maximization and the prediction step are named as follows: `example_f<free>_b<bounds>` and where `<free>` lists the variable via the index as e.g. printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129`. Then, the ending of the diffenerent files inicate what they contain.
+All files that are generated in the maximization and the prediction step are named as follows: `example_f<free>_b<bounds>` and where `<free>` lists the variable via the index as e.g. printed when the code is run and `<bounds>` lists the bound parameters in the same way. Example: `example_f034_b129`. Then, the ending of the diffenerent files inicate what they contain. 
 
 Each file generated starts with a table with the parameter settings that were used to enable reproducability:
 - The first line is a header for the parameter table 
-- The following 11 lines contain the parameter setting and potentially the final estimates from the optimisation if available
+ and the following 11 lines contain the parameter setting and potentially the final estimates from the optimisation if available. The prediction files and the auto_correlation file append the parameter settings of the other segments on after another if multiple segments are present.
 - The next line is empty
 
-#### 4.1 maximize
+### 4.1 maximize
 - Will create 3 files: one for the maximization process (`_interations.csv`), one for the final estimations (`_final.csv`), and a "parameter file" (`_parameter_file.csv`) that can directly be used as an input for a prediction run (this file is formated like the input parameter file and does not contain the table contain the parameter settings)
-- The interations file contains all likelihood evaluations of the likelihood maximization
-- The final file contains the estimated error for the estimated paramters via a hessian matrix. The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation. Finally, the number of data points, the total log likelihood, the normalized log likelihood, the used optimization algorithm, the set tolerance and the search space (log/linear) is noted.
-- The parameter file is in the format of the parameter file that was submitted to the code (see Sec. 2.1.2). It only contains the final estimation of each parameter. Thus, the paramters are treated as "fixed", when the code is run with this parameter file. This file can be used to run the prediction step directly (potentially on a different input file).
- 
-#### 4.2 scan
+- The _interations_ file contains all likelihood evaluations of the likelihood maximization
+- The _final_ file contains the estimated error for the estimated paramters via a hessian matrix. The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation. Finally, the number of data points, the total log likelihood, the normalized log likelihood, the used optimization algorithm, the set tolerance and the search space (log/linear) is noted.
+- The _parameter_ file is in the format of the parameter file that was submitted to the code (see Sec. 2.1.2). It only contains the final estimation of each parameter. Thus, the paramters are treated as "fixed", when the code is run with this parameter file. This file can be used to run the prediction step directly (potentially on a different input file).
+
+As the maximization is run on the different segments independently, `_segment` followed by the segment index is added to the sample input file name in case there are multiple segments. 
+
+
+### 4.2 scan
 - The 1d parameters scans will calculate the likelihood for the 1d ranges set by the parameter_bound file. Note, only "bound" parameters will be scaned
 - Will create a file for each parameter containing all calculated likelihoods of the scan
-- The file (given the input file `example.csv`) is named as follows: `example_<parameter>.csv`, where `<parameter>` is the paramter that is scaned
 
-#### 4.3 predict
+ `_segment` followed by the segment index is added to the sample input file name in case there are multiple segments. 
+
+### 4.3 predict
 - In case the maximisation is also run, the final parameter estimate is used for the prediction, otherwise the init value of each parameter is used.
 - Will create 3 files: combined predictions (`_prediction.csv`), backward only (`_prediction_backward.csv`), and forward only (`_prediction_forward.csv`)
 - The predictions consist of:
@@ -162,7 +197,7 @@ Each file generated starts with a table with the parameter settings that were us
   - the upper triangle of the covariance matrix labeled `cov_zi_zj` where `zi` and `zj` are one of `x`, `g`, `l`, and `q`.
   - ... of each time point for each cell in the same order as the input file
 
-#### 4.4 auto_correlation
+### 4.4 auto_correlation
 - The auto-correlation function _R(dt)_ is calculated over values of _dt_ that are equidistant. The incremenent is determined as the 30th pecentile of all the time increments between measurements in the data set. Measuremnt pairs with time differences that do not match any of the _dt_ are ignored (and a warning is printed). 
 - Running the auto-correlation part also runs the prediction part and generates those files, too. Setting both flags is therefore redundant but also not harmful.
 - A correlation file(`_correlation.csv`) is created:
@@ -181,9 +216,9 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 
 
 ---------
-## Notes 
 Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
-### TODO: 
+
+## TODO: 
 - [x] prepare for cluster
 - [x] write new simulation including asymmetric cell division and tree structure?
 - [x] use log of parameters
@@ -195,14 +230,3 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
 - [x] check input and give precise error messages
 - [x] catch all Nans in optimisation
 - [ ] autocorrelation
-
-## Technical Notes
-### Log-Likelihood maximization with multiple cell trees
-The log-likelihoods of all cell trees are added and the summed log-likelihood is then maximized. This of course implies that the parameters are the same for all cell trees. 
-
-## Minimizer 
- - Using nlopt library
- - Note, `total_likelihood` returns -tl (negative total log_likelihood). Thus, maximizing the log_likelihod, becomes minimization.
- - the wrapper ```double total_likelihood(const std::vector<double> &params_vec, std::vector<MOMAdata> &cells);``` meant for direct calculation without minimization returns just the log_likelihood
-- Current minimizer is _LN_COBYLA_
-

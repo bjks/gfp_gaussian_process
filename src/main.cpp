@@ -163,7 +163,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {
         {"-h","--help", "this help message"},
         {"-i", "--infile", "(required) input data file"},
-        {"-b", "--parameter_bounds", "(required) file setting the type, step, bounds of the parameters"},
+        {"-b", "--parameter_bounds", "(required) file(s) setting the type, step, bounds of the parameters"},
         {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
         {"-l","--print_level", "print level >=0, default: 0"},
         {"-o","--outdir", "specify output direction and do not use default"},
