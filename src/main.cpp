@@ -294,7 +294,7 @@ int main(int argc, char** argv){
             return EXIT_SUCCESS;    
         }
 
-        /* Read parameters */
+        /* Read parameters as a vector of Parameter_set instances */
         std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
         std::vector<Parameter_set> params_list;
         for (size_t i=0; i<param_files.size(); ++i){
@@ -323,8 +323,8 @@ int main(int argc, char** argv){
 
 
         /* ============================================================== */
-
         /* run bound_1dscan, minimization and/or prediction... */
+
         if (arguments.count("minimize")){
             for(size_t i=0; i<segment_indices.size(); ++i){
                 std::vector<MOMAdata> cells_in_segment = get_segment(cells, segment_indices[i]);
@@ -365,7 +365,7 @@ int main(int argc, char** argv){
         }
         
         if (arguments.count("auto_cov")){
-            /* Run covariance*/
+            /* Run covariance, note that prediction was already run as this stage */
             run_covariance(cells, params_list, arguments, config);
         }
 
