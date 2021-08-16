@@ -2,27 +2,30 @@
 
 ---
 ## Table of Content
-- 1 Compile
-  - 1.1 Compile locally
-  - 1.2 Compile on cluster
-- 2 Run
-  - 2.1 Required arguments
-    - 2.1.1 Input file
-    - 2.1.2 Parameter file
-  - 2.2 Optional arguments
-    - 2.2.1 Csv_config file
-  - 2.3 Using segments
-- 3 Model parameters
-- 4 Output
-  - 4.1 maximize
-  - 4.2 scan
-  - 4.3 predict
-  - 4.4 auto_correlation
--  5 Error messages
-[1 Compile](#Run)
+- [gfp_gaussian_process](#gfp_gaussian_process)
+  - [Table of Content](#table-of-content)
+  - [1 Compile](#1-compile)
+    - [1.1 Compile locally](#11-compile-locally)
+    - [1.2 Compile on cluster](#12-compile-on-cluster)
+  - [2 Run](#2-run)
+    - [2.1 Required arguments](#21-required-arguments)
+      - [2.1.1 Input file](#211-input-file)
+      - [2.1.2 Parameter file](#212-parameter-file)
+    - [2.2 Using segments](#22-using-segments)
+    - [2.2.3 Optional arguments](#223-optional-arguments)
+      - [2.3.1 Csv_config file](#231-csv_config-file)
+  - [3 Model parameters](#3-model-parameters)
+  - [4 Output](#4-output)
+    - [4.1 maximize](#41-maximize)
+    - [4.2 scan](#42-scan)
+    - [4.3 predict](#43-predict)
+    - [4.4 auto_correlation](#44-auto_correlation)
+  - [5 Error messages](#5-error-messages)
+  - [TODO:](#todo)
+
 ---
 
-## 1 Compile 
+## 1 Compile
 ### 1.1 Compile locally
 The following two libraries are needed:
 - nlopt (for minimization)
@@ -51,7 +54,7 @@ make install
 - Run `make cluster`. This will run `ml GCC/8.3.0; ml Eigen/3.3.7` as well as the compile command! Note, that the modules remain loaded after compilation.
 
 
-## 2 Run <a name="Run"></a>
+## 2 Run
 `cd bin`
 `./gfp_gaussian [-options]` with following options:
 ```
