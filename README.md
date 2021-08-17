@@ -108,8 +108,9 @@ The step value is used for the 1d scan to discretize the interval set by lower a
 ### 2.2 Using segments
 To analyse data sets that contain data points that shall be fitted by a different set of underlying parameters segment indices can be used. For that, a `segment_col` in the `csv_config` file can be specified. This column should contain the _segemnt index_ specifying for each data point to which segment it belongs. The segment indices are require to be consecutive and start at index 0. 
 
-The likelihood maximization that determines the parameter estimates are run independently for each segment. That means there is no difference between running different segments in sperate runs or as part of the same data set. The same behavior is used for 1d scans. However, the predictions as well as the calculation of the joint probablities that are used for the correlation functions are calculated by iterating through the entire data set. For that, the following scheme is used, which defines which set of parameters is used for which calculation in the forward and in the backward direction:
+The likelihood maximization that determines the parameter estimates are run independently for each segment. That means there is no difference between running different segments in sperate runs or as part of the same data set. The same behavior is used for 1d scans. However, the predictions as well as the calculation of the joint probablities that are used for the correlation functions are calculated by iterating through the entire data set. For that, the following scheme is used
 ![](Segments_scheme.png)
+Where each step involves two calculations: the calculation of the new prior which depends on the parameters of the biophysical model and the calculation of the posterior which depends on the parameters of the measurement noise. Note, that the prior calculation to go from time point 2 to 3 and vice verse both take the parameters of the 0th segment.
 
 For each segment in the data set one parameter file is required submitted in the order of the segment indices. For example:
 ```
@@ -118,13 +119,13 @@ For each segment in the data set one parameter file is required submitted in the
 will use the parameters in the file `parametersA.txt` for the segment with index 0 and the parameters in the file `parametersB.txt` for the segment with index 1, etc...
 
 ### 2.2.3 Optional arguments
-- `csv_config` sets the file that contains information on which columns will be used from the input file (see 2.2.1)
+- `csv_config` sets the file that contains information on which columns will be used from the input file (see 2.3.1)
 - `print_level=0` supresses input of the likelihood calculation, `1` prints every step of the maximization/scan/error bar calculation. This is purely meant for debugging!
 - `tolerance` sets the stopping critirium by setting the tolerance of maximization: Stop when an optimization step changes the function value by less than tolerance. By setting very low tolerances one might encounder rounding issues, in that case the last valid step is taken and a warning is printed to stderr.
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 - `search_space` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
 - `stationary` indicates that the cells growth is close to 0. Thus, the initial gfp production is calculated in this limit
-- `use_beta` indicates that the bleaching rate beta given in the parameter file as the initial value shall be used to calculate the initial gfp production estimate. Can be used with or without `--stationary`.
+- `use_beta` indicates that the bleaching rate beta given in the parameter file as the initial value shall be used to calculate the initial gfp production estimate. This, can be used with or without `--stationary`.
 
 #### 2.3.1 Csv_config file
 The following settings define how the input file will be read. Default values in brackets.
@@ -149,18 +150,18 @@ The 2 OU processes are descibed with a mean value (thus the mean growth/producti
     - mean_q    
     - gamma_q    
     - var_q  
-    - beta      
+    - beta         
 
-Additionally, the lenth of the cell and the gfp is effected by measurement noise
-- Measurement noise:
-    - var_x     
-    - var_g     
-
-Finally, asymmentric cell division is modeled via two variances of gaussians
+Additionally, asymmentric cell division is modeled via two variances of gaussians
 - cell division:
     - var_dx 
-    - var_dg      
+    - var_dg     
 
+
+Finally, the length of the cell and the gfp is effected by measurement noise
+- Measurement noise:
+    - var_x     
+    - var_g  
 
 ## 4 Output
 The following run modes can be set:
@@ -174,8 +175,8 @@ All files that are generated in the maximization and the prediction step are nam
 
 Each file generated starts with a table with the parameter settings that were used to enable reproducability:
 - The first line is a header for the parameter table 
- and the following 11 lines contain the parameter setting and potentially the final estimates from the optimisation if available. The prediction files and the auto_correlation file append the parameter settings of the other segments on after another if multiple segments are present.
-- The next line is empty
+ and the following 11 lines contain the parameter setting and potentially the final estimates from the optimisation if available. The prediction files and the auto_correlation file append the parameter settings of the other segments one after another if multiple segments are present.
+- The following line is empty
 
 ### 4.1 maximize
 - Will create 3 files: one for the maximization process (`_interations.csv`), one for the final estimations (`_final.csv`), and a "parameter file" (`_parameter_file.csv`) that can directly be used as an input for a prediction run (this file is formated like the input parameter file and does not contain the table contain the parameter settings)
