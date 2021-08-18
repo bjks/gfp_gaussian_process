@@ -1,9 +1,9 @@
 # gfp_gaussian_process
 
 ---
-## Table of Content
+## Table of Contents
 - [gfp_gaussian_process](#gfp_gaussian_process)
-  - [Table of Content](#table-of-content)
+  - [Table of Contents](#table-of-contents)
   - [1 Compile](#1-compile)
     - [1.1 Compile locally](#11-compile-locally)
     - [1.2 Compile on cluster](#12-compile-on-cluster)
