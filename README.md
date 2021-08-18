@@ -135,7 +135,8 @@ The following settings define how the input file will be read. Default values in
 - length_islog (false): indicates if the cell length in the data file is in logscale (true) of not (false)
 - fp_col (gfp_nb): column from which the intensity is read
 - delm (,): delimiter between columns, probably ',' or ';'
-- segment_col (): column from which the segment index is read. Empty `segment_col` (which is the default) indicats that segment indeces will not be used 
+- segment_col (): column from which the segment index is read. Not setting `segment_col` in the file indicats that segment indices will not be used 
+- filter_col (): column from which the filter will be read. To INclude a data point, set the entry in this column to `True`, `true`, `TRUE` or `1` and to EXclude a data point, set the entry in this column to `False`, `false`, `FALSE` or `0`. Not setting `filter_col` in the file indicats that the input file will not be filtered
 - cell_tag (date, pos, gl, id): columns that will make up the unique cell id, endings like .0 .00 etc of numeric values will be removed
 - parent_tags (date, pos, gl, parent_id): columns that will make up the unique cell id of the parent cell, endings like .0 .00 etc of numeric values will be removed
 

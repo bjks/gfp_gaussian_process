@@ -343,7 +343,7 @@ std::string outfile_name_parameter_file(std::map<std::string, std::string> argum
     /* Filename for a parameter file */
     std::string outfile = out_dir(arguments);
     outfile +=  add_segment_to_filename(file_base(arguments["infile"]), segment) + outfile_param_code(params) + "_parameter_file";
-    return outfile + ".csv";
+    return outfile + ".txt";
 }
 
 
