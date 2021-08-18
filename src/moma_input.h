@@ -354,11 +354,11 @@ std::map<std::string, int> get_header_indices(std::vector<std::string> &str_vec)
     std::string stri;
     for (size_t i = 0; i < str_vec.size(); ++i){
         stri = trim(str_vec[i], ' ');
-        stri = trim(str_vec[i], '\t');
-        stri = trim(str_vec[i], '\n');
-        stri = trim(str_vec[i], '\v');
-        stri = trim(str_vec[i], '\f');
-        stri = trim(str_vec[i], '\r');
+        stri = trim(stri, '\t');
+        stri = trim(stri, '\n');
+        stri = trim(stri, '\v');
+        stri = trim(stri, '\f');
+        stri = trim(stri, '\r');
         header_indices.insert(std::pair<std::string, int>(stri, i)); 
     }
     return header_indices;
@@ -428,6 +428,13 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config){
             return data;
         }
     }
+    if (!config.filter_col.empty()){
+        if (!header_indices.count(config.filter_col)){
+            std::cerr << "(read_data) ERROR: (filter_col) is not an column in input file: " << config.filter_col << "\n";
+            throw std::invalid_argument("Invalid argument");
+            return data;
+        }
+    }
     for(size_t i=0; i<config.cell_tags.size(); ++i){
         if (!header_indices.count(config.cell_tags[i])){
             std::cerr << "(read_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
@@ -450,42 +457,44 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config){
     int last_idx = -1;
     long line_count = 0;
     while (getline(file, line)) {
-        ++line_count;
         try{
             line_parts = split_string_at(line, config.delm);
+            if (config.filter_col.empty() || string2bool(line_parts[header_indices[config.filter_col]])){
+                ++line_count;
 
-            // compose the cell id of the cells using the cell_tags
-            curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
+                // compose the cell id of the cells using the cell_tags
+                curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
 
-            if (last_cell != curr_cell){
-                last_idx++;
-                MOMAdata next_cell;
-                // add new MOMAdata instance to vector 
-                data.push_back(next_cell); 
+                if (last_cell != curr_cell){
+                    last_idx++;
+                    MOMAdata next_cell;
+                    // add new MOMAdata instance to vector 
+                    data.push_back(next_cell); 
 
-                data[last_idx].cell_id = curr_cell;
-                // compose the cell id of the parent using the parent_tags
-                data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
+                    data[last_idx].cell_id = curr_cell;
+                    // compose the cell id of the parent using the parent_tags
+                    data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
+                }
+
+                append_vec(data[last_idx].time,  stod_reject_nan(line_parts[header_indices[config.time_col]])/config.rescale_time);
+
+                if (config.length_islog)
+                    append_vec(data[last_idx].log_length,  stod_reject_nan(line_parts[header_indices[config.length_col]]) );
+                else
+                    append_vec(data[last_idx].log_length,  log(stod_reject_nan(line_parts[header_indices[config.length_col]])) );
+
+                append_vec(data[last_idx].fp,  stod_reject_nan(line_parts[header_indices[config.fp_col]]) );
+
+                if (config.segment_col.empty()){
+                    append_vec(data[last_idx].segment, 0); //in case there is only one segment, assign a dummy segment index
+                }
+                else{
+                    append_vec(data[last_idx].segment,  std::stoi(line_parts[header_indices[config.segment_col]]) );
+                }
+
+                /* ============ */
+                last_cell = curr_cell;
             }
-
-            append_vec(data[last_idx].time,  stod_reject_nan(line_parts[header_indices[config.time_col]])/config.rescale_time);
-
-            if (config.length_islog)
-                append_vec(data[last_idx].log_length,  stod_reject_nan(line_parts[header_indices[config.length_col]]) );
-            else
-                append_vec(data[last_idx].log_length,  log(stod_reject_nan(line_parts[header_indices[config.length_col]])) );
-
-            append_vec(data[last_idx].fp,  stod_reject_nan(line_parts[header_indices[config.fp_col]]) );
-
-            if (config.segment_col.empty()){
-                append_vec(data[last_idx].segment, 0); //in case there is only one segment, assign a dummy segment index
-            }
-            else{
-                append_vec(data[last_idx].segment,  std::stoi(line_parts[header_indices[config.segment_col]]) );
-            }
-
-            /* ============ */
-            last_cell = curr_cell;
         }
         catch(std::exception &e){
             std::cerr << "(read_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;

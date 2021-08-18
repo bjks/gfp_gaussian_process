@@ -18,6 +18,7 @@ public:
     std::string delm = ",";
     int step = 1;
     std::string segment_col = "";
+    std::string filter_col = "";
 
     std::vector<std::string> cell_tags {"date", "pos", "gl", "id"};
     std::vector<std::string> parent_tags {"date", "pos", "gl", "parent_id"};
@@ -53,8 +54,7 @@ public:
                     length_col = parts[1];
                 }
                 else if (parts[0] == "length_islog"){
-                    if (parts[1] == "true" || parts[1] == "True" )
-                        length_islog = true;
+                    length_islog = string2bool(parts[1]);
                 }
                 else if (parts[0] == "fp_col"){
                     fp_col = parts[1];
@@ -84,6 +84,9 @@ public:
                 else if (parts[0] == "segment_col"){
                     segment_col = parts[1];
                 }
+                else if (parts[0] == "filter_col"){
+                    filter_col = parts[1];
+                }
             }
         }
     }
@@ -106,6 +109,8 @@ std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
 
     if (!config.segment_col.empty())
         os << pad_str("segment_col:", col) << config.segment_col << "\n";
+    if (!config.filter_col.empty())
+        os << pad_str("filter_col:", col) << config.filter_col << "\n";
     
     os          << pad_str("cell_tags:", col) ;
     for(size_t i=0; i < config.cell_tags.size(); i++){
