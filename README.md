@@ -180,7 +180,7 @@ Each file generated starts with a table with the parameter settings that were us
 - The following line is empty
 
 ### 4.1 maximize
-- Will create 3 files: one for the maximization process (`_interations.csv`), one for the final estimations (`_final.csv`), and a "parameter file" (`_parameter_file.csv`) that can directly be used as an input for a prediction run (this file is formated like the input parameter file and does not contain the table contain the parameter settings)
+- Will create 3 files: one for the maximization process (`_interations.csv`), one for the final estimations (`_final.csv`), and a "parameter file" (`_parameter_file.txt`) that can directly be used as an input for a prediction run (this file is formated like the input parameter file and does not contain the table contain the parameter settings)
 - The _interations_ file contains all likelihood evaluations of the likelihood maximization
 - The _final_ file contains the estimated error for the estimated paramters via a hessian matrix. The hessian is calculted using a range of finit-differnences that are set relative to the value of the respective paramter. I.e. epsilon=1e-2 corresponds to 1% of each paramterer is used for the hessian matrix estimation. Finally, the number of data points, the total log likelihood, the normalized log likelihood, the used optimization algorithm, the set tolerance and the search space (log/linear) is noted.
 - The _parameter_ file is in the format of the parameter file that was submitted to the code (see Sec. 2.1.2). It only contains the final estimation of each parameter. Thus, the paramters are treated as "fixed", when the code is run with this parameter file. This file can be used to run the prediction step directly (potentially on a different input file).
@@ -235,4 +235,5 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
 - [x] check input and give precise error messages
 - [x] catch all Nans in optimisation
 - [x] autocorrelation
-- [ ] segments
+- [x] segments
+- [x] optional filtering
