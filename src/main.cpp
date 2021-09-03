@@ -19,9 +19,11 @@ void run_minimization(std::vector<MOMAdata> &cells,
     std::cout << "-> Minimizaton" << "\n";
 
     /* set and setup (global) output file */
-    _outfile_ll = outfile_name_minimization_process(arguments, params, segment);
-    setup_outfile_likelihood(_outfile_ll, params);
-    std::cout << "Outfile: " << _outfile_ll << "\n";
+    std::string outfile_ll = outfile_name_minimization_process(arguments, params, segment);
+    _file_iteration = std::ofstream(outfile_ll, std::ios_base::app);
+
+    setup_outfile_likelihood(outfile_ll, params);
+    std::cout << "Outfile: " << outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
     std::string min_algo = "LN_COBYLA";
@@ -36,6 +38,8 @@ void run_minimization(std::vector<MOMAdata> &cells,
                                         params, std::stod(arguments["tolerance"]), 
                                         min_algo);
     }
+
+    _file_iteration.close();
 
     /* estimate errors of params via hessian */
     std::cout << "-> Error estimation" << "\n";
@@ -72,9 +76,11 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells,
             set and setup new (global) output file, for each scan, 
             filename containing the parameter name that is varied
             */
-            _outfile_ll = outfile_name_scan(arguments, params.all[i].name, segment);
-            setup_outfile_likelihood(_outfile_ll, params);
-            std::cout << "Outfile: " << _outfile_ll << "\n";
+            std::string outfile_scan = outfile_name_scan(arguments, params.all[i].name, segment);
+            _file_iteration = std::ofstream(outfile_scan, std::ios_base::app);
+
+            setup_outfile_likelihood(outfile_scan, params);
+            std::cout << "Outfile: " << outfile_scan << "\n";
 
             /* set sampling vector np.arange style*/
             std::vector<double> sampling = arange<double>(params.all[i].lower, 
@@ -127,6 +133,7 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
 }
 
 
+
 void run_covariance(std::vector<MOMAdata> &cells, 
                     std::vector<Parameter_set> params_list, 
                     std::map<std::string, std::string> arguments, 
@@ -141,8 +148,11 @@ void run_covariance(std::vector<MOMAdata> &cells,
     // defines the dts over which the correlation function will be calculated
     double dt = base_dt(cells); 
 
+    std::string outfile_joints = outfile_name_joints(arguments, params_list);
+    setup_outfile_joints(outfile_joints, params_list);
+
     // calculate all possible joints
-    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt);
+    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt, outfile_joints);
     std::vector<size_t> joint_number = count_joints(joint_matrix);
 
     // calculate (normalized) covariance from the joints

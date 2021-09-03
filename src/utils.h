@@ -22,9 +22,10 @@ bool string2bool(const std::string & s){
         return true;
     else if (s=="False" || s=="false" || s=="FALSE" || s=="0")
         return false;
-    else
+    else{
         std::cerr << "(string2bool) ERROR: no valid bool conversion of " << s << "\n";
         throw std::invalid_argument("Invalid argument");
+    }
 }
 
 std::string pad_str(std::string s, const size_t num, const char paddingChar = ' '){

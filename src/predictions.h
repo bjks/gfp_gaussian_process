@@ -330,7 +330,7 @@ std::string outfile_name_prediction_segments(std::map<std::string, std::string> 
     return outfile + ".csv";
 }
 
-void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd mat){
+void output_upper_triangle(std::ofstream &file, const Eigen::MatrixXd mat){
     /* Comma seperated output of upper triangle of Eigen::matrix*/
     for(size_t m=0; m<mat.rows();++m){
         for(size_t n=0; n<mat.cols();++n){
@@ -343,7 +343,7 @@ void output_upper_triangle(std::ofstream &file, Eigen::MatrixXd mat){
     }                     
 }
 
-void output_vector(std::ofstream &file, Eigen::VectorXd v){
+void output_vector(std::ofstream &file, const Eigen::VectorXd v){
     /* Comma seperated output of Eigen::vector */
     for (size_t k=0; k<v.size(); ++k){
         if (k>0)
