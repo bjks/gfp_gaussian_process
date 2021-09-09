@@ -124,18 +124,18 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
     if (_save_ll){
         _file_iteration << _iteration << ",";
         for (size_t i=0; i<params_vec.size(); ++i){
-            _file_iteration << params_vec[i]  << ",";
+            _file_iteration << std::setprecision(20) << params_vec[i]  << ",";
         }
-        _file_iteration << std::setprecision(10) << tl  << "\n";
+        _file_iteration << std::setprecision(30) << tl << std::setprecision(15) << "\n";
     }
 
     /* Print output dependend on set _print_level */
     if (_print_level>0){
             std::cout << _iteration << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
-                std::cout << params_vec[i]  << ", ";
+                std::cout << std::setprecision(20) << params_vec[i]  << ", ";
             }
-            std::cout << "ll=" <<  std::setprecision(10) << tl  << "\n";
+            std::cout << "ll=" << std::setprecision(30) << tl << std::setprecision(15) << "\n";
     }
     return -tl;
 }

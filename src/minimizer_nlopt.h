@@ -98,7 +98,7 @@ Although the tolerance criterium was not met, the last valid step is used for pa
     }
     _save_ll = false; // stop ll output
 
-    std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
+    std::cout << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
     params.set_final(parameter_state);
     std::cout << params << std::endl;
     return -ll_min;
@@ -203,7 +203,7 @@ Although the tolerance criterium was not met, the last valid step is used for pa
     }
     _save_ll = false; // stop ll output
 
-    std::cout << "Found maximum: log likelihood = " << std::setprecision(10) << -ll_min << "\n";
+    std::cout << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
 
     // save final value for each parameter
     for(size_t i=0; i<parameter_state.size(); ++i){

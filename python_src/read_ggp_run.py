@@ -164,7 +164,7 @@ def get_scan_files(filebase, paramter_settings):
 def get_all_filenames(filebase, paramter_settings):
     minimization_iter_file, minimization_final_file = get_minimization_file(filebase, paramter_settings)
     scans = get_scan_files(filebase, paramter_settings)
-    f, b, p = get_prediction_files(filebase, paramter_settings)
+    f, b, p = get_prediction_files(filebase, [paramter_settings])
     return {"iter": minimization_iter_file, 
             "final": minimization_final_file,
             "scans": scans,
@@ -403,6 +403,9 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
      
 
     norm = mpl.colors.Normalize(vmin=-len(cells_data)/2, vmax=len(cells_data))
+    if len(cells_data)==1:
+        norm = mpl.colors.Normalize(vmin=-10*len(cells_data), vmax=len(cells_data))
+
     cmap_data = mpl.cm.ScalarMappable(cmap='Oranges', norm=norm)
     cmap_data.set_array([])
 
@@ -433,7 +436,7 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
                     color=prediction_color, alpha=0.4)
 
     ax[0].set_ylabel("log lentgh")   
-    ax[1].set_ylabel("fl. protein")   
+    ax[1].set_ylabel("YFP content (a.u.)")   
     ax[2].set_ylabel(r"growth rate $\lambda$")   
     ax[3].set_ylabel(r"production rate $q$")   
 
@@ -460,6 +463,8 @@ def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 
      
 
     norm = mpl.colors.Normalize(vmin=-len(cells_data)/2, vmax=len(cells_data))
+    if len(cells_data)==1:
+        norm = mpl.colors.Normalize(vmin=-10*len(cells_data), vmax=len(cells_data))
     cmap_data = mpl.cm.ScalarMappable(cmap='Oranges', norm=norm)
     cmap_data.set_array([])
 
@@ -475,7 +480,7 @@ def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 
 
 
     ax[0].set_ylabel("log lentgh")   
-    ax[1].set_ylabel("fl. protein")   
+    ax[1].set_ylabel("YFP content (a.u.)")   
 
     ax[0].set_xlabel("time ({:s})".format(time_unit[0]))  
     ax[1].set_xlabel("time ({:s})".format(time_unit[0]))  
