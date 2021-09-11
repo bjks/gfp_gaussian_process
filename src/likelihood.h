@@ -38,15 +38,26 @@ void sc_likelihood(const std::vector<double> &params_vec,
     /* Calculates the likelihood of a single cell (can be a root cell)
     * the params_vec contains paramters in the following (well defined) order:
     * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
+    * 0             1               2           3       4       5       6       7   8       9       10   
     */
-    if (cell.is_root()){
-        cell.mean = cell.mean_init_forward;
-        cell.cov = cell.cov_init_forward;
-    }
-    else{
-        // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-        mean_cov_after_division(cell, params_vec[9], params_vec[10]);
-    }
+    init_sc_distribution(cell, 
+                    params_vec[1], 
+                    params_vec[2], 
+                    params_vec[2], 
+                    params_vec[3], 
+                    params_vec[4], 
+                    params_vec[5], 
+                    params_vec[9], 
+                    params_vec[10]);
+
+    // if (cell.is_root()){
+    //     cell.mean = cell.mean_init_forward;
+    //     cell.cov = cell.cov_init_forward;
+    // }
+    // else{
+    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
+    //     mean_cov_after_division(cell, params_vec[9], params_vec[10]);
+    // }
 
     Eigen::VectorXd xg(2);
 

@@ -26,7 +26,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
     std::cout << "Outfile: " << outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
-    std::string min_algo = "LN_COBYLA";
+    std::string min_algo = "LN_BOBYQA";
     double ll_max;
     if (arguments["search_space"] == "log"){
         ll_max = minimize_wrapper_log_params(&total_likelihood_log_params, cells, 

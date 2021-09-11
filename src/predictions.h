@@ -32,6 +32,36 @@ void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
     cell.cov = D + F * cell.parent->cov * F.transpose();
 }
 
+void init_sc_distribution(MOMAdata &cell, 
+                        const double &mean_lambda, 
+                        const double &gamma_lambda, 
+                        const double &var_lambda, 
+                        const double &mean_q, 
+                        const double &gamma_q, 
+                        const double &var_q, 
+                        const double &var_dx, 
+                        const double &var_dg){
+    if (cell.is_root()){
+        // set means
+        cell.mean(0) = cell.mean_init_forward(0);
+        cell.mean(1) = cell.mean_init_forward(1);
+
+        cell.mean(2) = mean_lambda;
+        cell.mean(3) = mean_q;
+
+        // set cov
+        cell.cov(0,0) = cell.cov_init_forward(0,0);
+        cell.cov(1,1) = cell.cov_init_forward(1,1);
+
+        cell.cov(2,2) = var_lambda/(2.*gamma_lambda);
+        cell.cov(3,3) = var_q/(2.*gamma_q);
+
+    }
+    else{
+        mean_cov_after_division(cell, var_dx, var_dg);
+    }
+}
+
 void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
     // tested (i.e. same output as python functions)
     Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
@@ -47,16 +77,28 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
 
-// I think here I will just change "params_vec" to "params_vecs[cell.segment[t]]"
-    if (cell.is_root()){
-        cell.mean = cell.mean_init_forward;
-        cell.cov = cell.cov_init_forward;
-    }
-    else{
-        int segment = cell.parent->segment[cell.parent->segment.size()-1];
-        // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-        mean_cov_after_division(cell, params_vecs[segment][9], params_vecs[segment][10]);
-    }
+
+    int segment = cell.parent->segment[cell.parent->segment.size()-1];
+
+    init_sc_distribution(cell, 
+                        params_vecs[segment][1], 
+                        params_vecs[segment][2], 
+                        params_vecs[segment][2], 
+                        params_vecs[segment][3], 
+                        params_vecs[segment][4], 
+                        params_vecs[segment][5], 
+                        params_vecs[segment][9], 
+                        params_vecs[segment][10]);
+
+    // if (cell.is_root()){
+    //     cell.mean = cell.mean_init_forward;
+    //     cell.cov = cell.cov_init_forward;
+    // }
+    // else{
+    //     int segment = cell.parent->segment[cell.parent->segment.size()-1];
+    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
+    //     mean_cov_after_division(cell, params_vecs[segment][9], params_vecs[segment][10]);
+    // }
 
     Eigen::VectorXd xg(2);
 
@@ -152,6 +194,38 @@ void mean_cov_after_division_r(MOMAdata &cell, double var_dx, double var_dg){
     }
 }
 
+
+void init_sc_distribution_r(MOMAdata &cell, 
+                        const double &mean_lambda, 
+                        const double &gamma_lambda, 
+                        const double &var_lambda, 
+                        const double &mean_q, 
+                        const double &gamma_q, 
+                        const double &var_q, 
+                        const double &var_dx, 
+                        const double &var_dg){
+    if (cell.is_leaf()){
+        // set means
+        cell.mean(0) = cell.mean_init_backward(0);
+        cell.mean(1) = cell.mean_init_backward(1);
+
+        cell.mean(2) = -mean_lambda;
+        cell.mean(3) = -mean_q;
+
+        // set cov
+        cell.cov(0,0) = cell.cov_init_backward(0,0);
+        cell.cov(1,1) = cell.cov_init_backward(1,1);
+
+        cell.cov(2,2) = var_lambda/(2.*gamma_lambda);
+        cell.cov(3,3) = var_q/(2.*gamma_q);
+
+    }
+    else{
+        mean_cov_after_division_r(cell, var_dx, var_dg);
+    }
+}
+
+
 void mean_cov_model_r(MOMAdata &cell, 
                     double t, double ml, 
                     double gl, double sl2, 
@@ -206,15 +280,26 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
 
-    if (cell.is_leaf()){
-        cell.mean = cell.mean_init_backward;
-        cell.cov = cell.cov_init_backward;
-    }
-    else{
-        int segment = cell.segment[cell.segment.size()-1];
-        // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-        mean_cov_after_division_r(cell, params_vecs[segment][9], params_vecs[segment][10]);
-    }
+    int segment = cell.segment[cell.segment.size()-1];
+
+    init_sc_distribution_r(cell, 
+                        params_vecs[segment][1], 
+                        params_vecs[segment][2], 
+                        params_vecs[segment][2], 
+                        params_vecs[segment][3], 
+                        params_vecs[segment][4], 
+                        params_vecs[segment][5], 
+                        params_vecs[segment][9], 
+                        params_vecs[segment][10]);
+    // if (cell.is_leaf()){
+    //     cell.mean = cell.mean_init_backward;
+    //     cell.cov = cell.cov_init_backward;
+    // }
+    // else{
+    //     int segment = cell.segment[cell.segment.size()-1];
+    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
+    //     mean_cov_after_division_r(cell, params_vecs[segment][9], params_vecs[segment][10]);
+    // }
 
     Eigen::VectorXd xg(2);
 
