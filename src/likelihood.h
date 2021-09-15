@@ -83,7 +83,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
         if (std::isnan(tl)){
-            std::cout << _iteration << ": ";
+            std::cout << _iteration + 1 << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
                 std::cout << params_vec[i]  << ", ";
             }

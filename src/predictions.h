@@ -77,8 +77,14 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
 
+    int segment;
 
-    int segment = cell.parent->segment[cell.parent->segment.size()-1];
+    if (cell.is_root()){
+        segment = 0;
+    }
+    else{
+        segment = cell.parent->segment[cell.parent->segment.size()-1];
+    }
 
     init_sc_distribution(cell, 
                         params_vecs[segment][1], 
@@ -89,12 +95,11 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
                         params_vecs[segment][5], 
                         params_vecs[segment][9], 
                         params_vecs[segment][10]);
-
+    
     // if (cell.is_root()){
     //     cell.mean = cell.mean_init_forward;
     //     cell.cov = cell.cov_init_forward;
     // }
-    // else{
     //     int segment = cell.parent->segment[cell.parent->segment.size()-1];
     //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
     //     mean_cov_after_division(cell, params_vecs[segment][9], params_vecs[segment][10]);
@@ -279,8 +284,14 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
+    int segment;
 
-    int segment = cell.segment[cell.segment.size()-1];
+    if (cell.is_leaf()){
+        segment = 0;
+    }
+    else{
+        segment = cell.segment[cell.segment.size()-1];
+    }
 
     init_sc_distribution_r(cell, 
                         params_vecs[segment][1], 
@@ -291,6 +302,7 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
                         params_vecs[segment][5], 
                         params_vecs[segment][9], 
                         params_vecs[segment][10]);
+
     // if (cell.is_leaf()){
     //     cell.mean = cell.mean_init_backward;
     //     cell.cov = cell.cov_init_backward;

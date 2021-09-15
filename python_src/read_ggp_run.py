@@ -393,12 +393,12 @@ def plot_noisy_param_run(filenames, params_config, skip=0, cols=3, width=14):
 # ==================================================== #
 # Prediction #
 # ==================================================== #
-def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min", 60)):
+def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13):
     """ needs a prediction file, start, stop, step refers to cells """
     _, axes = plt.subplots(4, 1, figsize=(8,10))
     ax = axes.ravel()
 
-    data = pd.read_csv(filename, skiprows=13)
+    data = pd.read_csv(filename, skiprows=skip_row)
     cells_data = df2ggp_cells(data)[start: stop: step]
      
 
@@ -412,26 +412,28 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
     cmap_prediction = mpl.cm.ScalarMappable(cmap='Blues', norm=norm)
     cmap_prediction.set_array([])
 
+    s = 4
+    lw = 1
     for i, cell in enumerate(cells_data):
         time = np.array(cell.time) / time_unit[1]
         data_color = cmap_data.to_rgba(i)
         prediction_color = cmap_prediction.to_rgba(i)
 
-        ax[0].scatter(time, cell.log_length, color=data_color, s=10)
-        ax[0].plot(time, cell.mean_x, color=prediction_color, lw=2)
+        ax[0].scatter(time, cell.log_length, color=data_color, s=s)
+        ax[0].plot(time, cell.mean_x, color=prediction_color, lw=lw)
         ax[0].fill_between(time, cell.mean_x-np.sqrt(cell.cov_xx), cell.mean_x+np.sqrt(cell.cov_xx), 
                     color=prediction_color, alpha=0.4)
 
-        ax[1].scatter(time, cell.gfp, color=data_color, s=10)
-        ax[1].plot(time, cell.mean_g, color=prediction_color, lw=2)
+        ax[1].scatter(time, cell.gfp, color=data_color, s=1)
+        ax[1].plot(time, cell.mean_g, color=prediction_color, lw=lw)
         ax[1].fill_between(time, cell.mean_g-np.sqrt(cell.cov_gg), cell.mean_g+np.sqrt(cell.cov_gg), 
                     color=prediction_color, alpha=0.4)
         
-        ax[2].plot(time, cell.mean_l, color=prediction_color)
+        ax[2].plot(time, cell.mean_l, color=prediction_color, lw=lw)
         ax[2].fill_between(time, cell.mean_l-np.sqrt(cell.cov_ll), cell.mean_l+np.sqrt(cell.cov_ll), 
                     color=prediction_color, alpha=0.4)
 
-        ax[3].plot(time, cell.mean_q, color=prediction_color)
+        ax[3].plot(time, cell.mean_q, color=prediction_color, lw=lw)
         ax[3].fill_between(time, cell.mean_q-np.sqrt(cell.cov_qq), cell.mean_q+np.sqrt(cell.cov_qq), 
                     color=prediction_color, alpha=0.4)
 
@@ -453,12 +455,12 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
 
 # ==================================================== #
 
-def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60)):
+def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13, scatter=True):
     """ needs a prediction file, start, stop, step refers to cells """
     _, axes = plt.subplots(2, 1, figsize=(8,5))
     ax = axes.ravel()
 
-    data = pd.read_csv(filename, skiprows=13)
+    data = pd.read_csv(filename, skiprows=skip_row)
     cells_data = df2ggp_cells(data)[start: stop: step]
      
 
@@ -475,8 +477,13 @@ def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 
         time = np.array(cell.time) / time_unit[1]
         data_color = cmap_data.to_rgba(i)
 
-        ax[0].scatter(time, cell.log_length, color=data_color, s=10)
-        ax[1].scatter(time, cell.gfp, color=data_color, s=10)
+        if scatter:
+            ax[0].scatter(time, cell.log_length, color=data_color, s=10)
+            ax[1].scatter(time, cell.gfp, color=data_color, s=10)
+        else:
+            ax[0].plot(time, cell.log_length, color=data_color, lw=0.2)
+            ax[1].plot(time, cell.gfp, color=data_color, lw=0.2)
+
 
 
     ax[0].set_ylabel("log lentgh")   

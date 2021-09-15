@@ -106,23 +106,21 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     std::string outfile_b = outfile_name_prediction(arguments, params_list, "_backward");
     std::string outfile_f = outfile_name_prediction(arguments, params_list, "_forward");
 
-
-    std::cout << "Outfile: " << outfile << "\n";
-    std::cout << "Outfile forward: " << outfile_f << "\n";
-    std::cout << "Outfile backward: " << outfile_b << "\n";
-
     std::vector<std::vector<double>> params_vecs;
     for (size_t i=0; i<params_list.size(); ++i){
         params_vecs.push_back(params_list[i].get_final());
     }
 
     // forward...
+    std::cout << "Outfile forward: " << outfile_f << "\n";
     prediction_forward(params_vecs, cells);
 
     // backward...
+    std::cout << "Outfile backward: " << outfile_b << "\n";
     prediction_backward(params_vecs, cells);
 
     // combine the two 
+    std::cout << "Outfile: " << outfile << "\n";
     combine_predictions(cells);
 
     /* save */
