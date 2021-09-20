@@ -1,5 +1,4 @@
 #include "predictions.h"
-#include "Gaussians.h"
 /*
 * This header relies on the Gaussian classes in contrast to the rest of the code, 
 * which just handles mean and covariances seperately
@@ -84,6 +83,31 @@ Gaussian include_measurement(Gaussian joint,
     return new_gaussian;
 }
 
+Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
+    /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n) is returned where z_n is before and z_n+1 is after cell division */
+    
+    /* create F, f, D */
+    Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
+    F(1,1) = 0.5;
+    
+    Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
+    
+    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
+    D(0,0) = params_vec[9];
+    D(1,1) = params_vec[10];
+
+    /* write joint as seperated gaussian of the conditional z_n+1| z_n 
+    (the model itself is formulated like that) and the marginal over z_n */
+    Affine_gaussian conditional(f, F, D);
+    Gaussian marginal(cell.mean_forward[t],  cell.cov_forward[t]);
+
+    /* calculate the joint ie the 8 dimensional gaussian N( [z_n, z_n+1]^T |..., ... )*/
+    Seperated_gaussian joint_sep(marginal, conditional);
+    Gaussian joint = joint_sep.to_joint();
+
+    /* ->  N( [z_n+1, z_n]^T |..., ... ) */
+    return joint.flip_xy();
+}
 
 Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
     /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n) is returned */
@@ -315,6 +339,33 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
     file.close();
 
 }
+
+// void joint_distributions_recr(const std::vector<std::vector<double>> &params_vecs, 
+//                     MOMAdata *cell){
+//     /*  
+//     * Recursive implementation that applies the function sc_prediction_forward to every cell in the genealogy
+//     * not meant to be called directly, see wrapper below
+//     */
+//     if (cell == nullptr)
+//         return;
+//     calc_joint_distributions(params_vecs, *cell);
+//     joint_distributions_recr(params_vecs, cell->daughter1);
+//     joint_distributions_recr(params_vecs, cell->daughter2);
+// }
+
+// void sc_joint_distributions_recr(const std::vector<std::vector<double>> &params_vecs, MOMAdata &cell,
+//                             std::vector<std::vector<Gaussian>> &joint_matrix, 
+//                             double dt, std::string outfile){
+//     /* Appends joints that are given by the cell to joint_matrix */
+//     std::ofstream file(outfile, std::ios_base::app);
+
+//     for (size_t t=0; t<cell.time.size()-1; ++t){
+//         file << cell.cell_id << "," << cell.parent_id << "," << cell.time[t];
+//         calc_joint_distributions(params_vecs, cell, t, cell.time.size(), joint_matrix, dt, file);
+//         file << "\n";
+//     }
+//     file.close();
+// }
 
 
 std::vector<std::vector<Gaussian>> collect_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 

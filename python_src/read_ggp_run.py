@@ -393,7 +393,8 @@ def plot_noisy_param_run(filenames, params_config, skip=0, cols=3, width=14):
 # ==================================================== #
 # Prediction #
 # ==================================================== #
-def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13):
+def plot_predictions(filename, start=None, stop=None, step=None, 
+                    time_unit=("min", 60), skip_row=13, xlim=[None, None]):
     """ needs a prediction file, start, stop, step refers to cells """
     _, axes = plt.subplots(4, 1, figsize=(8,10))
     ax = axes.ravel()
@@ -447,6 +448,9 @@ def plot_predictions(filename, start=None, stop=None, step=None, time_unit=("min
     ax[1].set_xlabel("time ({:s})".format(time_unit[0]))  
     ax[2].set_xlabel("time ({:s})".format(time_unit[0]))  
     ax[3].set_xlabel("time ({:s})".format(time_unit[0]))  
+
+    for i in range(4):
+        ax[i].set_xlim(xlim)
 
     for i in range(len(ax)):
         # ax[i].legend()

@@ -12,6 +12,8 @@
 #include <Eigen/LU> 
 
 #include "CSVconfig.h"
+#include "Gaussians.h"
+
 
 // ============================================================================= //
 // MOMAdata CLASS
@@ -62,6 +64,7 @@ public:
 
     // correlation function
     std::vector<Eigen::MatrixXd> correlation;
+    Gaussian joint;
 
     // member functions
     bool is_leaf() const;
@@ -722,61 +725,28 @@ void init_cells_f(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, 
     // Estimate initial x, g, and lambda
     std::vector<double> x0;
     std::vector<double> g0;
-    std::vector<double> l0;
 
     for(size_t i=0; i<cells.size(); ++i){
         if (cells[i].time.size()>1){
             x0.push_back(cells[i].log_length(0));
             g0.push_back(cells[i].fp(0));
-            l0.push_back(estimate_lambda(cells[i]));
         }
     }
     double mean_x0 = vec_mean(x0);
     double mean_g0 = vec_mean(g0);
-    double mean_l0 = vec_mean(l0);
-    
-    // Estimate initial q, which needs some guess for lambda
-    std::vector<double> q0;
-    for(size_t i=0; i<cells.size(); ++i){
-        if (cells[i].time.size()>1){
-            if (stationary){
-                if (use_beta){
-                    q0.push_back(estimate_q_stationary_beta(cells[i], beta));
-                }
-                else{
-                    q0.push_back(estimate_q_stationary(cells[i]));
-                }
-            }
-            else{
-                if (use_beta){
-                    q0.push_back(estimate_q_beta(cells[i], mean_l0, beta));
-                }
-                else{
-                    q0.push_back(estimate_q(cells[i], mean_l0));
-                }
-            }
-        }
-    }
-
-    double mean_q0 = vec_mean(q0);
 
     double var_x0 =  vec_var(x0);
     double var_g0 =  vec_var(g0);
-    double var_l0 =  vec_var(l0);
-    double var_q0 =  vec_var(q0);
 
     std::vector<MOMAdata *> roots = get_roots(cells);
     for(size_t i=0; i<roots.size(); ++i){
-        roots[i]->mean_init_forward << mean_x0, mean_g0, mean_l0, mean_q0;
+        roots[i]->mean_init_forward << mean_x0, mean_g0, 0, 0;
 
         roots[i]->cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
         roots[i]->cov_init_forward(0,0) = var_x0;
         roots[i]->cov_init_forward(1,1) = var_g0;
-        roots[i]->cov_init_forward(2,2) = var_l0;
-        roots[i]->cov_init_forward(3,3) = var_q0;
     }
 }
-
 
 void init_cells_r(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, double beta){
     /* 
@@ -787,58 +757,27 @@ void init_cells_r(std::vector<MOMAdata> &cells, bool stationary, bool use_beta, 
     // Estimate initial x, g, and lambda
     std::vector<double> x0;
     std::vector<double> g0;
-    std::vector<double> l0;
 
     for(size_t i=0; i<cells.size(); ++i){
         if (cells[i].time.size()>1){
             x0.push_back(cells[i].log_length(cells[i].log_length.size()-1));
             g0.push_back(cells[i].fp(cells[i].fp.size()-1));
-            l0.push_back(estimate_lambda(cells[i]));
         }
     }
     double mean_x0 = vec_mean(x0);
     double mean_g0 = vec_mean(g0);
-    double mean_l0 = vec_mean(l0);
-    
-    // Estimate initial q, which needs some guess for lambda
-    std::vector<double> q0;
-    for(size_t i=0; i<cells.size(); ++i){
-        if (cells[i].time.size()>1){
-            if (stationary){
-                if (use_beta){
-                    q0.push_back(estimate_q_stationary_beta(cells[i], beta));
-                }
-                else{
-                    q0.push_back(estimate_q_stationary(cells[i]));
-                }
-            }
-            else{
-                if (use_beta){
-                    q0.push_back(estimate_q_beta(cells[i], mean_l0, beta));
-                }
-                else{
-                    q0.push_back(estimate_q(cells[i], mean_l0));
-                }
-            }
-        }
-    }
-    double mean_q0 = vec_mean(q0);
 
     double var_x0 = vec_var(x0);
     double var_g0 = vec_var(g0);
-    double var_l0 = vec_var(l0);
-    double var_q0 = vec_var(q0);
 
     std::vector<MOMAdata *> leafs = get_leafs(cells);
     for(size_t i=0; i<leafs.size(); ++i){
-        leafs[i]->mean_init_backward << mean_x0, mean_g0, -mean_l0, -mean_q0;
+        leafs[i]->mean_init_backward << mean_x0, mean_g0, 0, 0;
 
         leafs[i]->cov_init_backward = Eigen::MatrixXd::Zero(4, 4);
 
         leafs[i]->cov_init_backward(0,0) = var_x0;
         leafs[i]->cov_init_backward(1,1) = var_g0;
-        leafs[i]->cov_init_backward(2,2) = var_l0;
-        leafs[i]->cov_init_backward(3,3) = var_q0;
     }
 }
 

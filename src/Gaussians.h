@@ -35,6 +35,7 @@ public:
     }
     
     static Gaussian multiply(Gaussian n1, Gaussian n2);
+    Gaussian flip_xy(int n);
 };
 
 Gaussian Gaussian::multiply(Gaussian n1, Gaussian n2){
@@ -133,4 +134,16 @@ Seperated_gaussian seperate_gaussian(Gaussian joint, int n=4){
                                 B- K.transpose()*A.inverse()*K);
     Seperated_gaussian sep(n1, n2);
     return sep;
+}
+
+Gaussian Gaussian::flip_xy(int n=4){
+    Eigen::VectorXd mean(n*2); 
+    mean << m.tail(n),  m.head(n);
+    
+    Eigen::MatrixXd cov(n*2, n*2); 
+    cov << vstack(hstack(C.block(n,n,n,n),                C.block(0,n,n,n).transpose()), 
+                  hstack(C.block(n,0,n,n).transpose(),    C.block(0,0,n,n)));
+
+    Gaussian n_new(mean, cov);
+    return n_new;
 }
