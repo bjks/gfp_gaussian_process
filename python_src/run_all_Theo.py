@@ -90,11 +90,16 @@ def main():
                         nargs='+',
                         required=True)
 
+    parser.add_argument('-space',
+                        dest='space' ,
+                        help='space',
+                        default='log')
+
     parser.add_argument('-t',
                         dest="tol",
                         help="tolerance",
                         required=False,
-                        default="0.0001")
+                        default="1e-7")
     
     parser.add_argument('--dryrun', action='store_true')
     parser.add_argument('--local', action='store_true')
@@ -118,7 +123,8 @@ def main():
         ggp_arg =   " -b " + get_arg_list(args.parameters) + \
                     " -c " + get_arg_list(args.csv_config) + \
                     " -t " + args.tol + \
-                    " -i " + file
+                    " -space " + args.space + \
+                    " -i " + file 
         if args.m:
             ggp_arg += ' -m '
         if args.p:
