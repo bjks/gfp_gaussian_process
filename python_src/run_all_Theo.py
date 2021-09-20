@@ -38,7 +38,7 @@ def get_input_files(directory, keyword=None):
 def run_command(arg, dryrun, iscluster):
     # run on cluster
     if iscluster:
-        com = "sbatch submit_ggp_run.sl  --export=COMMAND='" + arg +"'"
+        com = "sbatch  --export=COMMAND='" + arg +"'" + " submit_ggp_run.sl"
         if dryrun:  
             print(com)
         else:
@@ -110,7 +110,7 @@ def main():
         config =    {"bin": "./../bin/gfp_gaussian",
                      "iscluster": False}
     else:
-        config =    {"bin": "./scicore/home/nimwegen/ksches0000/gfp_gaussian_process/bin/gfp_gaussian",
+        config =    {"bin": "./../bin/gfp_gaussian",
                      "iscluster": True}
 
 
