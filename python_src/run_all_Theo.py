@@ -107,10 +107,10 @@ def main():
     # ======================================== #
 
     if args.local:
-        config =    {"bin": "../bin/gfp_gaussian",
+        config =    {"bin": "./../bin/gfp_gaussian",
                      "iscluster": False}
     else:
-        config =    {"bin": "/scicore/home/nimwegen/ksches0000/gfp_gaussian_process/bin/gfp_gaussian",
+        config =    {"bin": "./scicore/home/nimwegen/ksches0000/gfp_gaussian_process/bin/gfp_gaussian",
                      "iscluster": True}
 
 
