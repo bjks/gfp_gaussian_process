@@ -3,22 +3,27 @@ import os
 import sys
 
 
-# slurm_script = \
-# """
-# #!/bin/bash
+# Running together with the script:
+# ================================== #
 
-# #SBATCH --job-name=ggp
-# #SBATCH --cpus-per-task=1
-# #SBATCH --mem-per-cpu=4G
+#     #!/bin/bash
 
-# #SBATCH --time=23:00:00
-# #SBATCH --qos=1day
+#     #SBATCH --job-name=ggp
+#     #SBATCH --cpus-per-task=1
+#     #SBATCH --mem-per-cpu=4G
 
-# #SBATCH --output=std.out
-# #SBATCH --mail-type=END,FAIL,TIME_LIMIT
+#     #SBATCH --time=23:00:00
+#     #SBATCH --qos=1day
+
+#     #SBATCH --output=std.out
+#     #SBATCH --mail-type=END,FAIL,TIME_LIMIT
+
+#     ${COMMAND}
 
 
-# """
+# Example
+# ---------------------------------- #
+# python3 run_all_Theo.py -d ../data_theo/ -b ../data_theo/parameters_GM.txt ../data_theo/parameters_SPM.txt -c ../data_theo/csv_config.txt -m -t 1e-20
 
 def get_input_files(directory, keyword=None):
     entries = os.listdir(directory)
@@ -42,6 +47,7 @@ def run_command(arg, dryrun, iscluster):
         if dryrun:  
             print(com)
         else:
+            print(arg)
             os.system(com)
 
     # run locally
@@ -57,13 +63,21 @@ def get_arg_list(args):
         s += ' ' + a
     return s + ' '
 
-def get_new_parameter_files(input_file):
-    base = input_file.split('/')[-1][:-4]
-    p0 = input_file[:-4] + '_out/' + base + '_segment0_f012345678910_b_parameter_file.txt'
-    p1 = input_file[:-4] + '_out/' + base + '_segment1_f012345678910_b_parameter_file.txt'
-    return p0, p1
 
+def get_parameter_files(file):
+    out_dir = file[:-4] + '_out/'
+    entries = os.listdir(out_dir)
+    final_files = []
+    for e in entries:
+        if e.endswith('parameter_file.txt'):
+            final_files.append(os.path.join(out_dir, e))
+    
+    # sort accoring to segment number (files only differ at that number)
+    print(len(final_files))
+    if len(final_files)>1:
+        final_files = sorted(final_files)
 
+    return final_files
 
 ########################################################################################################################
 ########################################################################################################################
@@ -119,20 +133,28 @@ def main():
                      "iscluster": True}
 
 
-    for file in get_input_files(args.dir):
-        ggp_arg =   " -b " + get_arg_list(args.parameters) + \
-                    " -c " + get_arg_list(args.csv_config) + \
+    input_files = get_input_files(args.dir)
+
+    for infile in input_files:
+        ggp_arg =   " -c " + get_arg_list(args.csv_config) + \
                     " -t " + args.tol + \
                     " -space " + args.space + \
-                    " -i " + file 
+                    " -i " + infile 
         if args.m:
             ggp_arg += ' -m '
         if args.p:
             ggp_arg += ' -p '
 
-        command = config["bin"] + ' ' + ggp_arg
+        # deal with parameter files
+        if args.parameters[0] == "infer":
+            parameter_files = get_parameter_files(infile) 
+        else:
+            parameter_files = args.parameters
 
-        run_command(command, args.dryrun, config["iscluster"])
+        ggp_arg +=  " -b " + get_arg_list(parameter_files)
+        
+        # ============ run! ============ #
+        run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
 
 
 # ================================================================================ #

@@ -394,9 +394,9 @@ def plot_noisy_param_run(filenames, params_config, skip=0, cols=3, width=14):
 # Prediction #
 # ==================================================== #
 def plot_predictions(filename, start=None, stop=None, step=None, 
-                    time_unit=("min", 60), skip_row=13, xlim=[None, None]):
+                    time_unit=("min", 60), skip_row=13, xlim=[None, None], outfile=None):
     """ needs a prediction file, start, stop, step refers to cells """
-    _, axes = plt.subplots(4, 1, figsize=(8,10))
+    fig, axes = plt.subplots(4, 1, figsize=(8,10))
     ax = axes.ravel()
 
     data = pd.read_csv(filename, skiprows=skip_row)
@@ -455,13 +455,15 @@ def plot_predictions(filename, start=None, stop=None, step=None,
     for i in range(len(ax)):
         # ax[i].legend()
         ax[i].grid(True)
-    plt.show()
-
+    if outfile != None:
+        fig.savefig(outfile, dpi=600)
+    else:
+        plt.show()
 # ==================================================== #
 
-def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13, scatter=True):
+def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13, scatter=True, outfile=None):
     """ needs a prediction file, start, stop, step refers to cells """
-    _, axes = plt.subplots(2, 1, figsize=(8,5))
+    fig, axes = plt.subplots(2, 1, figsize=(8,5))
     ax = axes.ravel()
 
     data = pd.read_csv(filename, skiprows=skip_row)
@@ -500,4 +502,7 @@ def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 
     for i in range(len(ax)):
         # ax[i].legend()
         ax[i].grid(True)
-    plt.show()
+    if outfile != None:
+        fig.savefig(outfile, dpi=600)
+    else:
+        plt.show()
