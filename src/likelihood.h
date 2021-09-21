@@ -83,6 +83,14 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
         if (std::isnan(tl)){
+            if (_save_ll){
+                _file_iteration << _iteration + 1 << ",";
+                for (size_t i=0; i<params_vec.size(); ++i){
+                    _file_iteration << std::setprecision(20) << params_vec[i]  << ",";
+                }
+                _file_iteration << std::setprecision(30) << tl << std::setprecision(15) << "\n";
+            }
+
             std::cout << _iteration + 1 << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
                 std::cout << params_vec[i]  << ", ";
