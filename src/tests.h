@@ -315,3 +315,21 @@ void run_likelihood(CSVconfig config, Parameter_set params, std::string infile){
     sc_likelihood(params.get_init(), cells[0], tl);
     std::cout << "tl: " << tl << "\n";
 }
+
+
+void init_cells_f(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
+    /* 
+    * Inititalizes the mean vector and the covariance matrix of the root cells with
+    * pre-defined values
+    */
+    for(size_t i=0; i<cells.size(); ++i){
+        cells[i].mean_init_forward = Eigen::VectorXd::Zero(4);
+        cells[i].cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
+    }
+
+    std::vector<MOMAdata *> roots = get_roots(cells);
+    for(size_t i=0; i<roots.size(); ++i){
+        roots[i]->mean_init_forward = mean;
+        roots[i]->cov_init_forward = cov;
+    }
+}

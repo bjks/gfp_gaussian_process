@@ -177,8 +177,6 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-o","--outdir", "specify output direction and do not use default"},
         {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default: 1e-1"},
         {"-space","--search_space", "search parameter space in {'log'|'linear'} space, default: 'linear'"},
-        {"-stat","--stationary", "indicates that the cells are not growing much"},
-        {"-beta","--use_beta", "indicates that the initial beta will be used to initialize the cells"},
         {"-m","--maximize", "run maximization"},
         {"-s","--scan", "run 1d parameter scan"},
         {"-p","--predict", "run prediction"},
@@ -222,10 +220,6 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["tolerance"] = argv[i+1];
                 else if(k==key_indices["-space"])
                     arguments["search_space"] = argv[i+1];
-                else if(k==key_indices["-stat"])
-                    arguments["stationary"] = "1";
-                  else if(k==key_indices["-beta"])
-                    arguments["use_beta"] = "1";
                 else if(k==key_indices["-m"])
                     arguments["minimize"] = "1";
                 else if(k==key_indices["-s"])
@@ -341,8 +335,7 @@ int main(int argc, char** argv){
                 build_cell_genealogy(cells_in_segment);
 
                 /* inititialize mean and cov for forward and backward direction */
-                init_cells(cells_in_segment, arguments.count("stationary"), 
-                            arguments.count("use_beta"), params_list[i].all[6].init);
+                init_cells(cells_in_segment);
 
                 /* Run actual minimization */
                 run_minimization(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
@@ -357,8 +350,7 @@ int main(int argc, char** argv){
                 build_cell_genealogy(cells_in_segment);
 
                 /* inititialize mean and cov for forward and backward direction */
-                init_cells(cells_in_segment, arguments.count("stationary"), 
-                            arguments.count("use_beta"), params_list[i].all[6].init);
+                init_cells(cells_in_segment);
 
                 /* Run scan*/
                 run_bound_1dscan(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
@@ -367,8 +359,7 @@ int main(int argc, char** argv){
 
         if (arguments.count("predict")){
             build_cell_genealogy(cells);
-            init_cells(cells, arguments.count("stationary"), 
-                            arguments.count("use_beta"), params_list[0].all[6].init);
+            init_cells(cells);
             run_prediction_segments(cells, params_list, arguments, config);
         }
         
