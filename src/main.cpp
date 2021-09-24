@@ -301,7 +301,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cerr << "(arg_parser) ERROR: Required infile flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
-    else if(! std::filesystem::exists(arguments["infile"])){
+    else if(! std::experimental::filesystem::exists(arguments["infile"])){
         std::cerr << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
@@ -314,14 +314,14 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
     for (size_t i=0; i<param_files.size(); ++i){
-        if(!std::filesystem::exists(param_files[i])){   
+        if(!std::experimental::filesystem::exists(param_files[i])){   
             std::cerr << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
             throw std::invalid_argument("Invalide argument");
         }
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
-    if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
+    if(arguments.count("csv_config") && !std::experimental::filesystem::exists(arguments["csv_config"])){   
         std::cerr << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
