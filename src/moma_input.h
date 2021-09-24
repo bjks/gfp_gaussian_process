@@ -640,21 +640,6 @@ Eigen::VectorXd row_mean(Eigen::MatrixXd m){
 // MEAN/COV INIT 
 // ============================================================================= //
 
-double lin_fit_slope(Eigen::VectorXd x, Eigen::VectorXd y) {
-    /* returns slope of linear regression */
-    double s_x  = x.sum();
-    double s_y  = y.sum();
-    return (x.size() * x.dot(y) - s_x * s_y) / (x.size() * x.dot(x) - s_x * s_x);
-}
-
-double lin_fit_intercept(Eigen::VectorXd x, Eigen::VectorXd y) {
-    /* returns intercept of linear regression */
-    double s_x  = x.sum();
-    double s_y  = y.sum();
-    return (x.dot(x)*s_y - s_x*x.dot(y)) / (x.dot(x) * x.size() - s_x *s_x);
-}
-
-
 double vec_mean(std::vector<double> v){
     /* returns mean of std::vector */
     return std::accumulate(v.begin(), v.end(), 0.0) / v.size();
@@ -665,6 +650,7 @@ double vec_var(std::vector<double> v){
     double sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
     return sq_sum / v.size() - pow(vec_mean(v), 2);
 }
+
 
 void init_cells_f(std::vector<MOMAdata> &cells){
     /* 
@@ -732,21 +718,4 @@ void init_cells_r(std::vector<MOMAdata> &cells){
 void init_cells(std::vector<MOMAdata> &cells){
     init_cells_f(cells);
     init_cells_r(cells);
-}
-
-void init_cells_f(std::vector<MOMAdata> &cells, Eigen::VectorXd mean, Eigen::MatrixXd cov){
-    /* 
-    * Inititalizes the mean vector and the covariance matrix of the root cells with
-    * pre-defined values
-    */
-    for(size_t i=0; i<cells.size(); ++i){
-        cells[i].mean_init_forward = Eigen::VectorXd::Zero(4);
-        cells[i].cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
-    }
-
-    std::vector<MOMAdata *> roots = get_roots(cells);
-    for(size_t i=0; i<roots.size(); ++i){
-        roots[i]->mean_init_forward = mean;
-        roots[i]->cov_init_forward = cov;
-    }
 }

@@ -28,10 +28,11 @@ class Gaussian{
 public:
     Eigen::VectorXd m;
     Eigen::MatrixXd C;
+
     Gaussian() = default;
     Gaussian(Eigen::VectorXd m_, Eigen::MatrixXd C_) {
         m = m_;
-        C = C_;
+        C = C_; 
     }
     
     static Gaussian multiply(Gaussian n1, Gaussian n2);

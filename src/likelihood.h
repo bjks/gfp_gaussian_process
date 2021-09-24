@@ -1,4 +1,4 @@
-#include "correlation.h"
+#include "correlation_tree.h"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 #include <iomanip>
@@ -41,8 +41,8 @@ void sc_likelihood(const std::vector<double> &params_vec,
     * 0             1               2           3       4       5       6       7   8       9       10   
     */
     init_sc_distribution(cell, 
+                    params_vec[0], 
                     params_vec[1], 
-                    params_vec[2], 
                     params_vec[2], 
                     params_vec[3], 
                     params_vec[4], 

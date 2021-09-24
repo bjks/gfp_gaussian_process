@@ -132,7 +132,39 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
 
 
 
-void run_covariance(std::vector<MOMAdata> &cells, 
+// void run_covariance(std::vector<MOMAdata> &cells, 
+//                     std::vector<Parameter_set> params_list, 
+//                     std::map<std::string, std::string> arguments, 
+//                     const CSVconfig &config){
+//     std::cout << "-> auto co-variance" << "\n";
+
+//     std::vector<std::vector<double>> params_vecs;
+//     for (size_t i=0; i<params_list.size(); ++i){
+//         params_vecs.push_back(params_list[i].get_final());
+//     }
+
+//     // defines the dts over which the correlation function will be calculated
+//     double dt = base_dt(cells); 
+
+//     std::string outfile_joints = outfile_name_joints(arguments, params_list);
+//     setup_outfile_joints(outfile_joints, params_list);
+
+//     // calculate all possible joints
+//     std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt, outfile_joints);
+//     std::vector<size_t> joint_number = count_joints(joint_matrix);
+
+//     // calculate (normalized) covariance from the joints
+//     std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
+
+//     /* Output */
+//     std::string outfile_cov = outfile_name_covariances(arguments, params_list);
+//     std::cout << "Outfile: " << outfile_cov << "\n";
+
+//     write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params_list, config);
+// }
+
+
+void run_joint_distribution(std::vector<MOMAdata> &cells, 
                     std::vector<Parameter_set> params_list, 
                     std::map<std::string, std::string> arguments, 
                     const CSVconfig &config){
@@ -143,24 +175,12 @@ void run_covariance(std::vector<MOMAdata> &cells,
         params_vecs.push_back(params_list[i].get_final());
     }
 
-    // defines the dts over which the correlation function will be calculated
-    double dt = base_dt(cells); 
 
     std::string outfile_joints = outfile_name_joints(arguments, params_list);
     setup_outfile_joints(outfile_joints, params_list);
 
     // calculate all possible joints
-    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt, outfile_joints);
-    std::vector<size_t> joint_number = count_joints(joint_matrix);
-
-    // calculate (normalized) covariance from the joints
-    std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
-
-    /* Output */
-    std::string outfile_cov = outfile_name_covariances(arguments, params_list);
-    std::cout << "Outfile: " << outfile_cov << "\n";
-
-    write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params_list, config);
+    collect_joint_distributions(params_vecs, cells, outfile_joints);
 }
 
 
@@ -365,7 +385,7 @@ int main(int argc, char** argv){
         
         if (arguments.count("auto_cov")){
             /* Run covariance, note that prediction was already run as this stage */
-            run_covariance(cells, params_list, arguments, config);
+            run_joint_distribution(cells, params_list, arguments, config);
         }
 
         std::cout << "Done." << std::endl;

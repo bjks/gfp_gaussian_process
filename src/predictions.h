@@ -87,8 +87,8 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
     }
 
     init_sc_distribution(cell, 
+                        params_vecs[segment][0], 
                         params_vecs[segment][1], 
-                        params_vecs[segment][2], 
                         params_vecs[segment][2], 
                         params_vecs[segment][3], 
                         params_vecs[segment][4], 
@@ -294,8 +294,8 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
     }
 
     init_sc_distribution_r(cell, 
+                        params_vecs[segment][0], 
                         params_vecs[segment][1], 
-                        params_vecs[segment][2], 
                         params_vecs[segment][2], 
                         params_vecs[segment][3], 
                         params_vecs[segment][4], 
@@ -427,7 +427,7 @@ std::string outfile_name_prediction_segments(std::map<std::string, std::string> 
     return outfile + ".csv";
 }
 
-void output_upper_triangle(std::ofstream &file, const Eigen::MatrixXd mat){
+void output_upper_triangle(std::ostream &file, const Eigen::MatrixXd mat){
     /* Comma seperated output of upper triangle of Eigen::matrix*/
     for(size_t m=0; m<mat.rows();++m){
         for(size_t n=0; n<mat.cols();++n){
@@ -440,7 +440,7 @@ void output_upper_triangle(std::ofstream &file, const Eigen::MatrixXd mat){
     }                     
 }
 
-void output_vector(std::ofstream &file, const Eigen::VectorXd v){
+void output_vector(std::ostream &file, const Eigen::VectorXd v){
     /* Comma seperated output of Eigen::vector */
     for (size_t k=0; k<v.size(); ++k){
         if (k>0)
