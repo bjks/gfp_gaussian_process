@@ -177,10 +177,33 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
 
 
     std::string outfile_joints = outfile_name_joints(arguments, params_list);
-    setup_outfile_joints(outfile_joints, params_list);
 
-    // calculate all possible joints
-    collect_joint_distributions(params_vecs, cells, outfile_joints);
+    bool compress = true;
+    if (compress){
+        std::ofstream file(outfile_joints + ".gz", std::ios_base::out | std::ios_base::binary);
+        boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
+        outbuf.push(boost::iostreams::gzip_compressor());
+        outbuf.push(file);
+        //Convert streambuf to ostream
+        std::ostream out(&outbuf);
+
+        setup_outfile_joints(out, params_list);
+
+        // calculate all possible joints
+        collect_joint_distributions(params_vecs, cells, out);
+
+        boost::iostreams::close(outbuf);
+        file.close();
+    }
+    else{
+        std::ofstream file(outfile_joints);
+        setup_outfile_joints(file, params_list);
+
+        // calculate all possible joints
+        collect_joint_distributions(params_vecs, cells, file);
+        file.close();
+    }
+
 }
 
 

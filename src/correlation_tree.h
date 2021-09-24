@@ -61,8 +61,8 @@ public:
     }
     void add(Gaussian joint, std::string cell_id, double t);
     void clear();
-    void write(std::ofstream &file, int n);
-    void write_column_indices(std::ofstream &file, int n);
+    void write(std::ostream &file, int n);
+    void write_column_indices(std::ostream &file, int n);
 };
 
 void Joint_vector::add(Gaussian joint, std::string cell_id, double t){
@@ -88,7 +88,7 @@ void Joint_vector::clear(){
     }
 }
 
-void Joint_vector::write(std::ofstream &file, int n=44){
+void Joint_vector::write(std::ostream &file, int n=44){
     /*
     * Write down all joints that are added to the joint vector. Empty columns for not set ones
     */
@@ -105,7 +105,7 @@ void Joint_vector::write(std::ofstream &file, int n=44){
     }
 }
 
-void Joint_vector::write_column_indices(std::ofstream &file, int n=44){
+void Joint_vector::write_column_indices(std::ostream &file, int n=44){
     /*
     * Write the column incides as 2.1_33 as one line 
     */
@@ -416,7 +416,7 @@ void joint_distributions_recr(  const std::vector<std::vector<double>> &params_v
 
 void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 
                             MOMAdata &cell,
-                            std::ofstream &file, 
+                            std::ostream &file, 
                             Joint_vector &joint_vector){
 
     /* 
@@ -450,7 +450,7 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
 
 void collect_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 
                                 std::vector<MOMAdata> &cells, 
-                                std::string outfile){
+                                std::ostream &out){
     /* 
     * has to be run after the prediction is run!!!
     * setups the joint vector and loops over cells
@@ -458,32 +458,14 @@ void collect_joint_distributions(const std::vector<std::vector<double>> &params_
 
     Joint_vector joint_vector(cells);
 
-
-
-    std::ofstream of_file(outfile + ".zip", std::ios_base::out | std::ios_base::binary);
-    boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
-    outbuf.push(boost::iostreams::gzip_compressor());
-    outbuf.push(of_file);
-    //Convert streambuf to ostream
-    std::ostream out(&outbuf);
-    
-    out << "TEST TEST TEST";
-    boost::iostreams::close(outbuf); // Don't forget this!
-    of_file.close();
-
-    std::ofstream file(outfile, std::ios_base::app);
-
-    file << ",";
-    joint_vector.write_column_indices(file);
-    file << "\n";
+    out << ",";
+    joint_vector.write_column_indices(out);
+    out << "\n";
 
     for (size_t i=0; i< cells.size(); ++i){
         std::cout << "-> cell: " << i << "\n";
-        sc_joint_distributions(params_vecs, cells[i], file, joint_vector);
+        sc_joint_distributions(params_vecs, cells[i], out, joint_vector);
     }
-
-
-
 }
 
 
@@ -622,15 +604,9 @@ std::string outfile_name_joints(std::map<std::string, std::string> arguments, st
     return outfile  + "_joints" + ".csv";
 }
 
-void setup_outfile_joints(std::string outfile, std::vector<Parameter_set>& params_list){
+void setup_outfile_joints(std::ostream &file, std::vector<Parameter_set>& params_list){
     for(size_t i=0; i<params_list.size(); ++i){
-        if (i==0)
-            params_list[i].to_csv(outfile);
-        else
-            params_list[i].to_csv(outfile, std::ios_base::app);
+        params_list[i].to_csv(file);
     } 
-    std::ofstream file(outfile,std::ios_base::app);
     file << "\ncell_id,parent_id,time";
-
-    file.close();
 }
