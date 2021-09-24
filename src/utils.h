@@ -3,7 +3,7 @@
 #include <string>
 #include <sstream>  
 #include <map> 
-#include <experimental/filesystem>
+#include <filesystem>
 
 
 #ifndef UTILS_H
@@ -131,7 +131,7 @@ std::string out_dir(std::map<std::string, std::string> arguments){
         if (out_dir.back() != '/')
             out_dir += "/";
     }
-    std::experimental::filesystem::create_directory(out_dir);
+    std::filesystem::create_directory(out_dir);
     return out_dir;
 }
 

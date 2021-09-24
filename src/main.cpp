@@ -1,14 +1,14 @@
 #include "likelihood.h"
 #include "minimizer_nlopt.h"
-#include <experimental/filesystem>
+#include <filesystem>
 #include <iostream> 
 #include <iterator> 
 #include <iomanip> 
 
 
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
+// #include <boost/iostreams/filtering_streambuf.hpp>
+// #include <boost/iostreams/copy.hpp>
+// #include <boost/iostreams/filter/gzip.hpp>
 
 /* ======================================== */
 /* Routines for the different running modes */
@@ -135,39 +135,6 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
 }
 
 
-
-// void run_covariance(std::vector<MOMAdata> &cells, 
-//                     std::vector<Parameter_set> params_list, 
-//                     std::map<std::string, std::string> arguments, 
-//                     const CSVconfig &config){
-//     std::cout << "-> auto co-variance" << "\n";
-
-//     std::vector<std::vector<double>> params_vecs;
-//     for (size_t i=0; i<params_list.size(); ++i){
-//         params_vecs.push_back(params_list[i].get_final());
-//     }
-
-//     // defines the dts over which the correlation function will be calculated
-//     double dt = base_dt(cells); 
-
-//     std::string outfile_joints = outfile_name_joints(arguments, params_list);
-//     setup_outfile_joints(outfile_joints, params_list);
-
-//     // calculate all possible joints
-//     std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt, outfile_joints);
-//     std::vector<size_t> joint_number = count_joints(joint_matrix);
-
-//     // calculate (normalized) covariance from the joints
-//     std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
-
-//     /* Output */
-//     std::string outfile_cov = outfile_name_covariances(arguments, params_list);
-//     std::cout << "Outfile: " << outfile_cov << "\n";
-
-//     write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params_list, config);
-// }
-
-
 void run_joint_distribution(std::vector<MOMAdata> &cells, 
                     std::vector<Parameter_set> params_list, 
                     std::map<std::string, std::string> arguments, 
@@ -179,34 +146,30 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
         params_vecs.push_back(params_list[i].get_final());
     }
 
-
     std::string outfile_joints = outfile_name_joints(arguments, params_list);
 
-    bool compress = true;
-    if (compress){
-        std::ofstream file(outfile_joints + ".gz", std::ios_base::out | std::ios_base::binary);
-        boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
-        outbuf.push(boost::iostreams::gzip_compressor());
-        outbuf.push(file);
-        //Convert streambuf to ostream
-        std::ostream out(&outbuf);
+    /* if I get Boost to work on the cluster that is an option */
+    // std::ofstream file(outfile_joints + ".gz", std::ios_base::out | std::ios_base::binary);
+    // boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
+    // outbuf.push(boost::iostreams::gzip_compressor());
+    // outbuf.push(file);
+    // //Convert streambuf to ostream
+    // std::ostream out(&outbuf);
 
-        setup_outfile_joints(out, params_list);
+    // setup_outfile_joints(out, params_list);
 
-        // calculate all possible joints
-        collect_joint_distributions(params_vecs, cells, out);
+    // // calculate all possible joints
+    // collect_joint_distributions(params_vecs, cells, out);
 
-        boost::iostreams::close(outbuf);
-        file.close();
-    }
-    else{
-        std::ofstream file(outfile_joints);
-        setup_outfile_joints(file, params_list);
+    // boost::iostreams::close(outbuf);
+    // file.close();
 
-        // calculate all possible joints
-        collect_joint_distributions(params_vecs, cells, file);
-        file.close();
-    }
+    std::ofstream file(outfile_joints);
+    setup_outfile_joints(file, params_list);
+
+    // calculate all possible joints
+    collect_joint_distributions(params_vecs, cells, file);
+    file.close();
 
 }
 
@@ -301,7 +264,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cerr << "(arg_parser) ERROR: Required infile flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
-    else if(! std::experimental::filesystem::exists(arguments["infile"])){
+    else if(! std::filesystem::exists(arguments["infile"])){
         std::cerr << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
@@ -314,14 +277,14 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
     for (size_t i=0; i<param_files.size(); ++i){
-        if(!std::experimental::filesystem::exists(param_files[i])){   
+        if(!std::filesystem::exists(param_files[i])){   
             std::cerr << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
             throw std::invalid_argument("Invalide argument");
         }
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
-    if(arguments.count("csv_config") && !std::experimental::filesystem::exists(arguments["csv_config"])){   
+    if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
         std::cerr << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
