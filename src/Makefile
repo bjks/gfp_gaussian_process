@@ -17,7 +17,7 @@ variation:
 	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian_variation
 
 cluster:
-	ml GCC/8.3.0; ml Eigen/3.3.7; g++ main.cpp $(CFLAGS) $(NLOPTLAGS64)  $(EIGENFLAG) $(FADFLAG) -static-libstdc++ -lstdc++fs -o ../bin/gfp_gaussian
+	ml GCC/8.3.0; ml Eigen/3.3.7; ml Boost/1.74.0-foss-2018b; g++ main.cpp $(CFLAGS) $(NLOPTLAGS64) $(FADFLAG) -static-libstdc++ -lstdc++fs -o ../bin/gfp_gaussian
 
 
 

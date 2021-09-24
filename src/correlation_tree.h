@@ -1,9 +1,5 @@
 #include "predictions.h"
 
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-
 /*
 * This header relies on the Gaussian classes in contrast to the rest of the code, 
 * which just handles mean and covariances seperately
