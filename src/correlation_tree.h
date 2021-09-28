@@ -90,10 +90,10 @@ void Joint_vector::write(std::ostream &file, int n=44){
     */
     for (size_t i=0; i<column_indices.size();++i){
         if (is_set[i]){
+            file << ',';
             output_vector(file, joints[i].m);
             file << ',';
             output_upper_triangle(file, joints[i].C);
-            file << ',';
         }
         else{
             file << std::string(n, ',');
@@ -107,7 +107,12 @@ void Joint_vector::write_column_indices(std::ostream &file, int n=44){
     */
     for (size_t i=0; i<column_indices.size();++i){
         file << std::get<0>(column_indices[i]) << '_' << std::get<1>(column_indices[i]);
-        file << std::string(n, ',');
+        if (i==column_indices.size()-1){
+            file << std::string(n-1, ',');
+        }
+        else{
+            file << std::string(n, ',');
+        }
     }
 }
 
@@ -437,7 +442,7 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
         if (cell.is_leaf() && n==cell.time.size()-1){
                 continue;
         }
-        file << cell.cell_id << "," << cell.parent_id << "," << cell.time[n] << ",";
+        file << cell.cell_id << "," << cell.parent_id << "," << cell.time[n] ;
         joint_vector.write(file);
         file << "\n";
     }

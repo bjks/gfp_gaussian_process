@@ -85,40 +85,42 @@ def get_parameter_files(file):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Run gfp_gaussian for all files in dir')
+        description="Run gfp_gaussian for all files in dir (written for Theo's data sets)")
 
     parser.add_argument('-d',
                         dest='dir',
-                        help='dir',
+                        help='directory with inpput files',
                         required=True)
 
     parser.add_argument('-b',
                         dest='parameters' ,
-                        help='parameter file',
+                        help='Parameter file(s)',
                         nargs='+',
                         required=True)
 
     parser.add_argument('-c',
                         dest='csv_config' ,
-                        help='csv_config file',
+                        help='Csv config file(s)',
                         nargs='+',
                         required=True)
 
     parser.add_argument('-space',
                         dest='space' ,
-                        help='space',
+                        help='Space, log(default) or linear',
                         default='log')
 
     parser.add_argument('-t',
                         dest="tol",
-                        help="tolerance",
+                        help="Tolerance of maximization",
                         required=False,
                         default="1e-7")
     
-    parser.add_argument('--dryrun', action='store_true')
-    parser.add_argument('--local', action='store_true')
-    parser.add_argument('-m', action='store_true')
-    parser.add_argument('-p', action='store_true')
+    parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
+    parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
+    parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
+
+    parser.add_argument('-m', help="Run maximization", action='store_true')
+    parser.add_argument('-p', help="Run prediction", action='store_true')
 
     args = parser.parse_args()
 
@@ -149,7 +151,20 @@ def main():
         if args.parameters[0] == "infer":
             parameter_files = get_parameter_files(infile) 
         else:
-            parameter_files = args.parameters
+            if args.fallback:
+                parameter_files = []
+                for fallback_file in args.parameters:
+                    parameter_file = infile[:-4] + '_'+ fallback_file.split('/')[-1]
+
+                    print("\n", parameter_file, "\n")
+
+                    if os.path.exists(parameter_file):
+                        parameter_files.append(parameter_file)
+                    else:
+                        parameter_files.append(fallback_file)
+
+            else:
+                parameter_files = args.parameters
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)
         

@@ -37,6 +37,40 @@ LATEX_LABEL = {'mean_lambda': r'$\bar{\lambda}$',
             'var_dx': r'$\sigma^2_{dx}$',
             'var_dg': r'$\sigma^2_{dg}$'} 
 
+class Raw_cell:
+    def __init__(self, cell_id = 0, parent_id=-1):
+        self.parent_id = parent_id
+        self.cell_id = cell_id
+        self.length = []
+        self.gfp = []
+        self.time = []
+
+def df2raw_cells(dataset, 
+            time="time", 
+            length="length", gfp="fp", 
+            cell_id="cell_id", 
+            parent_id="parent_id"):
+    """ 
+    dataset (pandas data frame as read from csv file)
+    """
+    cell_list = []
+    last_cell = ""
+    for _, row in dataset.iterrows(): 
+        if row[cell_id] != last_cell:
+            new_cell = Raw_cell(
+                        cell_id=row[cell_id], 
+                        parent_id=row[parent_id])
+            cell_list.append(new_cell)
+
+        cell_list[-1].length.append(row[length])
+        cell_list[-1].gfp.append(row[gfp])
+        cell_list[-1].time.append(row[time])
+
+        last_cell = row[cell_id]
+    return cell_list
+
+
+
 class GGP_cell:
     def __init__(self, cell_id = 0, parent_id=-1):
         self.parent_id = parent_id
@@ -462,6 +496,68 @@ def plot_predictions(filename, start=None, stop=None, step=None,
         plt.show()
 # ==================================================== #
 
+           
+def plot_raw_data_input_file(filename,
+                            time="time", 
+                            length="length", 
+                            gfp="fp", 
+                            cell_id="cell_id", 
+                            parent_id="parent_id",
+                            start=None, stop=None, step=None, 
+                            time_unit=("min", 60), skip_row=0, 
+                            scatter=True, outfile=None):
+    """ needs a prediction file, start, stop, step refers to cells """
+    fig, axes = plt.subplots(2, 1, figsize=(8,5))
+    ax = axes.ravel()
+
+    data = pd.read_csv(filename, skiprows=skip_row)
+    cells_data = df2raw_cells(data, 
+                            time=time, 
+                            length=length, gfp=gfp, 
+                            cell_id=cell_id, 
+                            parent_id=parent_id)
+
+    norm = mpl.colors.Normalize(vmin=-len(cells_data)/2, vmax=len(cells_data))
+    if len(cells_data)==1:
+        norm = mpl.colors.Normalize(vmin=-10*len(cells_data), vmax=len(cells_data))
+    cmap_data = mpl.cm.ScalarMappable(cmap='Oranges', norm=norm)
+    cmap_data.set_array([])
+
+    cmap_prediction = mpl.cm.ScalarMappable(cmap='Blues', norm=norm)
+    cmap_prediction.set_array([])
+
+    for i, cell in enumerate(cells_data):
+        time = np.array(cell.time) / time_unit[1]
+        data_color = cmap_data.to_rgba(i)
+
+        if scatter:
+            ax[0].scatter(time, cell.length, color=data_color, s=10)
+            ax[1].scatter(time, cell.gfp, color=data_color, s=10)
+        else:
+            ax[0].plot(time, cell.length, color=data_color, lw=0.2)
+            ax[1].plot(time, cell.gfp, color=data_color, lw=0.2)
+
+
+
+    ax[0].set_ylabel("length")   
+    ax[1].set_ylabel("FP content (a.u.)")   
+
+    ax[0].set_xlabel("time ({:s})".format(time_unit[0]))  
+    ax[1].set_xlabel("time ({:s})".format(time_unit[0]))  
+
+
+    for i in range(len(ax)):
+        # ax[i].legend()
+        ax[i].grid(True)
+    if outfile != None:
+        fig.savefig(outfile, dpi=600)
+        plt.close()
+    else:
+        plt.show()
+
+
+
+
 def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 60), skip_row=13, scatter=True, outfile=None):
     """ needs a prediction file, start, stop, step refers to cells """
     fig, axes = plt.subplots(2, 1, figsize=(8,5))
@@ -469,7 +565,6 @@ def plot_raw_data(filename, start=None, stop=None, step=None, time_unit=("min", 
 
     data = pd.read_csv(filename, skiprows=skip_row)
     cells_data = df2ggp_cells(data)[start: stop: step]
-     
 
     norm = mpl.colors.Normalize(vmin=-len(cells_data)/2, vmax=len(cells_data))
     if len(cells_data)==1:
