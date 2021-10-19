@@ -49,7 +49,13 @@ def main():
                         default=None,
                         required=False)
     
-
+    parser.add_argument('-r',
+                        dest='range',
+                        help='range (start, stop, step)',
+                        nargs='+',
+                        type=int,
+                        default=[0, 100, 1],
+                        required=False)
 
     args = parser.parse_args()
 
@@ -67,10 +73,12 @@ def main():
                             length="length_um", 
                             gfp="fluo_ampl_ch_1", 
                             cell_id="cell_ID", 
-                            parent_id="parent_ID", start=0, stop=300, step=3, 
+                            parent_id="parent_ID", 
+                            start=args.range[0], stop=args.range[1], step=args.range[2], 
                             time_unit=("min", 60), outfile=outfile, 
                             scatter=False)
-            print(infile, '->', outfile)
+            print(infile, '->', outfile, 'cells:', args.range[0], args.range[1], args.range[2])
+
             
         except:
             print( "\n ----------> ", infile, "FAILED! <----------\n" )

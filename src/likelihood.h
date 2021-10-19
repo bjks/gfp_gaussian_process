@@ -1,4 +1,5 @@
 #include "correlation_tree.h"
+
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 #include <iomanip>
@@ -305,7 +306,8 @@ void save_final_likelihood(std::string outfile,
                             double ll_max, 
                             std::string min_algo, 
                             double tolerance, 
-                            std::string search_space){
+                            std::string search_space,
+                            std::string version){
     std::ofstream file(outfile,std::ios_base::app);
     long ndata_points = count_data_points(cells);
     file << "\n";
@@ -314,8 +316,8 @@ void save_final_likelihood(std::string outfile,
     file << "norm_log_likelihoood," << std::setprecision(15) << ll_max/ndata_points << "\n";
     file << "optimization_algorithm," << min_algo << "\n";
     file << "tolerance," << tolerance << "\n";
-    file << "search space," << search_space << "\n";
-
+    file << "search_space," << search_space << "\n";
+    file << "version," << version << "\n";
     file.close();
 }
 

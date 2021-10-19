@@ -6,7 +6,7 @@
 */
 
 
-std::vector<std::tuple<std::string, double>> get_column_indices(std::vector<MOMAdata> &cells){
+std::vector<std::tuple<std::string, double>> get_column_indices(std::vector <MOMAdata> &cells){
     /*
     */
     std::vector<std::tuple<std::string, double>> column_indices;
@@ -21,7 +21,6 @@ std::vector<std::tuple<std::string, double>> get_column_indices(std::vector<MOMA
     }
     return column_indices;
 }
-
 
 
 void add_to_joint_vector(const std::vector<std::tuple<std::string, double>> &column_indices, 
@@ -56,6 +55,7 @@ public:
         }
     }
     void add(Gaussian joint, std::string cell_id, double t);
+    size_t count();
     void clear();
     void write(std::ostream &file, int n);
     void write_column_indices(std::ostream &file, int n);
@@ -82,6 +82,14 @@ void Joint_vector::clear(){
         joints[i] = temp;
         is_set[i] = false;
     }
+}
+
+size_t Joint_vector::count(){
+    size_t count = 0; 
+    for (size_t i=0; i<column_indices.size(); ++i){
+        count += is_set[i];
+    }
+    return count;
 }
 
 void Joint_vector::write(std::ostream &file, int n=44){
@@ -187,9 +195,11 @@ Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> 
     D(0,0) = params_vec[9];
     D(1,1) = params_vec[10];
 
-    /* write conditional as affine gaussian of z_n+1| z_n (the model itself is formulated like that)  */
+    /* write conditional as affine gaussian of z_n+1| z_n (the model itself is formulated like that)
+    * writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
+    */
     Affine_gaussian conditional(f, F, D);
-    return conditional;
+    return conditional.transform();
 }
 
 /* ==================================================================================================== */
@@ -232,7 +242,7 @@ Gaussian consecutive_joint(const std::vector<double> &params_vec, MOMAdata cell,
 
 
 Affine_gaussian consecutive_conditional(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
-    /* given a P(z_n | D_n) the conditional P(z_n+1 | z_n D_n+1) is returned */
+    /* given a P(z_n | D_n) the conditional P(z_n+1 | z_n, D_n+1) is returned */
     cell.mean = cell.mean_forward[t];
     cell.cov = cell.cov_forward[t];
 
@@ -264,7 +274,7 @@ Affine_gaussian consecutive_conditional(const std::vector<double> &params_vec, M
 
     Gaussian joint(mean_joint, cov_joint);
 
-    // get conditional P (z_n+1, z_n) writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
+    // get conditional P (z_n+1 | z_n) writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
     Affine_gaussian conditional = seperate_gaussian(joint).conditional.transform();
     return conditional;
 }
@@ -302,7 +312,7 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
     * given the joint P(z_n+1, z_n | D_n+1) as well as the conditional P(z_n+2 | z_n+1, D_n+1) 
     * the posterior P(z_n+2, z_n | D_n+1) is returned
     */
-    Seperated_gaussian joint_sep =seperate_gaussian(joint);
+    Seperated_gaussian joint_sep = seperate_gaussian(joint);
     // multiplication
     // first factor after multiplication
     Eigen::VectorXd x = calc_x(joint_sep.marginal, conditional);
@@ -323,9 +333,6 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
     Affine_gaussian next_conditional = propagation(joint_sep.conditional, NX);
 
     Seperated_gaussian new_joint(next_marginal, next_conditional);
-    // Seperated_gaussian new_joint(marg, next_conditional);
-
-    /* ------------ include next x and g ------------*/
 
     return new_joint.to_joint();
 }
@@ -339,15 +346,26 @@ Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mea
     return new_joint.to_joint();
 }
 
+bool crosscovariance_is_small(Gaussian joint, double tolerance){
+    for (size_t i=0; i<4; ++i){
+        for (size_t j=4; j<8; ++j){
+            if(abs( joint.C(i,j) / (joint.m(i)*joint.m(j)) ) > tolerance){
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 /* =========================================================== */
 /* "Main" of the joint_distribution calculation */
 /* =========================================================== */
 
-void calc_joint_distributions(  const std::vector<std::vector<double>> &params_vecs, 
+bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_vecs, 
                                 MOMAdata &cell, 
                                 int n, 
-                                Joint_vector &joint_vector){
+                                Joint_vector &joint_vector,
+                                double tolerance_joint){
 
     /* Starting from P(z_n+1, z_n | D_n) */
 
@@ -358,21 +376,23 @@ void calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
 
     /* First iteration (m=1) includes y_n+1 and calculates P(z_n+2 | z_n+1, D_n+1 )*/
     for (m=1 ; n+m<cell.time.size(); ++m){
+
         std::vector<double> params_vec = params_vecs[cell.segment[n+m]];
 
         /* ------------ Posterior ------------ */ 
         /* include x and g -> P(z_n+1, z_n | D_n1+1) */
         D <<  params_vec[7], 0, 0,  params_vec[8];
-
         cell.joint = include_measurement(cell.joint, D, cell.log_length(n+m), cell.fp(n+m)); 
-        
+
         combined_joint = incorporate_backward_prob(seperate_gaussian(cell.joint ), 
                                                     cell.mean_backward[n+m], 
                                                     cell.cov_backward[n+m]);
-
-        // std::cout << "n " << n << "  m " << m << "  m+n " <<  n+m << "\n";
+        
+        if (crosscovariance_is_small(combined_joint, tolerance_joint)){
+            return true;
+        }
         joint_vector.add(combined_joint, cell.cell_id, cell.time[n+m]);
-
+        
         if (n+m<cell.time.size()-1){
             /* ------------ New prior ------------ */
             conditional = consecutive_conditional(params_vec, cell, n+m); // P(z_n+2 | z_n+1, D_n+1 )
@@ -383,6 +403,7 @@ void calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
             /* -------- New prior for cell(s) after division ------- */
             conditional = consecutive_conditional_cell_division(params_vecs[cell.segment[cell.time.size()-1]], cell); // P(z_n+2 | z_n+1, D_n+1 )
             cell.joint = next_joint(cell.joint, conditional);
+
             if (cell.daughter1 != nullptr){
                 cell.daughter1->joint = cell.joint;
             }
@@ -391,6 +412,7 @@ void calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
             }
         }
     }
+    return false;
 }
 
 
@@ -402,23 +424,26 @@ void calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
 void joint_distributions_recr(  const std::vector<std::vector<double>> &params_vecs, 
                                 MOMAdata *cell, 
                                 int n, 
-                                Joint_vector &joint_vector){
+                                Joint_vector &joint_vector, 
+                                double tolerance_joint){
     /*  
     * Recursive implementation that applies the function calc_joint_distributions to every cell in the genealogy
     */
     if (cell == nullptr)
         return;
-    calc_joint_distributions(params_vecs, *cell, n, joint_vector);
-
-    joint_distributions_recr(params_vecs, cell->daughter1, -1, joint_vector);
-    joint_distributions_recr(params_vecs, cell->daughter2, -1, joint_vector);
+    bool stop = calc_joint_distributions(params_vecs, *cell, n, joint_vector, tolerance_joint);
+    if (stop)
+        return;
+    joint_distributions_recr(params_vecs, cell->daughter1, -1, joint_vector, tolerance_joint);
+    joint_distributions_recr(params_vecs, cell->daughter2, -1, joint_vector, tolerance_joint);
 }
 
 
 void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 
                             MOMAdata &cell,
                             std::ostream &file, 
-                            Joint_vector &joint_vector){
+                            Joint_vector &joint_vector,
+                            double tolerance_joint){
 
     /* 
     * Calculates all joints starting from the time points in this cell. 
@@ -426,17 +451,22 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
     */
 
     for (size_t n=0; n<cell.time.size(); ++n){
+        joint_vector.clear();
+
         // P(z_n+1, z_n | D_n) (using Theta_n)
         if (n<cell.time.size()-1){
             cell.joint = consecutive_joint(params_vecs[cell.segment[n]], cell, n);
         }
         else{
             cell.joint = consecutive_joint_cell_division(params_vecs[cell.segment[n]], cell, n);
-
+            if (cell.daughter1 != nullptr){
+                cell.daughter1->joint = cell.joint;
+            }
+            if (cell.daughter2 != nullptr){
+                cell.daughter2->joint = cell.joint;
+            }
         }
-
-        joint_vector.clear();
-        joint_distributions_recr(params_vecs, &cell, n, joint_vector);
+        joint_distributions_recr(params_vecs, &cell, n, joint_vector, tolerance_joint);
 
         /* ============= OUTPUT ============= */
         if (cell.is_leaf() && n==cell.time.size()-1){
@@ -451,7 +481,8 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
 
 void collect_joint_distributions(const std::vector<std::vector<double>> &params_vecs, 
                                 std::vector<MOMAdata> &cells, 
-                                std::ostream &out){
+                                std::ostream &out, 
+                                double tolerance_joint){
     /* 
     * has to be run after the prediction is run!!!
     * setups the joint vector and loops over cells
@@ -465,86 +496,86 @@ void collect_joint_distributions(const std::vector<std::vector<double>> &params_
 
     for (size_t i=0; i< cells.size(); ++i){
         std::cout << "-> cell: " << i << "\n";
-        sc_joint_distributions(params_vecs, cells[i], out, joint_vector);
+        sc_joint_distributions(params_vecs, cells[i], out, joint_vector, tolerance_joint);
     }
 }
 
 
-/* -------------------------------------------------------------------------- */
-Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, size_t n, bool naive=false){
-    /* 
-    * Calculates the (normalized) covariance matrix R(zi, zj) from joints P(zi, zj | D) 
-    * If no joints are in vector, Nans are returned
-    */
+// /* -------------------------------------------------------------------------- */
+// Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, size_t n, bool naive=false){
+//     /* 
+//     * Calculates the (normalized) covariance matrix R(zi, zj) from joints P(zi, zj | D) 
+//     * If no joints are in vector, Nans are returned
+//     */
 
-    Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
+//     Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
 
-    // Handle empty vectors
-    if (joints.size()==0){
-        for (size_t i=0; i<n; ++i){
-            for (size_t j=0; j<n; ++j){
-                cov(i,j) = std::numeric_limits<double>::quiet_NaN();
-            }
-        }
-        return cov;
-    }
+//     // Handle empty vectors
+//     if (joints.size()==0){
+//         for (size_t i=0; i<n; ++i){
+//             for (size_t j=0; j<n; ++j){
+//                 cov(i,j) = std::numeric_limits<double>::quiet_NaN();
+//             }
+//         }
+//         return cov;
+//     }
 
-    // Compute C for non-empty vectors
-    for (size_t i=0; i<n; ++i){
-        for (size_t j=0; j<n; ++j){
+//     // Compute C for non-empty vectors
+//     for (size_t i=0; i<n; ++i){
+//         for (size_t j=0; j<n; ++j){
 
-            // calculate covariance element <C_ij + m_i *m_j> - <m_i> * <m_j>
-            double mimj = 0;
-            double mi = 0;
-            double mj = 0;
+//             // calculate covariance element <C_ij + m_i *m_j> - <m_i> * <m_j>
+//             double mimj = 0;
+//             double mi = 0;
+//             double mj = 0;
 
-            double mimi = 0;
-            double mjmj = 0;
+//             double mimi = 0;
+//             double mjmj = 0;
 
-            for(size_t k=0; k<joints.size(); ++k){
-                if (naive){
-                    mimj += joints[k].m(i)*joints[k].m(j);
+//             for(size_t k=0; k<joints.size(); ++k){
+//                 if (naive){
+//                     mimj += joints[k].m(i)*joints[k].m(j);
 
-                    mimi += pow(joints[k].m(i),2);
-                    mjmj += pow(joints[k].m(j),2);
-                }
-                else{
-                    mimj += joints[k].C(i,j) + joints[k].m(i)*joints[k].m(j); // sum over all C_ij + m_i * m_j
-                    mimi += pow(joints[k].m(i),2) + joints[k].C(i,i);
-                    mjmj += pow(joints[k].m(j),2) + joints[k].C(j,j);
-                }
-                mi += joints[k].m(i);
-                mj += joints[k].m(j);
-            }
-            cov(i,j) = mimj/joints.size() -  mi/joints.size() * mj/joints.size();
+//                     mimi += pow(joints[k].m(i),2);
+//                     mjmj += pow(joints[k].m(j),2);
+//                 }
+//                 else{
+//                     mimj += joints[k].C(i,j) + joints[k].m(i)*joints[k].m(j); // sum over all C_ij + m_i * m_j
+//                     mimi += pow(joints[k].m(i),2) + joints[k].C(i,i);
+//                     mjmj += pow(joints[k].m(j),2) + joints[k].C(j,j);
+//                 }
+//                 mi += joints[k].m(i);
+//                 mj += joints[k].m(j);
+//             }
+//             cov(i,j) = mimj/joints.size() -  mi/joints.size() * mj/joints.size();
 
-            // Normalization
-            cov(i,j) /= sqrt((mimi/joints.size() - pow(mi/joints.size(),2)) * \
-                             (mjmj/joints.size() - pow(mj/joints.size(),2))); 
+//             // Normalization
+//             cov(i,j) /= sqrt((mimi/joints.size() - pow(mi/joints.size(),2)) * \
+//                              (mjmj/joints.size() - pow(mj/joints.size(),2))); 
             
-            // ...move to the next entry
-        }
-    }
-    return cov;
-}
+//             // ...move to the next entry
+//         }
+//     }
+//     return cov;
+// }
 
-std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussian>> joint_matrix){
-    /* returns (normalized) correlation matrices from vector of vector joints */
-    std::vector<Eigen::MatrixXd> covariances;
-    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
-        covariances.push_back(covariance_from_joint(joint_matrix[dt], 8));
-    }
-    return covariances;
-}
+// std::vector<Eigen::MatrixXd> covariance_function(std::vector<std::vector<Gaussian>> joint_matrix){
+//     /* returns (normalized) correlation matrices from vector of vector joints */
+//     std::vector<Eigen::MatrixXd> covariances;
+//     for(size_t dt=0; dt<joint_matrix.size(); ++dt){
+//         covariances.push_back(covariance_from_joint(joint_matrix[dt], 8));
+//     }
+//     return covariances;
+// }
 
-std::vector<size_t> count_joints(std::vector<std::vector<Gaussian>> joint_matrix){
-    /* Counts the number of joints (number of pairs of data points) for each dt */
-    std::vector<size_t> n;
-    for(size_t dt=0; dt<joint_matrix.size(); ++dt){
-        n.push_back(joint_matrix[dt].size());
-    }
-    return n;
-}
+// std::vector<size_t> count_joints(std::vector<std::vector<Gaussian>> joint_matrix){
+//     /* Counts the number of joints (number of pairs of data points) for each dt */
+//     std::vector<size_t> n;
+//     for(size_t dt=0; dt<joint_matrix.size(); ++dt){
+//         n.push_back(joint_matrix[dt].size());
+//     }
+//     return n;
+// }
 
 
 

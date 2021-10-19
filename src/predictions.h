@@ -451,7 +451,7 @@ void output_vector(std::ostream &file, const Eigen::VectorXd v){
 
 
 void write_predictions_to_file(const std::vector<MOMAdata> &cells, std::string outfile, 
-                                std::vector<Parameter_set> &params_list, const CSVconfig &config, std::string direction="n"){   
+                                std::vector<Parameter_set> &params_list, std::string direction="n"){   
     for(size_t i=0; i<params_list.size(); ++i){
         if (i==0)
             params_list[i].to_csv(outfile);
@@ -469,7 +469,7 @@ void write_predictions_to_file(const std::vector<MOMAdata> &cells, std::string o
     for(size_t i=0; i<cells.size();++i){
         for (size_t j=0; j<cells[i].mean_forward.size();++j ){
             file << cells[i].cell_id << "," << cells[i].parent_id << "," 
-                 << cells[i].time[j] * config.rescale_time << "," 
+                 << cells[i].time[j] << "," 
                  << cells[i].log_length[j] << "," << cells[i].fp[j] << ",";
             if(direction=="f"){
                 output_vector(file, cells[i].mean_forward[j]);

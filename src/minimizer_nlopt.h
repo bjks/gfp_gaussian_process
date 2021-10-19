@@ -57,7 +57,7 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
         nlopt_algo = nlopt::LN_SBPLX;    // failed to converge 2/10
     }
     else if (opt_name == "LN_NELDERMEAD"){
-        nlopt_algo = nlopt::LN_NELDERMEAD;  // failed to converge 2/10 (different ones)
+        nlopt_algo = nlopt::LN_NELDERMEAD;  
     }
     else if (opt_name == "LN_PRAXIS"){
         nlopt_algo = nlopt::LN_PRAXIS;  // just stops???

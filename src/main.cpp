@@ -34,12 +34,12 @@ void run_minimization(std::vector<MOMAdata> &cells,
     double ll_max;
     if (arguments["search_space"] == "log"){
         ll_max = minimize_wrapper_log_params(&total_likelihood_log_params, cells, 
-                                        params, std::stod(arguments["tolerance"]), 
+                                        params, std::stod(arguments["tolerance_maximization"]), 
                                         min_algo);
     }
     else{
         ll_max = minimize_wrapper(&total_likelihood, cells, 
-                                        params, std::stod(arguments["tolerance"]), 
+                                        params, std::stod(arguments["tolerance_maximization"]), 
                                         min_algo);
     }
 
@@ -52,9 +52,13 @@ void run_minimization(std::vector<MOMAdata> &cells,
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
-    save_final_likelihood(outfile_estim, cells, ll_max, min_algo, 
-                        std::stod(arguments["tolerance"]), 
-                        arguments["search_space"]);
+    save_final_likelihood(outfile_estim, 
+                          cells, 
+                          ll_max, 
+                          min_algo, 
+                          std::stod(arguments["tolerance_maximization"]), 
+                          arguments["search_space"],
+                          "0.2");
 
     std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);
     create_parameter_file(outfile_params, params);
@@ -128,10 +132,10 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     combine_predictions(cells);
 
     /* save */
-    write_predictions_to_file(cells, outfile_f, params_list, config, "f");
-    write_predictions_to_file(cells, outfile_b, params_list, config, "b");
+    write_predictions_to_file(cells, outfile_f, params_list, "f");
+    write_predictions_to_file(cells, outfile_b, params_list, "b");
 
-    write_predictions_to_file(cells, outfile, params_list, config);
+    write_predictions_to_file(cells, outfile, params_list);
 }
 
 
@@ -139,7 +143,7 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
                     std::vector<Parameter_set> params_list, 
                     std::map<std::string, std::string> arguments, 
                     const CSVconfig &config){
-    std::cout << "-> auto co-variance" << "\n";
+    std::cout << "-> joint posteriors" << "\n";
 
     std::vector<std::vector<double>> params_vecs;
     for (size_t i=0; i<params_list.size(); ++i){
@@ -168,7 +172,7 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
     setup_outfile_joints(file, params_list);
 
     // calculate all possible joints
-    collect_joint_distributions(params_vecs, cells, file);
+    collect_joint_distributions(params_vecs, cells, file, std::stod(arguments["rel_tolerance_joints"]));
     file.close();
 
 }
@@ -179,18 +183,19 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
 std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::vector<std::string>> keys = 
         {
-        {"-h","--help", "this help message"},
-        {"-i", "--infile", "(required) input data file"},
-        {"-b", "--parameter_bounds", "(required) file(s) setting the type, step, bounds of the parameters"},
-        {"-c", "--csv_config", "file that sets the colums that will be used from the input file"},
-        {"-l","--print_level", "print level >=0, default: 0"},
-        {"-o","--outdir", "specify output direction and do not use default"},
-        {"-t","--tolerance", "absolute tolerance of maximization between optimization steps, default: 1e-1"},
-        {"-space","--search_space", "search parameter space in {'log'|'linear'} space, default: 'linear'"},
-        {"-m","--maximize", "run maximization"},
-        {"-s","--scan", "run 1d parameter scan"},
-        {"-p","--predict", "run prediction"},
-        {"-a","--auto_correlation", "run auto_correlation"}
+        {"-h",      "--help",                   "this help message"},
+        {"-i",      "--infile",                 "(required) input data file"},
+        {"-b",      "--parameter_bounds",       "(required) file(s) setting the type, step, bounds of the parameters"},
+        {"-c",      "--csv_config",             "file that sets the colums that will be used from the input file"},
+        {"-l",      "--print_level",            "print level {0,1,2}, default: 0"},
+        {"-o",      "--outdir",                 "specify output direction and do not use default"},
+        {"-t",      "--tolerance_maximization",  "absolute tolerance of maximization between optimization steps, default: 1e-3"},
+        {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-8"},
+        {"-space",  "--search_space",           "search parameter space in {'log'|'linear'} space, default: 'log'"},
+        {"-m",      "--maximize",               "run maximization"},
+        {"-s",      "--scan",                   "run 1d parameter scan"},
+        {"-p",      "--predict",                "run prediction"},
+        {"-j",      "--joints",                 "run calculation of joint probabilities"}
         };
 
     std::map<std::string, int> key_indices; 
@@ -201,8 +206,9 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::map<std::string, std::string> arguments;
     /* defaults: */
     arguments["print_level"] = "0";
-    arguments["tolerance"] = "1e-1";
-    arguments["search_space"] = "linear";
+    arguments["tolerance_maximization"] = "1e-3";
+    arguments["rel_tolerance_joints"] = "1e-8";
+    arguments["search_space"] = "log";
 
 
     for(int k=0; k<keys.size(); ++k){
@@ -227,7 +233,9 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 				else if(k==key_indices["-o"])
                     arguments["outdir"] = argv[i+1];
 				else if(k==key_indices["-t"])
-                    arguments["tolerance"] = argv[i+1];
+                    arguments["tolerance_maximization"] = argv[i+1];
+                else if(k==key_indices["-r"])
+                    arguments["rel_tolerance_joints"] = argv[i+1];
                 else if(k==key_indices["-space"])
                     arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-m"])
@@ -236,15 +244,15 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["scan"] = "1";
                 else if(k==key_indices["-p"])
                     arguments["predict"] = "1";
-                else if(k==key_indices["-a"]){
-                    arguments["auto_cov"] = "1";
+                else if(k==key_indices["-j"]){
+                    arguments["joints"] = "1";
                     arguments["predict"] = "1"; // needs to be run prior to the auto covariance calculation
                 }
                 else if (k==key_indices["-h"]){
                     arguments["help"] = "1";
                     std::cout << "Usage: ./gfp_gaussian [-options]\n";
                     for(size_t j=0; j<keys.size(); ++j)
-                        std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 27) << keys[j][2] <<"\n";
+                        std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 35) << keys[j][2] <<"\n";
                 }
             }
         }
@@ -297,6 +305,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 /* =============================================================================== */
 
 int main(int argc, char** argv){
+
     try{
         /* process command line arguments */
         std::map<std::string, std::string> arguments = arg_parser(argc, argv);
@@ -373,8 +382,8 @@ int main(int argc, char** argv){
             run_prediction_segments(cells, params_list, arguments, config);
         }
         
-        if (arguments.count("auto_cov")){
-            /* Run covariance, note that prediction was already run as this stage */
+        if (arguments.count("joints")){
+            /* Run joints, note that prediction was already run as this stage! */
             run_joint_distribution(cells, params_list, arguments, config);
         }
 

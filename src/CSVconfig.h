@@ -10,11 +10,11 @@ class CSVconfig {
     */
 public:
     // Defaults
-    std::string time_col = "time_sec";
-    double rescale_time = 60.;
+    std::string time_col = "time";
+    double rescale_time = 1.;
     std::string length_col = "length_um";
     bool length_islog = false;
-    std::string fp_col = "gfp_nb";
+    std::string fp_col = "gfp";
     std::string delm = ",";
     int step = 1;
     std::string segment_col = "";

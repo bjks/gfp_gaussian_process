@@ -16,12 +16,11 @@ local:
 variation:
 	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian_variation
 
+v1:
+	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian_ac_v1.0
+
+v1_naive:
+	g++ main.cpp -Wall $(CFLAGS) $(NLOPTLAGS) $(EIGENFLAG) $(FADFLAG) -o ../bin/gfp_gaussian_ac_v1.0_naive
+
 cluster:
 	ml GCC/8.3.0; ml Eigen/3.3.7; g++ main.cpp $(CFLAGS) $(NLOPTLAGS64) $(FADFLAG) -static-libstdc++ -lstdc++fs -o ../bin/gfp_gaussian
-
-
-
-
-
-
-

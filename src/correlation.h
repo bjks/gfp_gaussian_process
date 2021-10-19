@@ -1,8 +1,52 @@
 #include "predictions.h"
+
+
+/* 
+==================================================================
+==================================================================
+This version of calculating the correlation function is not used 
+anymore, but kept for later reference
+==================================================================
+==================================================================
+*/
+
+
 /*
 * This header relies on the Gaussian classes in contrast to the rest of the code, 
 * which just handles mean and covariances seperately
 */
+
+void run_covariance(std::vector<MOMAdata> &cells, 
+                    std::vector<Parameter_set> params_list, 
+                    std::map<std::string, std::string> arguments, 
+                    const CSVconfig &config){
+    std::cout << "-> auto co-variance" << "\n";
+
+    std::vector<std::vector<double>> params_vecs;
+    for (size_t i=0; i<params_list.size(); ++i){
+        params_vecs.push_back(params_list[i].get_final());
+    }
+
+    // defines the dts over which the correlation function will be calculated
+    double dt = base_dt(cells); 
+
+    std::string outfile_joints = outfile_name_joints(arguments, params_list);
+    setup_outfile_joints(outfile_joints, params_list);
+
+    // calculate all possible joints
+    std::vector<std::vector<Gaussian>> joint_matrix = collect_joint_distributions(params_vecs, cells, dt, outfile_joints);
+    std::vector<size_t> joint_number = count_joints(joint_matrix);
+
+    // calculate (normalized) covariance from the joints
+    std::vector<Eigen::MatrixXd> covariances = covariance_function(joint_matrix);
+
+    /* Output */
+    std::string outfile_cov = outfile_name_covariances(arguments, params_list);
+    std::cout << "Outfile: " << outfile_cov << "\n";
+
+    write_covariances_to_file(covariances, dt, joint_number, outfile_cov, params_list, config);
+}
+
 
 std::vector<std::vector<Gaussian>> init_joint_matrix(std::vector<MOMAdata> &cells, size_t dt){
     /*
@@ -272,6 +316,12 @@ void calc_joint_distributions(const std::vector<std::vector<double>> &params_vec
     joint = include_measurement(joint, D, cell.log_length(n1+1), cell.fp(n1+1)); 
     
     combined_joint = incorporate_backward_prob(seperate_gaussian(joint), cell.mean_backward[n1+1], cell.cov_backward[n1+1]);
+    
+    // write to file
+    file << ',';
+    output_vector(file, combined_joint.m);
+    file << ',';
+    output_upper_triangle(file, combined_joint.C);
 
     int idx = assign2index(dt, cell.time[n1+1] - cell.time[n1] , dt*1e-5);
     if (idx != -1){
@@ -430,8 +480,12 @@ Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, size_t n, bo
                 }
                 mi += joints[k].m(i);
                 mj += joints[k].m(j);
+            
             }
+
             cov(i,j) = mimj/joints.size() -  mi/joints.size() * mj/joints.size();
+
+            std::cout << cov(i,j) << " ";
 
             // Normalization
             cov(i,j) /= sqrt((mimi/joints.size() - pow(mi/joints.size(),2)) * \
@@ -439,7 +493,10 @@ Eigen::MatrixXd covariance_from_joint(std::vector<Gaussian> joints, size_t n, bo
             
             // ...move to the next entry
         }
+        std::cout << "\n";
     }
+    std::cout << "\n";
+
     return cov;
 }
 

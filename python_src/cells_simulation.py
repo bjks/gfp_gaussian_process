@@ -20,14 +20,14 @@ class Cell:
         self.time = [time0]
         self.segment = []
 
-    def to_df(self, n=1):
-        df = pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[::n],
-                                "time_min": self.time[::n],
-                                "parent_id": ([self.parent_id]*len(self.time))[::n],
-                                "log_length": self.log_length[::n], 
-                                "gfp": self.gfp[::n],
-                                "lt": self.lt[::n],
-                                "qt": self.qt[::n]})
+    def to_df(self, n=1, start=0):
+        df = pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[start::n],
+                                "time_min": self.time[start::n],
+                                "parent_id": ([self.parent_id]*len(self.time))[start::n],
+                                "log_length": self.log_length[start::n], 
+                                "gfp": self.gfp[start::n],
+                                "lt": self.lt[start::n],
+                                "qt": self.qt[start::n]})
         if len(self.segment)>0:
             df['segment']=self.segment[::n]
         return df
@@ -536,6 +536,18 @@ def build_data_set(cells_simulated, var_x, var_g, n):
                                                                         scale=np.sqrt(var_g))
         dataset = dataset.append(next_celldf)
     return dataset
+
+def build_data_set_fixed_dt(cells_simulated, var_x, var_g, dt, atol=1e-4):
+    dataset = pd.DataFrame()
+    for i in range(len(cells_simulated)):
+        next_celldf = cells_simulated[i].to_df(1)
+        next_celldf['log_length_noise'] = next_celldf['log_length'] + np.random.normal(loc=np.zeros_like( next_celldf['log_length']), scale=np.sqrt(var_x))
+        next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
+                                                                        scale=np.sqrt(var_g))
+        dataset = dataset.append(next_celldf)
+    
+    return dataset[ np.abs( (dataset['time_min'] + atol/2) % dt) < atol ] 
+
 
 def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):
     print("Every", n, "th datapoint is saved")

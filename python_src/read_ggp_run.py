@@ -428,7 +428,7 @@ def plot_noisy_param_run(filenames, params_config, skip=0, cols=3, width=14):
 # Prediction #
 # ==================================================== #
 def plot_predictions(filename, start=None, stop=None, step=None, 
-                    time_unit=("min", 60), skip_row=13, xlim=[None, None], outfile=None):
+                    time_unit=("min", 60), skip_row=13, xlim=[None, None], outfile=None, show=True):
     """ needs a prediction file, start, stop, step refers to cells """
     fig, axes = plt.subplots(4, 1, figsize=(8,10))
     ax = axes.ravel()
@@ -492,8 +492,10 @@ def plot_predictions(filename, start=None, stop=None, step=None,
     if outfile != None:
         fig.savefig(outfile, dpi=600)
         fig.clear()
-    else:
+    elif show:
         plt.show()
+    else:
+        return ax
 # ==================================================== #
 
            

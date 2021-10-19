@@ -50,6 +50,22 @@ def main():
                         help='dir',
                         required=True)
 
+    parser.add_argument('-skip',
+                        dest='skip',
+                        help='skip rows in input file',
+                        default=25,
+                        type=int,
+                        required=False)
+    
+    parser.add_argument('-r',
+                        dest='range',
+                        help='range (start, stop, step)',
+                        nargs='+',
+                        type=int,
+                        default=[0, 100, 1],
+                        required=False)
+
+
     args = parser.parse_args()
     # ======================================== #
     # ======================================== #
@@ -58,12 +74,12 @@ def main():
     input_files = get_input_files(args.dir)
 
     for infile in input_files:
-        print(infile)
+        print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
         prediction_file = get_prediction_file(infile)
 
         if prediction_file!=None:
-            plot_predictions(prediction_file, start=10, stop=100, step=1, 
-                    time_unit=("min", 60), skip_row=25, xlim=[None, None], outfile=get_plot_file(infile))
+            plot_predictions(prediction_file, start=args.range[0], stop=args.range[1], step=args.range[2], 
+                    time_unit=("min", 60), skip_row=args.skip, xlim=[None, None], outfile=get_plot_file(infile))
 
 
 # ================================================================================ #
