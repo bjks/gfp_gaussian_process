@@ -107,7 +107,10 @@ public:
 };
 
 Gaussian Seperated_gaussian::to_joint(int n){
-    /* rewrites the sperated gaussian (N(x | m, C) N(y | a + F x, A)) as N([x y]| m, C) whith matching m and C  */
+    /* 
+    * rewrites the sperated gaussians (N(x | m, C) N(y | a + F x, A)) as N([x y]| m, C) whith matching m and C  
+    * "Inverse" of seperate_gaussian()
+    */
     Eigen::VectorXd mean_joint(n); 
     mean_joint << marginal.m, conditional.a + conditional.F * marginal.m;
 
@@ -122,6 +125,10 @@ Gaussian Seperated_gaussian::to_joint(int n){
 
 
 Seperated_gaussian seperate_gaussian(Gaussian joint, int n=4){
+    /* 
+    * rewrites the joint  N([x y]| m, C) as sperated gaussians (N(x | m, C) N(y | a + F x, A)) whith matching m, C, a, F, A  
+    * "Inverse" of to_joint() (and thus not part of Seperated_gaussian classe)
+    */
     Eigen::MatrixXd B = joint.C.bottomRightCorner(n,n);
     Eigen::MatrixXd K = joint.C.topRightCorner(n,n);
     Eigen::MatrixXd A = joint.C.topLeftCorner(n,n);
@@ -138,6 +145,7 @@ Seperated_gaussian seperate_gaussian(Gaussian joint, int n=4){
 }
 
 Gaussian Gaussian::flip_xy(int n=4){
+    /* flips x and y of 2n dimensional gaussian ie N([x,y]) -> N([y,x]), where x and y are n dimensional */
     Eigen::VectorXd mean(n*2); 
     mean << m.tail(n),  m.head(n);
     
