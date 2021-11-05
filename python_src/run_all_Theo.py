@@ -23,7 +23,8 @@ import sys
 
 # Example
 # ---------------------------------- #
-# python3 run_all_Theo.py -d ../data_theo/ -b ../data_theo/parameters_GM.txt ../data_theo/parameters_SPM.txt -c ../data_theo/csv_config.txt -m -t 1e-20
+# python3 run_all_Theo.py -d ../data_theo/ -b ../data_theo/parameters_GM.txt ../data_theo/parameters_SPM.txt --fallback -c ../data_theo/csv_config.txt -m -t 1e-20
+# python3 run_all_Theo.py -d ../data_theo/ -b infer -c ../data_theo/csv_config_NOFILTER.txt -p --local
 
 def get_input_files(directory, keyword=None):
     entries = os.listdir(directory)
@@ -100,8 +101,7 @@ def main():
 
     parser.add_argument('-c',
                         dest='csv_config' ,
-                        help='Csv config file(s)',
-                        nargs='+',
+                        help='Csv config file',
                         required=True)
 
     parser.add_argument('-space',
@@ -138,10 +138,10 @@ def main():
     input_files = get_input_files(args.dir)
 
     for infile in input_files:
-        ggp_arg =   " -c " + get_arg_list(args.csv_config) + \
-                    " -t " + args.tol + \
-                    " -space " + args.space + \
-                    " -i " + infile 
+        ggp_arg =   " -c "      + args.csv_config + \
+                    " -t "      + args.tol + \
+                    " -space "  + args.space + \
+                    " -i "      + infile 
         if args.m:
             ggp_arg += ' -m '
         if args.p:

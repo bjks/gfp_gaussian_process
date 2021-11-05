@@ -13,8 +13,8 @@ plt.rcParams['mathtext.default'] = 'regular'
 params = {'text.usetex': False, 'mathtext.fontset': 'cm'}
 plt.rcParams.update(params)
 
-SMALL_SIZE = 14
-MEDIUM_SIZE = 16
+SMALL_SIZE = 13
+MEDIUM_SIZE = 14
 
 plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
@@ -88,6 +88,15 @@ class GGP_cell:
         self.cov_gg = []
         self.cov_ll = []
         self.cov_qq = []
+
+    def to_df(self, n=1, start=0):
+        df = pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[start::n],
+                                "time_min": self.time[start::n],
+                                "parent_id": ([self.parent_id]*len(self.time))[start::n],
+                                "log_length": self.log_length[start::n], 
+                                "gfp": self.gfp[start::n]
+                                })
+        return df
 
 
 def df2ggp_cells(dataset, 
