@@ -16,7 +16,7 @@ def get_input_files(directory, keyword=None):
             if e.endswith(".csv") and keyword in e:
                 final_files.append(os.path.join(directory,e))   
 
-    return final_files
+    return sorted(final_files)
 
 
 
