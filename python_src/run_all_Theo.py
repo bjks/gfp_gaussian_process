@@ -1,7 +1,7 @@
 import argparse
 import os 
 import sys
-
+import numpy as np
 
 # Running together with the script:
 # ================================== #
@@ -38,7 +38,7 @@ def get_input_files(directory, keyword=None):
             if e.endswith(".csv") and keyword in e:
                 final_files.append(os.path.join(directory,e))   
 
-    return final_files
+    return sorted(final_files)
 
 
 def run_command(arg, dryrun, iscluster):
@@ -68,17 +68,42 @@ def get_arg_list(args):
 def get_parameter_files(file):
     out_dir = file[:-4] + '_out/'
     entries = os.listdir(out_dir)
-    final_files = []
+    parameter_files = []
     for e in entries:
         if e.endswith('parameter_file.txt'):
-            final_files.append(os.path.join(out_dir, e))
+            parameter_files.append(os.path.join(out_dir, e))
     
     # sort accoring to segment number (files only differ at that number)
-    print(len(final_files))
-    if len(final_files)>1:
-        final_files = sorted(final_files)
+    if len(parameter_files)>1:
+        parameter_files = sorted(parameter_files)
 
-    return final_files
+    return parameter_files
+
+def create_new_parameter_file(parameter_files):
+    segment0 = []
+    segment1 = []
+    if len(parameter_files) == 2:
+        with open(parameter_files[0],'r') as fin:
+            for _, line in enumerate(fin):
+                if not line.startswith('#'):
+                    segment0.append(line)
+        with open(parameter_files[1],'r') as fin:
+            for _, line in enumerate(fin):
+                if not line.startswith('#'):
+                    segment1.append(line)
+
+        output_file = parameter_files[0].replace("segment0", "segment2" )
+        with open(output_file, 'w') as fout:
+            fout.write("Automatically generated file identical to segments1 apart from beta which from segments0")
+            for i,_ in enumerate(segment0):
+                if segment0[i].startswith("beta"):
+                    fout.write(segment0[i])
+                else:
+                    fout.write(segment1[i])
+        return parameter_files + [output_file]
+    else:
+        return parameter_files 
+
 
 ########################################################################################################################
 ########################################################################################################################
@@ -118,6 +143,7 @@ def main():
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
     parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
+    parser.add_argument('--newparamfile', help="Creates third parameter file ('segment2') that is identical to the segment1 but contains the beta from segment0", action='store_true')
 
     parser.add_argument('-m', help="Run maximization", action='store_true')
     parser.add_argument('-p', help="Run prediction", action='store_true')
@@ -135,7 +161,7 @@ def main():
                      "iscluster": True}
 
 
-    input_files = get_input_files(args.dir)
+    input_files = get_input_files(args.dir)[:5]
 
     for infile in input_files:
         ggp_arg =   " -c "      + args.csv_config + \
@@ -150,6 +176,9 @@ def main():
         # deal with parameter files
         if args.parameters[0] == "infer":
             parameter_files = get_parameter_files(infile) 
+            if args.newparamfile:
+                parameter_files = create_new_parameter_file(parameter_files)
+
         else:
             if args.fallback:
                 parameter_files = []
