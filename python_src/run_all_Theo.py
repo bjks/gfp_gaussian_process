@@ -160,7 +160,7 @@ def main():
                      "iscluster": True}
 
 
-    input_files = get_input_files(args.dir)[:5]
+    input_files = get_input_files(args.dir)
 
     for infile in input_files:
         ggp_arg =   " -c "      + args.csv_config + \
