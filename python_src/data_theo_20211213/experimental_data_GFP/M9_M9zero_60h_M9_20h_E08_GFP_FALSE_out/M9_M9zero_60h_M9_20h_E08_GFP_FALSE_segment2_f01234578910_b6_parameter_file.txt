@@ -1,0 +1,11 @@
+Automatically generated file identical to segments1 apart from beta which from segments0mean_lambda = 0.238612
+gamma_lambda = 0.00014368
+var_lambda = 1.09644e-05
+mean_q = 0.43614
+gamma_q = 0.0136835
+var_q = 0.947136
+beta = 0.00627657
+var_x = 0.000115287
+var_g = 51214.6
+var_dx = 0.0336146
+var_dg = 5.78191e+09

@@ -93,7 +93,7 @@ def create_new_parameter_file(parameter_files):
 
         output_file = parameter_files[0].replace("segment0", "segment2" )
         with open(output_file, 'w') as fout:
-            fout.write("Automatically generated file identical to segments1 apart from beta which from segments0")
+            fout.write("#Automatically generated file identical to segments1 apart from beta which from segments0\n")
             for i,_ in enumerate(segment0):
                 if segment0[i].startswith("beta"):
                     fout.write(segment0[i])

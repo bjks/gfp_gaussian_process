@@ -1,0 +1,12 @@
+# Generated parameter file with the final parameters that may be used for predictions
+mean_lambda = 0.00327467
+gamma_lambda = 1.87979
+var_lambda = 0.000411422
+mean_q = 530.18
+gamma_q = 0.602105
+var_q = 352739
+beta = 0.05
+var_x = 9.2339e-05
+var_g = 424443
+var_dx = 0.172966
+var_dg = 1.24521e+11

@@ -1,0 +1,19 @@
+# -------------------------------------------------------- #
+# Config file for reading input file
+# -------------------------------------------------------- #
+# lines staring with '#' are ignored
+# Note: Everything behind the '=' sign (excluding l/r whitespaces) is taken
+
+length_col = length_um
+length_islog = false
+
+time_col = time_sec
+
+rescale_time = 3600
+
+fp_col = fluo_ampl_ch_1
+parent_tags = gl_id, parent_ID
+cell_tags = gl_id, cell_ID
+
+segment_col = segment
+

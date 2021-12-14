@@ -1,0 +1,26 @@
+no,name,type,init,step,lower_bound,upper_bound,final
+0,mean_lambda,free,1e-06,1e-07, , ,5.88535e-07
+1,gamma_lambda,free,0.1,0.01, , ,0.0512974
+2,var_lambda,free,1e-06,1e-07, , ,8.80235e-06
+3,mean_q,free,1,1, , ,112.087
+4,gamma_q,free,1,0.1, , ,4.30791
+5,var_q,free,100000,10000, , ,703854
+6,beta,bound,0.04,0.004,0.03,0.05,0.0307852
+7,var_x,free,1e-05,0.001, , ,7.31e-05
+8,var_g,free,100000,1000, , ,109601
+9,var_dx,free,0.01,0.001, , ,0.0152806
+10,var_dg,free,1e+09,1e+08, , ,1.33788e+09
+
+errors^2:
+epsilon,mean_lambda,gamma_lambda,var_lambda,mean_q,gamma_q,var_q,beta,var_x,var_g,var_dx,var_dg
+0.05,1.46606e-13,0.000114053,3.45579e-12,1929.17,-0.0727251,-5.55427e+09,1.54592e-05,4.62572e-12,1.15668e+07,0.000392819,4.52089e+18
+0.01,-2.64421e-14,-0.000100448,3.14899e-12,-608.801,-0.013565,-4.35533e+08,-4.06682e-06,4.11775e-12,1.01565e+07,1.51603e-05,-1.6706e+17
+0.005,5.34898e-15,9.7846e-05,-5.3528e-12,-331.107,0.033897,-2.58738e+09,-2.12726e-06,4.93668e-12,1.01367e+07,7.02015e-07,-6.38286e+15
+
+n_data_points, 2848
+total_log_likelihoood,-17590.6196333957
+norm_log_likelihoood,-6.17648161284961
+optimization_algorithm,LN_NELDERMEAD
+tolerance,1e-40
+search_space,log
+version,0.2
