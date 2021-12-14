@@ -1,7 +1,6 @@
 import argparse
 import os 
 import sys
-import numpy as np
 
 # Running together with the script:
 # ================================== #
