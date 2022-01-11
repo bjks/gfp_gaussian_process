@@ -78,18 +78,11 @@ def main():
                         dest='dir',
                         help='directory with input files',
                         required=True)
-
-    parser.add_argument('-b',
-                        dest='parameters' ,
-                        help='Parameter file(s)',
-                        nargs='+',
-                        required=True)
     
     parser.add_argument('-o',
                         dest='out' ,
                         help='Output dir',
-                        nargs='+',
-                        required=True)
+                        default=None)
 
     parser.add_argument('-c',
                         dest='csv_config' ,
@@ -104,7 +97,6 @@ def main():
     parser.add_argument('-t',
                         dest="tol",
                         help="Tolerance of maximization",
-                        required=False,
                         default="1e-7")
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
@@ -138,10 +130,14 @@ def main():
         if args.p:
             ggp_arg += ' -p '
 
-        parameter_files = get_parameter_file(infile) 
+        parameter_file = get_parameter_file(infile) 
 
-        ggp_arg +=  " -b " + parameter_files
-        
+        ggp_arg +=  " -b " + parameter_file
+
+        if args.out != None:
+            outdir = os.path.join(args.out,  input_files.split('/')[-1][:-4] + '_out')
+            ggp_arg +=  " -o " + outdir
+
         # ============ run! ============ #
         run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
 
