@@ -104,6 +104,7 @@ def main():
 
     parser.add_argument('-m', help="Run maximization", action='store_true')
     parser.add_argument('-p', help="Run prediction", action='store_true')
+    parser.add_argument('-j', help="Run prediction", action='store_true')
 
     args = parser.parse_args()
 
@@ -129,6 +130,8 @@ def main():
             ggp_arg += ' -m '
         if args.p:
             ggp_arg += ' -p '
+        if args.j:
+            ggp_arg += ' -j '
 
         parameter_file = get_parameter_file(infile) 
 
