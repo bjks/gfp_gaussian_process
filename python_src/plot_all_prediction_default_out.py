@@ -79,7 +79,7 @@ def main():
 
         if prediction_file!=None:
             plot_predictions(prediction_file, start=args.range[0], stop=args.range[1], step=args.range[2], 
-                    time_unit=("min", 60), skip_row=args.skip, xlim=[None, None], outfile=get_plot_file(infile))
+                    time_unit=("h", 1), skip_row=args.skip, xlim=[None, None], outfile=get_plot_file(infile))
 
 
 # ================================================================================ #

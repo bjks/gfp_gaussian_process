@@ -70,7 +70,12 @@ def write_params2file(params, filname):
     with open(filname, 'w') as fout:
         fout.write("# Automatically estimated parameter for initialzing MLE search\n")
         for param in params:
-            fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param], params[param]/2. ))
+            if param == "gamma_lambda" or param == "gamma_q":
+                fout.write("{:s} = {:.2E}, {:.2E}, 0.01, 100\n".format(param, params[param], params[param]/2. ))
+
+            else:
+                fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param], params[param]/2. ))
+
         
 ########################################################################################################################
 ########################################################################################################################
@@ -110,14 +115,14 @@ def main():
                         dest='gamma_lambda',
                         help='guessed gamma_lambda',
                         type=float,
-                        default=1,
-                        required=False)               
+                        default=5,
+                        required=False)    
 
     parser.add_argument('-gamma_q',
                         dest='gamma_q',
                         help='guessed gamma_q',
                         type=float,
-                        default=1,
+                        default=5,
                         required=False)               
 
     parser.add_argument('-beta',

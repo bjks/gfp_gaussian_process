@@ -458,10 +458,12 @@ def main():
                 dt = 18.75
             elif "glycerol" in joint_filename:
                 dt = 6
-            elif "gloucose_" in joint_filename:
+            elif "glucose_" in joint_filename:
                 dt = 3
             elif "glucoseaa" in joint_filename:
                 dt = 1.5
+            else:
+                dt = None
 
             prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
 
