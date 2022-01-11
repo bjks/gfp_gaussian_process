@@ -135,7 +135,7 @@ def main():
         ggp_arg +=  " -b " + parameter_file
 
         if args.out != None:
-            outdir = os.path.join(args.out,  input_files.split('/')[-1][:-4] + '_out')
+            outdir = os.path.join(args.out,  infile.split('/')[-1][:-4] + '_out')
             ggp_arg +=  " -o " + outdir
 
         # ============ run! ============ #
