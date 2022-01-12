@@ -69,7 +69,7 @@ def get_parameter_files(file, out_dir = None):
     entries = os.listdir(out_dir)
     parameter_files = []
     for e in entries:
-        if e.startswith(file[:-4]) and e.endswith('parameter_file.txt'):
+        if file[:-4] in e and e.endswith('parameter_file.txt'):
             parameter_files.append(os.path.join(out_dir, e))
     
     # sort accoring to segment number (files only differ at that number)
