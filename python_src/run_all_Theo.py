@@ -65,7 +65,7 @@ def get_arg_list(args):
 
 def get_parameter_files(file, outdir = None):
     if outdir == None:
-        out_dir = file[:-4] + '_out/'
+        outdir = file[:-4] + '_out/'
     entries = os.listdir(out_dir)
     parameter_files = []
     for e in entries:
