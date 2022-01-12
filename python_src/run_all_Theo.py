@@ -63,10 +63,10 @@ def get_arg_list(args):
     return s + ' '
 
 
-def get_parameter_files(file, outdir = None):
-    if outdir == None:
-        outdir = file[:-4] + '_out/'
-    entries = os.listdir(outdir)
+def get_parameter_files(file, out_dir = None):
+    if out_dir == None:
+        out_dir = file[:-4] + '_out/'
+    entries = os.listdir(out_dir)
     parameter_files = []
     for e in entries:
         if e.endswith('parameter_file.txt'):
