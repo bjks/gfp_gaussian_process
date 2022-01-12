@@ -121,6 +121,11 @@ def main():
                         help='Parameter file(s)',
                         nargs='+',
                         required=True)
+                        
+    parser.add_argument('-o',
+                        dest='out' ,
+                        help='Output dir',
+                        default=None)
 
     parser.add_argument('-c',
                         dest='csv_config' ,
@@ -195,6 +200,8 @@ def main():
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)
         
+        if args.out != None:
+            ggp_arg +=  " -o " + args.out
         # ============ run! ============ #
         run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
 

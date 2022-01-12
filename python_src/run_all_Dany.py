@@ -138,8 +138,7 @@ def main():
         ggp_arg +=  " -b " + parameter_file
 
         if args.out != None:
-            outdir = os.path.join(args.out,  infile.split('/')[-1][:-4] + '_out')
-            ggp_arg +=  " -o " + outdir
+            ggp_arg +=  " -o " + args.out
 
         # ============ run! ============ #
         run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
