@@ -63,8 +63,9 @@ def get_arg_list(args):
     return s + ' '
 
 
-def get_parameter_files(file):
-    out_dir = file[:-4] + '_out/'
+def get_parameter_files(file, outdir = None):
+    if outdir == None:
+        out_dir = file[:-4] + '_out/'
     entries = os.listdir(out_dir)
     parameter_files = []
     for e in entries:
@@ -121,7 +122,7 @@ def main():
                         help='Parameter file(s)',
                         nargs='+',
                         required=True)
-                        
+
     parser.add_argument('-o',
                         dest='out' ,
                         help='Output dir',
@@ -178,7 +179,7 @@ def main():
 
         # deal with parameter files
         if args.parameters[0] == "infer":
-            parameter_files = get_parameter_files(infile) 
+            parameter_files = get_parameter_files(infile, args.out) 
             if args.newparamfile:
                 parameter_files = create_new_parameter_file(parameter_files)
 
