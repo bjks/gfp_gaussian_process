@@ -69,6 +69,7 @@ void posterior(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Ma
     cell.cov = cell.cov - K.transpose() * Si * K;
 }
 
+
 /* -------------------------------------------------------------------------- */
 void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs, 
                     MOMAdata &cell){
@@ -200,6 +201,44 @@ void mean_cov_after_division_r(MOMAdata &cell, double var_dx, double var_dg){
 }
 
 
+Eigen::VectorXd reverse_mean(Eigen::VectorXd mean){
+    Eigen::VectorXd temp_mean(4); 
+
+    temp_mean << mean;
+    temp_mean(2) = - mean(2);
+    temp_mean(3) = - mean(3);
+    return temp_mean;
+}
+
+Eigen::MatrixXd reverse_cov(Eigen::MatrixXd cov){
+    Eigen::MatrixXd temp_cov(4,4);
+
+    temp_cov << cov;
+    std::vector<std::vector<int>> entries   {{0,2},
+                                            {0,3},
+                                            {1,2},
+                                            {1,3}};
+
+    for(size_t k=0; k<entries.size(); ++k){
+        temp_cov(entries[k][0], entries[k][1]) = - cov(entries[k][0], entries[k][1]);
+        temp_cov(entries[k][1], entries[k][0]) = - cov(entries[k][1], entries[k][0]);
+    }
+    return temp_cov;
+}
+
+
+void posterior_r(Eigen::MatrixXd xgt, MOMAdata &cell, Eigen::Matrix2d S, Eigen::Matrix2d Si){
+    cell.mean = reverse_mean(cell.mean);
+    cell.cov = reverse_cov(cell.cov);
+
+    Eigen::MatrixXd K = cell.cov.block(0,0,2,4);
+    cell.mean = cell.mean + K.transpose() * Si * xgt;
+    cell.cov = cell.cov - K.transpose() * Si * K;
+
+    cell.mean = reverse_mean(cell.mean);
+    cell.cov = reverse_cov(cell.cov);
+}
+
 void init_sc_distribution_r(MOMAdata &cell, 
                         const double &mean_lambda, 
                         const double &gamma_lambda, 
@@ -214,8 +253,8 @@ void init_sc_distribution_r(MOMAdata &cell,
         cell.mean(0) = cell.mean_init_backward(0);
         cell.mean(1) = cell.mean_init_backward(1);
 
-        cell.mean(2) = -mean_lambda;
-        cell.mean(3) = -mean_q;
+        cell.mean(2) = - mean_lambda;
+        cell.mean(3) = - mean_q;
 
         // set cov
         cell.cov(0,0) = cell.cov_init_backward(0,0);
@@ -237,8 +276,9 @@ void mean_cov_model_r(MOMAdata &cell,
                     double mq, double gq, 
                     double sq2, double b){
     /* reverses the mean_cov_model function by switching the sign OU process params and beta */
-    mean_cov_model(cell,t,-ml,-gl,sl2,-mq,-gq,sq2,-b);
+    mean_cov_model(cell, t, -ml, gl, sl2, -mq, gq, sq2, -b);
 }
+
 
 void append_reversed_mean(MOMAdata &cell){
     /* append the "reverse" of the mean 
@@ -246,10 +286,8 @@ void append_reversed_mean(MOMAdata &cell){
     in front of mean_backward variable in cell
     */
     Eigen::VectorXd temp_mean(4); 
-    temp_mean << cell.mean;
+    temp_mean << reverse_mean(cell.mean);
 
-    temp_mean(2) = - cell.mean(2);
-    temp_mean(3) = - cell.mean(3);
     cell.mean_backward.insert(cell.mean_backward.begin(), temp_mean);
 }
 
@@ -262,16 +300,8 @@ void append_reversed_cov(MOMAdata &cell){
     in front of cov_backward variable in cell
     */
     Eigen::MatrixXd temp_cov(4,4);
-    temp_cov << cell.cov;
-    std::vector<std::vector<int>> entries   {{0,2},
-                                            {0,3},
-                                            {1,2},
-                                            {1,3}};
+    temp_cov << reverse_cov(cell.cov);
 
-    for(size_t k=0; k<entries.size(); ++k){
-        temp_cov(entries[k][0], entries[k][1]) = - cell.cov(entries[k][0], entries[k][1]);
-        temp_cov(entries[k][1], entries[k][0]) = - cell.cov(entries[k][1], entries[k][0]);
-    }
     cell.cov_backward.insert(cell.cov_backward.begin(), temp_cov);
 }
 
