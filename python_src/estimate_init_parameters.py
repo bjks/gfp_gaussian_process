@@ -40,6 +40,7 @@ def estimate_q(cells, beta=0):
         gfp_interp = cell.gfp[:-1] + np.diff(cell.gfp)/2
 
         qs = np.append(qs, (dg/dt + beta*gfp_interp)/length_interp)
+    print(qs)
     return np.mean(qs), np.var(qs)
 
 def estimate_var_x(cells, rel_err=0.05):
@@ -90,11 +91,6 @@ def main():
                         help='Directory with input files',
                         required=True)
 
-    parser.add_argument('-o',
-                        dest='out',
-                        help='Do not use the default output file, but this one instead',
-                        default=None,
-                        required=False)
     
     parser.add_argument('-rescale_time',
                         dest='rescale_time',
@@ -138,26 +134,39 @@ def main():
     # ======================================== #
 
     input_files = get_input_files(args.dir)
-    print("in", input_files)
+    print(len(input_files), "input files in", args.dir)
 
     for infile in input_files:
 
-
         data = pd.read_csv(infile, skiprows=0)
-        data.loc[: , "time_h"] = data["time_sec"].to_numpy() / args.rescale_time
+        data.loc[: , "time"] = data["time_sec"].to_numpy() / args.rescale_time
 
         cells_data_segs = []
         params = {}
 
         for seg, prefix in enumerate(args.segments):
-            segment_data = data[data["segment"] == seg]
+            if 'SP_transi' in data.columns:
+                data = data[data["SP_transi"] == "TRUE"]
+
+            if 'segment' in data.columns:
+                segment_data = data[data["segment"] == seg]
+            else:
+                segment_data = data
 
             cells_data = df2raw_cells(segment_data, 
-                                    time="time_h", 
+                                    time="time", 
                                     length="length_um", 
                                     gfp="fluo_ampl_ch_1", 
                                     cell_id="cell_ID", 
                                     parent_id="parent_ID")
+
+            # cells_data = df2raw_cells(segment_data, 
+            #                         time="time", 
+            #                         length="length_um", 
+            #                         gfp="gfp_nb", 
+            #                         cell_id="sub_cell", 
+            #                         parent_id="sub_parent")
+
             # OUs
             mean_lambda, variance_lambda = estimate_lambda(cells_data)
             params["mean_lambda"] = mean_lambda
@@ -182,6 +191,7 @@ def main():
             # write to file named as expected by "run_all_Theo.py"
             parameter_file = infile[:-4] + '_'+ prefix + ".txt"
             write_params2file(params, parameter_file)
+            break
 
 if __name__ == "__main__":
     main()

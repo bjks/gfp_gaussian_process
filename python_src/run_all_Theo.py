@@ -78,7 +78,7 @@ def get_parameter_files(file, out_dir = None):
 
     return parameter_files
 
-def create_new_parameter_file(parameter_files):
+def create_new_parameter_file_from_both(parameter_files):
     segment0 = []
     segment1 = []
     if len(parameter_files) == 2:
@@ -103,6 +103,26 @@ def create_new_parameter_file(parameter_files):
     else:
         return parameter_files 
 
+def create_new_parameter_file(parameter_files):
+    segment1 = []
+    if len(parameter_files) == 2:
+        with open(parameter_files[1],'r') as fin:
+            for _, line in enumerate(fin):
+                if not line.startswith('#'):
+                    segment1.append(line)
+
+        output_file = parameter_files[0].replace("segment0", "segment2" )
+        with open(output_file, 'w') as fout:
+            fout.write("#Automatically generated file identical to segments1 apart from beta which is taken times 4\n")
+            for i,_ in enumerate(segment1):
+                if segment1[i].startswith("beta"):
+                    line_splitted = segment1[i].split("=")
+                    fout.write(line_splitted[0], ' = ', str(float(line_splitted[0])*4))
+                else:
+                    fout.write(segment1[i])
+        return parameter_files + [output_file]
+    else:
+        return parameter_files 
 
 ########################################################################################################################
 ########################################################################################################################

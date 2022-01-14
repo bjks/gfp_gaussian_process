@@ -468,6 +468,9 @@ def main():
             corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
 
             data_set = joint_filename.split("/")[-1].split("_")[0] + '_' + joint_filename.split("/")[-1].split("_")[1]
+            
+            mk_missing_dir(args.output_dir)
+
             plot_file = os.path.join(args.output_dir, 
                                     data_set + "_correlation_{:s}{:s}.pdf")
 
