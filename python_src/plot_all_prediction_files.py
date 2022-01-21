@@ -29,12 +29,12 @@ def get_prediction_file(directory):
     entries = os.listdir(directory)
     final_files = []
     for e in entries:
-        if e.endswith('backward.csv'):
-            final_files.append( os.path.join(directory, e) )
         if e.endswith('prediction.csv'):
             final_files.append( os.path.join(directory, e) )
-        if e.endswith('forward.csv'):
-            final_files.append( os.path.join(directory, e) )
+        # if e.endswith('backward.csv'):
+        #     final_files.append( os.path.join(directory, e) )
+        # if e.endswith('forward.csv'):
+        #     final_files.append( os.path.join(directory, e) )
     return final_files
 
 ########################################################################################################################

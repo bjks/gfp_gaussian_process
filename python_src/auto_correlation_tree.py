@@ -6,6 +6,9 @@ import argparse
 # from read_ggp_run import *
 import copy
 import os
+import matplotlib.colors as mcolors
+from matplotlib import cm
+
 
 def get_input_files(directory, keyword=None):
     entries = os.listdir(directory)
@@ -434,6 +437,89 @@ def tree_correlation_plot(correlations, x, y, plot_file=None, title=None, param_
     else:
         plt.show()
 
+    return
+
+
+def tree_correlation_plot_list(correlations_list, x, y, plot_file=None, labels=[], param_dict_list=[], min_joint_number=10):
+    mapping = {z:i for i, z in enumerate(["x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"])}
+
+    norm = mcolors.Normalize(vmin=0, vmax=9.9)
+
+    colors_sets = {}
+    for i, l in enumerate(labels):
+        colors_sets[l] = cm.tab10(norm(i)) 
+
+    # =========== figure =========== #
+    fig, _ = plt.subplots(figsize=(8,4))
+    ax0 = plt.subplot2grid((1,1), (0, 0)) 
+    axs = [ax0]
+
+    for ax in axs:
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        # set the x-spine
+        ax.spines['left'].set_position('zero')
+
+        # turn off the right spine/ticks
+        ax.spines['right'].set_color('none')
+        ax.yaxis.tick_left()
+
+
+    # =========== plot =========== #
+    # decide if exponential will be plotted
+    for correlations, param_dict, label in zip(correlations_list, param_dict_list, labels):
+        gamma = None
+        if x[0] == "l" and y[0] == "l":
+            gamma = param_dict["gamma_lambda"]
+        elif x[0] == "q" and y[0] == "q":
+            gamma = param_dict["gamma_q"]
+
+        if param_dict!=None:
+            ax0.axvline(np.log(2)/param_dict["mean_lambda"], color=colors_sets[label], alpha=0.5)
+
+        # =========== correlation =========== #
+        rs = []
+        errs = []
+
+        dts = []
+        corr_naive = []
+
+        for i, corr in enumerate(correlations):
+            if corr.n>min_joint_number:
+                dts.append(corr.dt)
+
+                rs.append(corr.corr_mle[mapping[x],mapping[y]])
+                errs.append(corr.corr_mle_err[mapping[x],mapping[y]])
+
+                corr_naive.append(corr.corr_naive[mapping[x],mapping[y]])
+
+        dts = np.array(dts).astype(float)
+
+        ax0.errorbar(dts, rs, yerr=errs, lw=2, color=colors_sets[label], label=label)
+        
+        if gamma!=None:
+            ax0.plot(dts, np.exp(-dts*gamma), ls='--', color=colors_sets[label], alpha=0.6)
+        else:
+            ax0.plot(dts, dts*0, color=colors_sets[label])
+
+
+    # ===== layout ===== #
+    ax0.set_ylabel(r"$\langle {:s}, {:s}\rangle$".format(x,y))
+    ax0.set_ylim([-0.3,1.1])
+    ax0.legend()
+    ax0.set_xlabel("dt (min)")
+
+    fig.tight_layout(h_pad=4)
+    if plot_file != None:
+        plot_output = plot_file.format(y[0], x[0])
+        print("Saved in", plot_output)
+        fig.savefig(plot_output, dpi=300, facecolor="white")
+    else:
+        plt.show()
+
+
+# ================================= #
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run gfp_gaussian for all files in dir (written for Theo's data sets)")
@@ -448,40 +534,84 @@ def main():
                         help='directory for output',
                         required=True)
 
+    parser.add_argument('-g',
+                        dest='group',
+                        help='group',
+                        default=None,
+                        required=False)
+
     args = parser.parse_args()
 
     joint_filenames = get_input_files(args.dir, keyword="joints")
 
-    for joint_filename in joint_filenames:
-        try:
-            if "acetate" in joint_filename:
-                dt = 18.75
-            elif "glycerol" in joint_filename:
-                dt = 6
-            elif "glucose_" in joint_filename:
-                dt = 3
-            elif "glucoseaa" in joint_filename:
-                dt = 1.5
+    mk_missing_dir(args.output_dir)
 
-            prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
+    if args.group == None:
+        #### SEPERATE ####
+        for joint_filename in joint_filenames:
+            try:
+                if "acetate" in joint_filename:
+                    dt = 18.75
+                elif "glycerol" in joint_filename:
+                    dt = 6
+                elif "glucose_" in joint_filename:
+                    dt = 3
+                elif "glucoseaa" in joint_filename:
+                    dt = 1.5
 
-            corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
+                prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
 
-            data_set = joint_filename.split("/")[-1].split("_")[0] + '_' + joint_filename.split("/")[-1].split("_")[1]
+                corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
+
+                data_set = joint_filename.split("/")[-1].split("_")[0] + '_' + joint_filename.split("/")[-1].split("_")[1]
+                
+                plot_file = os.path.join(args.output_dir, data_set + "_correlation_{:s}{:s}.pdf")
+
+                tree_correlation_plot(corr, "l(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+                tree_correlation_plot(corr, "q(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+
+                tree_correlation_plot(corr, "l(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+                tree_correlation_plot(corr, "q(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+            except:
+                print(joint_filename, "failed")
+
+    elif args.group == "condition":
+        for condition in ["acetate", "glycerol", "glucose_", "glucoseaa"]:
+            corrs = []  
+            param_dict_list = []
+            labels = []
+            for joint_filename in joint_filenames:
+                if condition in joint_filename:
+                    print(joint_filename)
+                    try:
+                        if "acetate" in joint_filename:
+                            dt = 18.75
+                        elif "glycerol" in joint_filename:
+                            dt = 6
+                        elif "glucose_" in joint_filename:
+                            dt = 3
+                        elif "glucoseaa" in joint_filename:
+                            dt = 1.5
+
+                        prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
+
+                        corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
+                        corrs.append(corr)
+                        param_dict_list.append(read_final_params(joint_filename))
+                        labels.append(joint_filename.split('/')[-1].split("_")[0] + "_" + joint_filename.split('/')[-1].split("_")[1])
+                    except:
+                        print(joint_filename, "failed")
+
+            plot_file = os.path.join(args.output_dir, condition + "_correlation_{:s}{:s}.pdf")
+            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
+            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
             
-            mk_missing_dir(args.output_dir)
+            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
+            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
 
-            plot_file = os.path.join(args.output_dir, 
-                                    data_set + "_correlation_{:s}{:s}.pdf")
-
-            tree_correlation_plot(corr, "l(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-            tree_correlation_plot(corr, "q(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-
-            tree_correlation_plot(corr, "l(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-            tree_correlation_plot(corr, "q(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-        except:
-            print(joint_filename, "failed")
 
 # ================================================================================ #
 if __name__ == "__main__":
     main()
+
+# %%

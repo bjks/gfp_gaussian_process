@@ -40,8 +40,11 @@ def estimate_q(cells, beta=0):
         gfp_interp = cell.gfp[:-1] + np.diff(cell.gfp)/2
 
         qs = np.append(qs, (dg/dt + beta*gfp_interp)/length_interp)
-    print(qs)
-    return np.mean(qs), np.var(qs)
+
+    if np.mean(qs) < 0:
+        print('mean q', np.mean(qs), '!!!!!')
+
+    return np.max([np.mean(qs), 0.01]), np.var(qs)
 
 def estimate_var_x(cells, rel_err=0.05):
     x = []
@@ -71,11 +74,14 @@ def write_params2file(params, filname):
     with open(filname, 'w') as fout:
         fout.write("# Automatically estimated parameter for initialzing MLE search\n")
         for param in params:
-            if param == "gamma_lambda" or param == "gamma_q":
-                fout.write("{:s} = {:.2E}, {:.2E}, 0.01, 100\n".format(param, params[param], params[param]/2. ))
-
+            if type(params[param]) == list:
+                fout.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(param, params[param][0],
+                                                                 params[param][0]/2.,
+                                                                 params[param][1],
+                                                                 params[param][2]) )
             else:
-                fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param], params[param]/2. ))
+                fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param], 
+                                                                    params[param]/2.))
 
         
 ########################################################################################################################
@@ -111,22 +117,17 @@ def main():
                         dest='gamma_lambda',
                         help='guessed gamma_lambda',
                         type=float,
-                        default=5,
+                        default=[5, 0.01, 100],
                         required=False)    
 
     parser.add_argument('-gamma_q',
                         dest='gamma_q',
                         help='guessed gamma_q',
+                        nargs='+',
                         type=float,
-                        default=5,
+                        default=[5, 0.01, 100],
                         required=False)               
 
-    parser.add_argument('-beta',
-                        dest='beta',
-                        help='guessed beta',
-                        type=float,
-                        default=0,
-                        required=False)  
 
     args = parser.parse_args()
 
@@ -138,6 +139,16 @@ def main():
 
     for infile in input_files:
 
+        if "GFP" in infile:
+            beta_bounds = [[0.0122, 0.00000, 0.02440],
+                            [0.05, 0.001, 0.1]]  
+        elif "RFP" in infile:
+            beta_bounds = [[0.184, 0.12900, 0.23900],
+                            [0.05, 0.01, 0.1]]
+        elif "YFP" in infile:
+            beta_bounds = [[0.337, 0.27100, 0.40300],
+                            [0.07, 0.01, 0.1]]
+
         data = pd.read_csv(infile, skiprows=0)
         data.loc[: , "time"] = data["time_sec"].to_numpy() / args.rescale_time
 
@@ -145,9 +156,7 @@ def main():
         params = {}
 
         for seg, prefix in enumerate(args.segments):
-            if 'SP_transi' in data.columns:
-                data = data[data["SP_transi"] == "TRUE"]
-
+            print(infile, seg)
             if 'segment' in data.columns:
                 segment_data = data[data["segment"] == seg]
             else:
@@ -171,14 +180,14 @@ def main():
             mean_lambda, variance_lambda = estimate_lambda(cells_data)
             params["mean_lambda"] = mean_lambda
             params["gamma_lambda"] = args.gamma_lambda
-            params["var_lambda"] = variance_lambda/(2*args.gamma_lambda)
+            params["var_lambda"] = variance_lambda/(2*args.gamma_lambda[0])
 
-            mean_q, variance_q = estimate_q(cells_data, args.beta)
+            mean_q, variance_q = estimate_q(cells_data, beta_bounds[seg][0]) 
             params["mean_q"] = mean_q
             params["gamma_q"] = args.gamma_q
-            params["var_q"] = variance_q/(2*args.gamma_q)
+            params["var_q"] = variance_q/(2*args.gamma_q[0])
             
-            params["beta"] = args.beta
+            params["beta"] =  beta_bounds[seg]
 
             # measurment noise
             params["var_x"] = estimate_var_x(cells_data, rel_err=0.01)
@@ -191,7 +200,6 @@ def main():
             # write to file named as expected by "run_all_Theo.py"
             parameter_file = infile[:-4] + '_'+ prefix + ".txt"
             write_params2file(params, parameter_file)
-            break
 
 if __name__ == "__main__":
     main()
