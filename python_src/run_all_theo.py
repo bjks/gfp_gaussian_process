@@ -113,9 +113,13 @@ def create_new_parameter_file(parameter_files):
 
         output_file = parameter_files[0].replace("segment0", "segment2" )
         with open(output_file, 'w') as fout:
-            fout.write("#Automatically generated file identical to segments1\n")
+            fout.write("#Automatically generated file identical to segments1 apart from beta\n")
             for i,_ in enumerate(segment1):
-                fout.write(segment1[i])
+                if segment1[i].startswith("beta"):
+                    line_splitted = segment1[i].split("=")
+                    fout.write(line_splitted[0], ' = ', str(float(line_splitted[0])*4))
+                else:
+                    fout.write(segment1[i])
         return parameter_files + [output_file]
     else:
         return parameter_files 
