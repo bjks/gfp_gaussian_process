@@ -117,7 +117,7 @@ def create_new_parameter_file(parameter_files):
             for i,_ in enumerate(segment1):
                 if segment1[i].startswith("beta"):
                     line_splitted = segment1[i].split("=")
-                    fout.write(line_splitted[0] + ' = ' + str(float(line_splitted[1])*4))
+                    fout.write(line_splitted[0] + ' = ' + str(float(line_splitted[1])*4) + '\n')
                 else:
                     fout.write(segment1[i])
         return parameter_files + [output_file]
