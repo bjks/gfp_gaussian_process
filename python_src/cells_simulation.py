@@ -29,7 +29,7 @@ class Cell:
                                 "lt": self.lt[start::n],
                                 "qt": self.qt[start::n]})
         if len(self.segment)>0:
-            df['segment']=self.segment[::n]
+            df['segment']=self.segment[start::n]
         return df
 
 # =============== pd dataframe to cells =============== #
@@ -101,8 +101,8 @@ def ggp_df2cells(dataset, time="time",
             new_cell = Cell(row[log_length], row[gfp], 
                         lambda0, q0, 
                         time0=row[time],
-                        cell_id=row[cell_id], 
-                        parent_id=p)
+                        cell_id=str(row[cell_id]), 
+                        parent_id=str(p))
             cell_list.append(new_cell)
             cell_list[-1].cov_xx = []
             cell_list[-1].cov_gg = []
@@ -512,15 +512,20 @@ def write_param_file(filename, parameters,
             else:            
                 fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-11])))
 
-def write_csv_config(filename, segment=None):
+def write_csv_config(filename, segment=None, lane=None):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data\n")
         fin.write("time_col = time_min  \n")
         fin.write("length_col = log_length_noise \n")
         fin.write("length_islog = true \n")
         fin.write("fp_col = gfp_noise \n")
-        fin.write("parent_tags = parent_id \n")
-        fin.write("cell_tags = cell_id \n")
+        if lane!=None:
+            fin.write("cell_tags = " + lane + ", cell_id \n")
+            fin.write("parent_tags = " + lane + ", parent_id \n")
+        else:
+            fin.write("cell_tags = cell_id \n")
+            fin.write("parent_tags = parent_id \n")
+
         fin.write("rescale_time = 1 \n")
         if segment!=None:
             fin.write("segment_col = " + segment + " \n")

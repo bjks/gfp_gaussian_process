@@ -456,8 +456,8 @@ def plot_predictions(filename, start=None, stop=None, step=None,
     cmap_prediction = mpl.cm.ScalarMappable(cmap='Blues', norm=norm)
     cmap_prediction.set_array([])
 
-    s = 4
-    lw = 1
+    s = 0.5
+    lw = 0.7
     for i, cell in enumerate(cells_data):
         time = np.array(cell.time) / time_unit[1]
         data_color = cmap_data.to_rgba(i)
@@ -466,23 +466,23 @@ def plot_predictions(filename, start=None, stop=None, step=None,
         ax[0].scatter(time, cell.log_length, color=data_color, s=s)
         ax[0].plot(time, cell.mean_x, color=prediction_color, lw=lw)
         ax[0].fill_between(time, cell.mean_x-np.sqrt(cell.cov_xx), cell.mean_x+np.sqrt(cell.cov_xx), 
-                    color=prediction_color, alpha=0.4)
+                    color=prediction_color, alpha=0.2)
 
-        ax[1].scatter(time, cell.gfp, color=data_color, s=1)
+        ax[1].scatter(time, cell.gfp, color=data_color, s=s)
         ax[1].plot(time, cell.mean_g, color=prediction_color, lw=lw)
         ax[1].fill_between(time, cell.mean_g-np.sqrt(cell.cov_gg), cell.mean_g+np.sqrt(cell.cov_gg), 
-                    color=prediction_color, alpha=0.4)
+                    color=prediction_color, alpha=0.2)
         
         ax[2].plot(time, cell.mean_l, color=prediction_color, lw=lw)
         ax[2].fill_between(time, cell.mean_l-np.sqrt(cell.cov_ll), cell.mean_l+np.sqrt(cell.cov_ll), 
-                    color=prediction_color, alpha=0.4)
+                    color=prediction_color, alpha=0.2)
 
         ax[3].plot(time, cell.mean_q, color=prediction_color, lw=lw)
         ax[3].fill_between(time, cell.mean_q-np.sqrt(cell.cov_qq), cell.mean_q+np.sqrt(cell.cov_qq), 
-                    color=prediction_color, alpha=0.4)
+                    color=prediction_color, alpha=0.2)
 
-    ax[0].set_ylabel("log lentgh")   
-    ax[1].set_ylabel("YFP content (a.u.)")   
+    ax[0].set_ylabel("log length")   
+    ax[1].set_ylabel("FP content (a.u.)")   
     ax[2].set_ylabel(r"growth rate $\lambda$")   
     ax[3].set_ylabel(r"production rate $q$")   
 
@@ -494,6 +494,7 @@ def plot_predictions(filename, start=None, stop=None, step=None,
 
     for i in range(4):
         ax[i].set_xlim(xlim)
+    fig.tight_layout(h_pad=4)
 
     for i in range(len(ax)):
         # ax[i].legend()

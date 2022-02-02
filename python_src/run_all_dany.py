@@ -39,6 +39,7 @@ def get_input_files(directory, keyword=None):
 
 def run_command(arg, dryrun, iscluster):
     # run on cluster
+    # sbatch  --export=COMMAND='./../bin/gfp_gaussian -i ../../experimental_data/data_dany_input/filtered_data/glucoseaa_rrnB_filtered.csv -c ../../experimental_data/data_dany_input/filtered_data/csv_config_filtered.txt -b ../../experimental_data/data_dany_input/filtered_data/glucoseaa_rrnB_parameters.txt -m -p -j -t 1e-40' submit_ggp_run.sl
     if iscluster:
         com = "sbatch  --export=COMMAND='" + arg +"'" + " submit_ggp_run.sl"
         if dryrun:  
