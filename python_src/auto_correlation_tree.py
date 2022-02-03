@@ -498,6 +498,7 @@ def tree_correlation_plot_list(correlations_list, x, y,
         dts = np.array(dts).astype(float)
         if scale_t:
             dts/= (np.log(2)/param_dict["mean_lambda"])
+            gamma/= (np.log(2)/param_dict["mean_lambda"])
 
         else:
             if param_dict!=None:
