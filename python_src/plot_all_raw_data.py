@@ -68,18 +68,31 @@ def main():
         try:
             outfile = get_plot_file(infile, args.out)
 
+            # plot_raw_data_input_file(infile, 
+            #                 time="time_sec", 
+            #                 length="length_um", 
+            #                 gfp="fluo_ampl_ch_1", 
+            #                 cell_id="cell_ID", 
+            #                 parent_id="parent_ID", 
+            #                 start=args.range[0], stop=args.range[1], step=args.range[2], 
+            #                 time_unit=("min", 60), outfile=outfile, 
+            #                 scatter=False)
+            # print(infile, '->', outfile, 'cells:', args.range[0], args.range[1], args.range[2])
+
             plot_raw_data_input_file(infile, 
                             time="time_sec", 
                             length="length_um", 
-                            gfp="fluo_ampl_ch_1", 
-                            cell_id="cell_ID", 
-                            parent_id="parent_ID", 
+                            gfp="gfp_nb", 
+                            cell_id="sub_cell", 
+                            parent_id="sub_parent", 
                             start=args.range[0], stop=args.range[1], step=args.range[2], 
                             time_unit=("min", 60), outfile=outfile, 
                             scatter=False)
             print(infile, '->', outfile, 'cells:', args.range[0], args.range[1], args.range[2])
 
-            
+
+
+
         except:
             print( "\n ----------> ", infile, "FAILED! <----------\n" )
 # ================================================================================ #

@@ -156,6 +156,14 @@ def get_filebase(directory, sample, out):
         return os.path.join(directory, sample + "_out", sample)
     return os.path.join(directory, out, sample)
 
+
+def header_lines(filename, until="cell_id"):
+    with open(filename,'r') as fin:
+        for i, line in enumerate(fin):
+            if line.startswith(until):
+                return i
+    return None
+
 # Files
 def get_param_code(paramter_settings):
     param_code = '_f'

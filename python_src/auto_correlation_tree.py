@@ -445,7 +445,8 @@ def tree_correlation_plot_list(correlations_list, x, y,
                                 labels=[], 
                                 param_dict_list=[], 
                                 min_joint_number=10, 
-                                scale_t=False):
+                                scale_t=False, 
+                                ylim=[-0.3,1.1]):
     mapping = {z:i for i, z in enumerate(["x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"])}
 
     norm = mcolors.Normalize(vmin=0, vmax=9.9)
@@ -515,7 +516,7 @@ def tree_correlation_plot_list(correlations_list, x, y,
 
     # ===== layout ===== #
     ax0.set_ylabel(r"$\langle {:s}, {:s}\rangle$".format(x,y))
-    ax0.set_ylim([-0.3,1.1])
+    ax0.set_ylim(ylim)
     ax0.legend()
     if scale_t:
         ax0.set_xlabel("norm. dt")
@@ -617,11 +618,11 @@ def main():
                         print(joint_filename, "failed")
 
             plot_file = os.path.join(args.output_dir, condition + "_correlation_{:s}{:s}.pdf")
-            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
-            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
+            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20, ylim=[-0.9, 1])
+            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20, ylim=[-0.9, 1])
             
-            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
-            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=10)
+            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20, ylim=[-0.9, 1])
+            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20, ylim=[-0.9, 1])
 
 
     elif args.group == "promoter":
