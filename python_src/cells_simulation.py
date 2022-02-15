@@ -257,7 +257,7 @@ def is_cell_division(cell, mode, division_log_length, division_time, division_ad
         else: 
             return False
     if mode == "adder":
-        if cell.log_length[-1] - cell.log_length[0] > division_addition:
+        if np.exp(cell.log_length[-1]) - np.exp(cell.log_length[0]) > np.exp(division_addition):
             return True
 
 # ============= FULL SIMULATION ============= # 
