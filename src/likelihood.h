@@ -63,7 +63,6 @@ void sc_likelihood(const std::vector<double> &params_vec,
     Eigen::VectorXd xg(2);
 
     Eigen::MatrixXd D(2,2);
-    D <<  params_vec[7], 0, 0,  params_vec[8];
 
     Eigen::Matrix2d S;
     Eigen::Matrix2d Si;
@@ -71,6 +70,15 @@ void sc_likelihood(const std::vector<double> &params_vec,
     for (size_t t=0; t<cell.time.size(); ++t ){
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
+
+
+        /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
+        if (_noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+        }
+        else {
+            D <<  params_vec[7], 0, 0,  params_vec[8];
+        }
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
@@ -307,6 +315,7 @@ void save_final_likelihood(std::string outfile,
                             std::string min_algo, 
                             double tolerance, 
                             std::string search_space,
+                            std::string noise_model,
                             std::string version){
     std::ofstream file(outfile,std::ios_base::app);
     long ndata_points = count_data_points(cells);
@@ -317,6 +326,7 @@ void save_final_likelihood(std::string outfile,
     file << "optimization_algorithm," << min_algo << "\n";
     file << "tolerance," << tolerance << "\n";
     file << "search_space," << search_space << "\n";
+    file << "noise_model," << noise_model << "\n";
     file << "version," << version << "\n";
     file.close();
 }

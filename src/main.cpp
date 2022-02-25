@@ -57,8 +57,9 @@ void run_minimization(std::vector<MOMAdata> &cells,
                           ll_max, 
                           min_algo, 
                           std::stod(arguments["tolerance_maximization"]), 
-                          arguments["search_space"],
-                          "0.2");
+                          arguments["search_space"], 
+                          arguments["noise_model"],
+                          "0.3.0");
 
     std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);
     create_parameter_file(outfile_params, params);
@@ -192,6 +193,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-t",      "--tolerance_maximization",  "absolute tolerance of maximization between optimization steps, default: 1e-3"},
         {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-8"},
         {"-space",  "--search_space",           "search parameter space in {'log'|'linear'} space, default: 'log'"},
+        {"-noise",  "--noise_model",            "measurement noise of fp content {'const'|'scaled'} default: 'const'"},
         {"-m",      "--maximize",               "run maximization"},
         {"-s",      "--scan",                   "run 1d parameter scan"},
         {"-p",      "--predict",                "run prediction"},
@@ -209,6 +211,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     arguments["tolerance_maximization"] = "1e-3";
     arguments["rel_tolerance_joints"] = "1e-8";
     arguments["search_space"] = "log";
+    arguments["noise_model"] = "const";
 
 
     for(int k=0; k<keys.size(); ++k){
@@ -238,6 +241,10 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["rel_tolerance_joints"] = argv[i+1];
                 else if(k==key_indices["-space"])
                     arguments["search_space"] = argv[i+1];
+                else if(k==key_indices["-noise"])
+                    arguments["noise_model"] = argv[i+1];
+                else if(k==key_indices["-space"])
+                    arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-m"])
                     arguments["minimize"] = "1";
                 else if(k==key_indices["-s"])
@@ -264,6 +271,11 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     /* Check if meaningfull search space argument */
     if (arguments["search_space"] != "log" && arguments["search_space"] != "linear"){
         std::cerr << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
+        throw std::invalid_argument("Invalide argument");
+    }
+
+    if (arguments["noise_model"] != "const" && arguments["noise_model"] != "scaled"){
+        std::cerr << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
         throw std::invalid_argument("Invalide argument");
     }
 
@@ -310,6 +322,7 @@ int main(int argc, char** argv){
         /* process command line arguments */
         std::map<std::string, std::string> arguments = arg_parser(argc, argv);
         _print_level = std::stoi(arguments["print_level"]);
+        _noise_model = arguments["noise_model"];
 
         if (arguments.count("help")){
             return EXIT_SUCCESS;    

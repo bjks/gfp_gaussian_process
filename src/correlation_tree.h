@@ -380,8 +380,14 @@ bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
         std::vector<double> params_vec = params_vecs[cell.segment[n+m]];
 
         /* ------------ Posterior ------------ */ 
-        /* include x and g -> P(z_n+1, z_n | D_n1+1) */
-        D <<  params_vec[7], 0, 0,  params_vec[8];
+        /* include x and g -> P(z_n+1, z_n | D_n1+1) */        
+        if (_noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+        }
+        else {
+            D <<  params_vec[7], 0, 0,  params_vec[8];
+        }
+
         cell.joint = include_measurement(cell.joint, D, cell.log_length(n+m), cell.fp(n+m)); 
 
         combined_joint = incorporate_backward_prob(seperate_gaussian(cell.joint ), 

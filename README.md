@@ -29,7 +29,8 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
     - [5.4 joints](#54-joints)
   - [6 Error messages](#6-error-messages)
   - [Version](#version)
-    - [Changed in 0.2](#changed-in-02)
+    - [Changed in 0.2.0](#changed-in-020)
+    - [Changed in 0.3.0](#changed-in-030)
   - [TODO](#todo)
 
 ---
@@ -76,12 +77,13 @@ make install
 -t, --tolerance_maximization       absolute tolerance of maximization between optimization steps, default: 1e-3
 -r, --rel_tolerance_joints         relative tolerance of joint calculation: default 1e-8
 -space, --search_space             search parameter space in {'log'|'linear'} space, default: 'log'
+-noise, --noise_model              measurement noise of fp content {'const'|'scaled'} default: 'const'
 -m, --maximize                     run maximization
 -s, --scan                         run 1d parameter scan
 -p, --predict                      run prediction
 -j, --joints                       run calculation of joint probabilities
 ```
-Example: `./gfp_gaussian -c csv_config.txt -b parameter_min.txt -i ../data/simulation_gaussian_gfp.csv -o out/ -l 1 -t 1e-2  -m -p`
+Example: `./gfp_gaussian -c csv_config.txt -b parameters.txt -i data/example.csv -o out/ -l 1 -t 1e-10 -m -p`
 
 ### 2.1 Required arguments
 - `infile` sets the input file that contains the data, eg as given by MOMA (see 2.1.1)
@@ -133,14 +135,16 @@ will use the parameters in the file `parametersA.txt` for the segment with index
 - `rel_tolerance_joints (1e-8)` sets the stopping critirium for the joint calculation. The calculation is stopped when the cross covariances beween the two time points is smaller than the product of the corresponding means times the set tolerance. $\frac{\text{Cov}(z_{n+m}, z_n)_{i,j}}{ \langle z_{n+m}\rangle_i \langle z_n\rangle_j} < \text{tolerance }$
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 - `search_space (log)` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
+- `noise_model` defines how the measurement noise  depends on the content of fluorescence proteins. 'const' means that the measurement is constant with a variance `var_g`. `scaled` means the variance of the measurement scales linearly with the flourescence protein content. In this case `var_g` is the prefactor of the scaling. 
+
 
 #### 2.3.1 Csv_config file
 The following settings define how the input file will be read.
 - `time_col (time_sec)`: column from which the time is read
-- `rescale_time (1`): factor by which time will be devided before the anything is run
+- `rescale_time (1`): factor by which time will be devided before anything is run
 - `length_col (length_um)`: column from which the length of the cell is read
 - `length_islog (false)`: indicates if the cell length in the data file is in logscale (true) of not (false)
-- `fp_col (gfp_nb)`: column from which the intensity is read
+- `fp_col (gfp_nb)`: column from which the flourescence protein content is read
 - `delm (,)`: delimiter between columns, probably ',' or ';'
 - `segment_col ()`: column from which the segment index is read. Not setting `segment_col` in the file indicats that segment indices will not be used 
 - `filter_col ()`: column from which the filter will be read. To INclude a data point, set the entry in this column to `True`, `true`, `TRUE` or `1` and to EXclude a data point, set the entry in this column to `False`, `false`, `FALSE` or `0`. Not setting `filter_col` in the file indicats that the input file will not be filtered
@@ -223,7 +227,7 @@ __Output:__
   
 
 | cell_id | parent_id | time | cell1_1 | cell1_2 | cell1_3 | cell2_4 | cell2_5
-|-|-|-|-|-|-|-|-|-|-|-|
+|---------|-----------|------|---------|---------|---------|---------|---------|
 | cell1 |       | 0 | $P(z_1, z_0)$  | $P(z_2, z_0)$ | $P(z_3, z_0)$ | $P(z_4, z_0)$  |$P(z_5, z_0)$ |
 | cell1 |       | 1 |                | $P(z_2, z_1)$ | $P(z_3, z_1)$ | $P(z_4, z_1)$  |$P(z_5, z_1)$ |
 | cell1 |       | 2 |                |               | $P(z_3, z_2)$ | $P(z_4, z_2)$  |$P(z_5, z_2)$ |
@@ -248,13 +252,16 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 
 
 ## Version
-### Changed in 0.2
+### Changed in 0.2.0
 - rescale_time default is 1
 - time in prediction file in also rescaled making the prediction file consistent
 - tol default is 1e-3
 - prior for first time point is set according to the parameters making stationary and use_beta obsolete
 - joint calculation and output of joints
 - Use `LN_NELDERMEAD`
+
+### Changed in 0.3.0
+- introduction of a scaled noise model
 
 ## TODO
 - [x] prepare for cluster
@@ -274,5 +281,6 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 - [x] stopping criteria for joints -> tolerance 
 - [x] write (python) script for reading joint file and calculate correlation function on single lineages
 - [ ] include marginals (ie predictions) to correlation function calculation for Cov < tolerance 
-- [ ] calculate correlations on a tree (downstream of the ggp code)
+- [x] calculate correlations on a tree (downstream of the ggp code)
+- [x] include scaled noise to correlation part
 

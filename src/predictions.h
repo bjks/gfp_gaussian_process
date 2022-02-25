@@ -6,6 +6,8 @@
 #include <math.h>
 #include <cmath>
 
+std::string _noise_model;
+
 /* 
 * functions corresponding to backward part end with '_r'
 */
@@ -120,7 +122,13 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
 
-        D <<  params_vec[7], 0, 0,  params_vec[8];
+        /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
+        if (_noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+        }
+        else {
+            D <<  params_vec[7], 0, 0,  params_vec[8];
+        }
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
@@ -357,7 +365,14 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
         
         params_vec = params_vecs[cell.segment[t]];
 
-        D <<  params_vec[7], 0, 0,  params_vec[8];
+        /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
+        if (_noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+        }
+        else {
+            D <<  params_vec[7], 0, 0,  params_vec[8];
+        }
+
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 

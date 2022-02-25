@@ -269,7 +269,8 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                     log_length0=None,
                     gfp0=None, 
                     tree=True,
-                    tmax=np.inf):
+                    tmax=np.inf, 
+                    verbose=True):
     if gfp0 == None:
         gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
     if log_length0 == None:
@@ -336,8 +337,8 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                 pass
         progress_bar_n = np.around(len(cells_simulated)/n_cells*20).astype(int)
         progress_bar = '='*progress_bar_n + ' '*(20-progress_bar_n)
-
-        print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
+        if verbose:
+            print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
     print('')
     return cells_simulated
 
@@ -348,7 +349,8 @@ def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
                     log_length0=None,
                     gfp0=None, 
                     tree=True,
-                    tmax=np.inf):
+                    tmax=np.inf, 
+                    verbose=True):
     parameter_set = parameter_sets[0]
 
     if gfp0 == None:
@@ -431,8 +433,8 @@ def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
                 pass
         progress_bar_n = np.around(len(cells_simulated)/n_cells*20).astype(int)
         progress_bar = '='*progress_bar_n + ' '*(20-progress_bar_n)
-
-        print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
+        if verbose:
+            print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
     print('')
     return cells_simulated
 
@@ -531,7 +533,7 @@ def write_csv_config(filename, segment=None, lane=None):
             fin.write("segment_col = " + segment + " \n")
 
 
-def build_data_set(cells_simulated, var_x, var_g, n):
+def build_data_set_fixed_n(cells_simulated, var_x, var_g, n):
     print("Every", n, "th datapoint is saved")
     dataset = pd.DataFrame()
     for i in range(len(cells_simulated)):
@@ -554,17 +556,18 @@ def build_data_set_fixed_dt(cells_simulated, var_x, var_g, dt, atol=1e-4):
     return dataset[ np.abs( (dataset['time_min'] + atol/2) % dt) < atol ] 
 
 
-def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, n):
-    print("Every", n, "th datapoint is saved")
+def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, dt, atol=1e-4):
+
     dataset = pd.DataFrame()
     for i in range(len(cells_simulated)):
-        next_celldf = cells_simulated[i].to_df(n)
+        next_celldf = cells_simulated[i].to_df(1)
         next_celldf['log_length_noise'] = next_celldf['log_length'] + np.random.normal(loc=np.zeros_like( next_celldf['log_length']), scale=np.sqrt(var_x))
         next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
                                                                         scale=np.sqrt(var_g * next_celldf['gfp']))
         dataset = dataset.append(next_celldf)
+    
+    return dataset[ np.abs( (dataset['time_min'] + atol/2) % dt) < atol ] 
 
-    return dataset
 
 # =============== RUN COMMAND =============== #
 def suggest_run_command(directory, filename, 
