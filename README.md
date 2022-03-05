@@ -1,6 +1,6 @@
 # gfp_gaussian_process
 
-__Version: 0.2__
+__Version: 0.3__
 
 ---------
 Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
@@ -280,7 +280,7 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 - [x] joint output
 - [x] stopping criteria for joints -> tolerance 
 - [x] write (python) script for reading joint file and calculate correlation function on single lineages
-- [ ] include marginals (ie predictions) to correlation function calculation for Cov < tolerance 
+- [x] include marginals (ie predictions) to correlation function calculation for Cov < tolerance 
 - [x] calculate correlations on a tree (downstream of the ggp code)
 - [x] include scaled noise to correlation part
 
