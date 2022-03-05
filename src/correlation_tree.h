@@ -12,9 +12,9 @@ std::vector<std::tuple<std::string, double>> get_column_indices(std::vector <MOM
     std::vector<std::tuple<std::string, double>> column_indices;
     for (size_t i=0; i<cells.size(); ++i){
         for (size_t t=0; t<cells[i].time.size(); ++t){
-            if (cells[i].is_root() && t==0){
-                continue;
-            }
+            // if (cells[i].is_root() && t==0){
+            //     continue;
+            // }
             std::tuple<std::string, double> indx(cells[i].cell_id, cells[i].time[t]);
             column_indices.push_back(indx);
         }
@@ -54,6 +54,7 @@ public:
             is_set.push_back(false);
         }
     }
+
     void add(Gaussian joint, std::string cell_id, double t);
     size_t count();
     void clear();
@@ -475,9 +476,9 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
         joint_distributions_recr(params_vecs, &cell, n, joint_vector, tolerance_joint);
 
         /* ============= OUTPUT ============= */
-        if (cell.is_leaf() && n==cell.time.size()-1){
-                continue;
-        }
+        // if (cell.is_leaf() && n==cell.time.size()-1){
+        //         continue;
+        // }
         file << cell.cell_id << "," << cell.parent_id << "," << cell.time[n] ;
         joint_vector.write(file);
         file << "\n";
@@ -500,7 +501,7 @@ void collect_joint_distributions(const std::vector<std::vector<double>> &params_
     joint_vector.write_column_indices(out);
     out << "\n";
 
-    for (size_t i=0; i< cells.size(); ++i){
+    for (size_t i=0; i<cells.size(); ++i){
         std::cout << "-> cell: " << i << "\n";
         sc_joint_distributions(params_vecs, cells[i], out, joint_vector, tolerance_joint);
     }

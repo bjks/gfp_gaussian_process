@@ -46,7 +46,6 @@ def read_final_params(filename):
 
 
 # %%
-
 len_mean = 8
 len_cov = 36
 
@@ -81,8 +80,9 @@ class Gaussian:
 
     '''
     def __init__(self, vec, n=8):
-        try:
+        # try:
 
+            # full joint
             if n==8:
                 self.m = vec[:8].astype(float)
                 cov_vec = vec[8:].astype(float)
@@ -94,6 +94,7 @@ class Gaussian:
                 c = np.array( [ np.concatenate( ([0] *(8-i) , cov_vec[sum_i_9[i]: sum_i_9[i-1] ] ) ) for i in np.arange(1,9)[::-1]])
                 self.C = c + np.tril(c.T, -1) 
 
+            # "joint" from full marginal
             elif n==4:
                 m = vec[:4].astype(float)
                 self.m = np.hstack((m,m))
@@ -103,10 +104,29 @@ class Gaussian:
                 c = np.array( [ np.concatenate( ([0] *(4-i) , cov_vec[sum_i_5[i]: sum_i_5[i-1] ] ) ) for i in np.arange(1,5)[::-1]])
                 C = c + np.tril(c.T, -1) 
                 self.C = np.vstack((np.hstack((C, C)), np.hstack((C,C))))
+            
+            # aprrox. joint from marginal
+            elif n==2:
+                marginal1 = vec[:14].astype(float)
+                marginal2 = vec[14:28].astype(float)
 
-        except:
-            self.m = None
-            self.C = None
+                self.m = np.hstack(( marginal1[:4], marginal2[:4]))
+                sum_i_5 = [10, 9, 7, 4, 0] 
+
+                cov_vec1 = marginal1[4:]
+                c1 = np.array( [ np.concatenate( ([0] *(4-i) , cov_vec1[sum_i_5[i]: sum_i_5[i-1] ] ) ) for i in np.arange(1,5)[::-1]])
+                C1 = c1 + np.tril(c1.T, -1) 
+
+                cov_vec2 = marginal2[4:]
+                c2 = np.array( [ np.concatenate( ([0] *(4-i) , cov_vec2[sum_i_5[i]: sum_i_5[i-1] ] ) ) for i in np.arange(1,5)[::-1]])
+                C2 = c2 + np.tril(c2.T, -1) 
+
+                zeros = np.zeros((4,4))
+                self.C = np.vstack(( np.hstack((C1, zeros))  , np.hstack((zeros,C2)) ))
+
+        # except:
+        #     self.m = None
+        #     self.C = None
 
 
 def log_likelihood_function(V_yy,V_yx,V_xx, sigma_y, sigma_x, r, n):
@@ -192,7 +212,7 @@ class Correlation:
         self.corr_mle_err = None
 
 
-    def add(self, joint):
+    def add(self, joint, naive=False):
         """add (sum) posterior to current sum of moments: mm = <xy> and m = <x>
 
         Args:
@@ -200,8 +220,10 @@ class Correlation:
         """
         self.n += 1
         self.m += joint.m
-
-        self.mm += joint.m * joint.m[:,np.newaxis] + joint.C
+        if naive:
+            self.mm += joint.m * joint.m[:,np.newaxis] + np.diag(joint.C)
+        else:
+            self.mm += joint.m * joint.m[:,np.newaxis] + joint.C
         # Equivalent to:
         # for i in range(8): for j in range(8): self.mm[i,j] += joint.m[i] * joint.m[j] + joint.C[i,j]
 
@@ -259,18 +281,48 @@ class Correlation:
         
 
 
+### CELL PATHS ###
+def cell_paths(start_cell, cell_list):
+    path = [start_cell]
+    cell = cell_list[start_cell]
+    while cell in cell_list:
+        path.append(cell)
+        cell = cell_list[cell]
+    return path
+
+def paths2matrix(paths, cells):
+    lookup = np.zeros(( len(cells),len(cells) ))
+    for i, c1 in enumerate(cells):
+        for j, c2 in enumerate(cells):
+            for path in paths:
+                if c1 in path and c2 in path:
+                    lookup[i,j] = 1
+    return pd.DataFrame(lookup, cells, cells)
+
+def cell_lineage_lookup(cells, parents):
+    cell_parent = {}
+    parent_cell = {}
+
+    for i, cell in enumerate(cells):
+        cell_parent[cell] = parents[i]
+
+    paths = []
+    for c in cells:
+        if c not in parents:
+            paths.append(cell_paths(c, cell_parent))
+    return paths2matrix(paths, cells)
+
 
 
 # %%
-
-def files2correlation_function(joint_file, prediction_file, dts, tol): 
+def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=False, only_marg=False): 
     """reads joint_file and prediction_file as input and calculates the correlation function
 
     Args:
         joint_file (str): [description]
         prediction_file (str): [description]
         dts (np.array()): dt values over which the correlatio will be calculated
-        tol (double): tolerance of dt, i.e. joint posterior with dt' will be used for C(dt) id |dt'-dt|<dt,
+        tol (double): tolerance of dt, i.e. joint posterior with dt' will be used for C(dt) if |dt'-dt|<dt;
                         should be much smaller that any increment of dts
 
     Returns:
@@ -284,51 +336,83 @@ def files2correlation_function(joint_file, prediction_file, dts, tol):
     count_cells = 0 
     skip = True
     
+    cell_ids = []
+    parent_ids = []
+
+    marginals = []
+    cell_tag = []
 
     ### read the prediction_file to get statistics for C(dt=0) ###
     with open(prediction_file,'r') as fin:
         for _, line in enumerate(fin):
             if not skip:
+                
                 line_splitted = line.strip('\n').split(',')
+                cell_id = line_splitted[0]
+                time = line_splitted[2]
+
+                marginals.append(line_splitted[5:])
+                cell_tag.append((line_splitted[0], time))
                 joint = Gaussian(np.array(line_splitted[5:]),n=4)
-                # in case 0 is not the dt this is needed:
-                idx = np.argwhere(np.isclose(dts, 0, atol=tol))
+                
+                idx = np.argwhere(np.isclose(dts, 0, atol=tol)) # in case 0 is not the dt this is needed
                 if len(idx)>0:
-                    correlations[idx[0,0]].add(joint)
+                    correlations[idx[0,0]].add(joint, naive=naive_exp)
+
+                if cell_id != last_cell:
+                    cell_ids.append(cell_id)
+                    parent_ids.append( line_splitted[1])
+
+                last_cell = cell_id
 
             if line.startswith('cell_id'):
                 skip = False    
 
-    time_points = []
+    cell_lineage_lookup_table = cell_lineage_lookup(cell_ids, parent_ids)
+    time_point_cols = []
+    cell_id_cols = []
 
+    last_cell = ""
     skip = True
+    i=0
     ### read the joint_file to get statistics for C(dt>0)  ###
     with open(joint_file,'r') as fin:
         for _, line in enumerate(fin):
             if not skip:
                 line_splitted = line.strip('\n').split(',')
-                cell_id = line_splitted[0]
-                time = float(line_splitted[2])
+                cell_id_row = line_splitted[0]
+                time_row = float(line_splitted[2])
                 chunks =  np.reshape(line_splitted[3:], (-1,len_gaussian))
-                joints_vecs = [Gaussian(c) if c[0]!='' else None for c in chunks]
+                joints_vecs = [Gaussian(c) if c[0]!='' else None for c in chunks] # eg [G, None, G, G, None]
                 for j, joint in enumerate(joints_vecs):
-                    if joint!=None:                        
-                        idx = np.argwhere(np.isclose(dts, time_points[j] - time, atol=tol))
+                    time_plus_dt = time_point_cols[j] 
+                    if joint != None and not only_marg:     
+                        idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))
                         if len(idx)>0:
-                            correlations[idx[0,0]].add(joint)
-                            
-                if cell_id != last_cell:
-                    # print("\rNumber of cells processed: ", count_cells, end='')  
+                            correlations[idx[0,0]].add(joint, naive=naive_exp)
+                    else:
+                        if cell_lineage_lookup_table.loc[cell_id_row, cell_id_cols[j]] and j>i:
+                            idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))  
+                            if len(idx)>0:
+                                joint = Gaussian(np.array(marginals[j] + marginals[i]), n=2)
+                                correlations[idx[0,0]].add(joint, naive=naive_exp)
+                        else:
+                            pass
+                        
+                i += 1            
+                if cell_id_row != last_cell:
+                    print("\rNumber of cells processed: ", count_cells, end='')  
                     count_cells += 1
 
-                last_cell = cell_id
+                last_cell = cell_id_row
 
             if line.startswith('cell_id'):
                 skip = False    
                 line_splitted = line.strip('\n').split(',')[3:]
                 for entry in line_splitted:
                     if entry != '':
-                        time_points.append(float(entry.split('_')[1]))
+                        cell_id_cols.append(entry.split('_')[0])
+                        time_point_cols.append(float(entry.split('_')[1]))
                         
     # finally calculate cov, corr_naive, corr_mle, corr_mle_error
     for i, dt in enumerate(dts):
@@ -562,7 +646,8 @@ def main():
     joint_filenames = get_input_files(args.dir, keyword="joints")
 
     mk_missing_dir(args.output_dir)
-
+    min_joint_number=50
+    
     if args.group == None:
         #### SEPERATE ####
         for joint_filename in joint_filenames:
@@ -578,17 +663,17 @@ def main():
 
                 prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
 
-                corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
+                corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 100*dt, dt), 0.3)
 
                 data_set = joint_filename.split("/")[-1].split("_")[0] + '_' + joint_filename.split("/")[-1].split("_")[1]
                 
                 plot_file = os.path.join(args.output_dir, data_set + "_correlation_{:s}{:s}.pdf")
 
-                tree_correlation_plot(corr, "l(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-                tree_correlation_plot(corr, "q(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+                tree_correlation_plot(corr, "l(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
+                tree_correlation_plot(corr, "q(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
 
-                tree_correlation_plot(corr, "l(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
-                tree_correlation_plot(corr, "q(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename))
+                tree_correlation_plot(corr, "l(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
+                tree_correlation_plot(corr, "q(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
             except:
                 print(joint_filename, "failed")
 
@@ -612,7 +697,7 @@ def main():
 
                         prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
 
-                        corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
+                        corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 100*dt, dt), 0.3)
                         corrs.append(corr)
                         param_dict_list.append(read_final_params(joint_filename))
                         labels.append(joint_filename.split('/')[-1].split("_")[0] + "_" + joint_filename.split('/')[-1].split("_")[1])
@@ -620,11 +705,11 @@ def main():
                         print(joint_filename, "failed")
 
             plot_file = os.path.join(args.output_dir, condition + "_correlation_{:s}{:s}.pdf")
-            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20)
-            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20)
+            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
+            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
             
-            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20)
-            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=20)
+            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
+            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
 
 
     elif args.group == "promoter":
