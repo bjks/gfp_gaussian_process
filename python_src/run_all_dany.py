@@ -105,7 +105,7 @@ def main():
 
     parser.add_argument('-m', help="Run maximization", action='store_true')
     parser.add_argument('-p', help="Run prediction", action='store_true')
-    parser.add_argument('-j', help="Run prediction", action='store_true')
+    parser.add_argument('-j', help="Run joints", action='store_true')
 
     args = parser.parse_args()
 

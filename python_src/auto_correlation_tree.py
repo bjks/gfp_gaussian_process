@@ -8,6 +8,7 @@ import copy
 import os
 import matplotlib.colors as mcolors
 from matplotlib import cm
+import pandas as pd
 
 
 def get_input_files(directory, keyword=None):
@@ -701,8 +702,8 @@ def main():
                         corrs.append(corr)
                         param_dict_list.append(read_final_params(joint_filename))
                         labels.append(joint_filename.split('/')[-1].split("_")[0] + "_" + joint_filename.split('/')[-1].split("_")[1])
-                    except:
-                        print(joint_filename, "failed")
+                    except Exception as e:
+                    	print("ERROR :", str(e), ";", joint_filename, "failed")
 
             plot_file = os.path.join(args.output_dir, condition + "_correlation_{:s}{:s}.pdf")
             tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
