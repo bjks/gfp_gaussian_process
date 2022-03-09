@@ -1,4 +1,5 @@
 # %%
+from email.policy import default
 import numpy as np 
 import matplotlib.pyplot as plt
 # import matplotlib as mpl
@@ -11,16 +12,16 @@ from matplotlib import cm
 import pandas as pd
 
 
-def get_input_files(directory, keyword=None):
+def get_input_files(directory, keyword=None, ext=".csv"):
     entries = os.listdir(directory)
     final_files = []
     if keyword == None:
         for e in entries:
-            if e.endswith(".csv"):
+            if e.endswith(ext):
                 final_files.append(os.path.join(directory,e))
     else:
         for e in entries:
-            if e.endswith(".csv") and keyword in e:
+            if e.endswith(ext) and keyword in e:
                 final_files.append(os.path.join(directory,e))   
     return sorted(final_files)
 
@@ -46,23 +47,12 @@ def read_final_params(filename):
         return param_dict
 
 
-# %%
 len_mean = 8
 len_cov = 36
 
 len_gaussian = len_mean+len_cov
 
 len_gaussian4x4 = 4+10
-
-class Cell:
-    def __init__(self, cell_id, parent_id):
-        self.parent_id = parent_id
-        self.cell_id = cell_id
-
-        self.time = []
-        self.number_of_joints = []
-        self.line = []
-        self.joints = []
 
 
 # ---------------------------------------------------------------------------------------------------------- #
@@ -235,9 +225,14 @@ class Correlation:
         """calculated covariance <xy> - <x><y>, sets cov
         """
         self.cov = np.zeros((8,8))
-        for i in range(8):
+        if self.n >0:
+            for i in range(8):
                 for j in range(8):
                     self.cov[i,j] = self.mm[i,j]/self.n -  self.m[i]/self.n * self.m[j]/self.n
+        else:
+            for i in range(8):
+                for j in range(8):
+                    self.cov[i,j] = np.nan
 
 
     def naive(self):
@@ -279,7 +274,6 @@ class Correlation:
 
                     self.corr_mle[i,j] = r_max
                     self.corr_mle_err[i,j] = err
-        
 
 
 ### CELL PATHS ###
@@ -314,8 +308,6 @@ def cell_lineage_lookup(cells, parents):
     return paths2matrix(paths, cells)
 
 
-
-# %%
 def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=False, only_marg=False): 
     """reads joint_file and prediction_file as input and calculates the correlation function
 
@@ -424,204 +416,15 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=
     return correlations
 
 
-# %%
-def tree_correlation_plot(correlations, x, y, plot_file=None, title=None, param_dict=None, min_joint_number=10):
-    mapping = {z:i for i, z in enumerate(["x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"])}
 
-    rs = []
-    errs = []
-
-    dts = []
-    corr_naive = []
-
-    for i, corr in enumerate(correlations):
-        if corr.n>min_joint_number:
-            dts.append(corr.dt)
-
-            rs.append(corr.corr_mle[mapping[x],mapping[y]])
-            errs.append(corr.corr_mle_err[mapping[x],mapping[y]])
-
-            corr_naive.append(corr.corr_naive[mapping[x],mapping[y]])
-
-    # =========== plot =========== #
-    # decide if exponential will be plotted
-    gamma = None
-    if param_dict!=None:
-        if x[0] == "l" and y[0] == "l":
-            gamma = param_dict["gamma_lambda"]
-        elif x[0] == "q" and y[0] == "q":
-            gamma = param_dict["gamma_q"]
-
-    # prepare axes depending on whether exponential is plotted
-    if gamma!=None:
-        fig, _ = plt.subplots(figsize=(8,8))
-        ax0 = plt.subplot2grid((2, 1), (0, 0)) # the figure has 3 row, 2 columns, and this plot is the first plot. 
-        ax1 = plt.subplot2grid((2, 1), (1, 0), sharex=ax0)
-        axs = [ax0, ax1]
-    else:
-        fig, _ = plt.subplots(figsize=(8,4))
-
-        ax0 = plt.subplot2grid((1,1), (0, 0)) # the figure has 3 row, 2 columns, and this plot is the first plot. 
-        axs = [ax0]
-
-    for ax in axs:
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        # set the x-spine
-        ax.spines['left'].set_position('zero')
-
-        # turn off the right spine/ticks
-        ax.spines['right'].set_color('none')
-        ax.yaxis.tick_left()
-    
-
-    # add top x axis
-    secax0 = ax0.secondary_xaxis('top', functions=(lambda x:  x/(np.log(2)/param_dict["mean_lambda"]), 
-                                                    lambda x: x*(np.log(2)/param_dict["mean_lambda"]) ))
-    secax0.set_xlabel('dts (cell cycle)')
-
-    if title!=None:
-        ax0.set_title(title,fontweight="bold")
-    dts = np.array(dts).astype(float)
-    if param_dict!=None:
-        ax0.axvline(np.log(2)/param_dict["mean_lambda"], color="grey", ls='--')
-
-    ax0.errorbar(dts, rs, yerr=errs, label=r"$\langle {:s}, {:s}\rangle$".format(x,y), lw=2, color="tab:blue")
-    ax0.plot(dts, corr_naive, label=r"naive $\langle {:s}, {:s}\rangle$".format(x,y), lw=2, color="tab:green")
-
-    ax0.set_ylabel("correlation")
-    ax0.set_ylim([-0.3,1.1])
-    ax0.legend()
-    
-    if gamma!=None:
-        secax1 = ax1.secondary_xaxis('top', functions=(lambda x:  x/(np.log(2)/param_dict["mean_lambda"]), 
-                                                    lambda x: x*(np.log(2)/param_dict["mean_lambda"]) ))
-
-        ax0.plot(dts, np.exp(-dts*gamma), label="exponential", color="darkgrey")
-        ax1.errorbar(dts, rs-np.exp(-dts*gamma), yerr=errs, label=r"$\langle {:s}, {:s}\rangle$".format(x,y), lw=2, color="tab:blue")
-        ax1.plot(dts, corr_naive-np.exp(-dts*gamma), label=r"naive $\langle {:s}, {:s}\rangle$".format(x,y), lw=2, color="tab:green")
-
-        ax1.plot(dts, dts*0, color="darkgrey")
-        ax1.axvline(np.log(2)/param_dict["mean_lambda"], color="grey", ls='--')
-
-        ax1.set_ylabel("deviation from exponential")
-        ax1.set_ylim([-0.5, 0.5])
-        ax1.legend()
-        
-        ax1.set_xlabel("dt (min)")
-
-    else:
-        ax0.plot(dts, dts*0, color="darkgrey")
-        ax0.set_xlabel("dt (min)")
-
-    fig.tight_layout(h_pad=4)
-    if plot_file != None:
-        plot_output = plot_file.format(y[0], x[0])
-        print("Saved in", plot_output)
-        fig.savefig(plot_output, dpi=300, facecolor="white")
-    else:
-        plt.show()
-
-    return
-
-
-def tree_correlation_plot_list(correlations_list, x, y, 
-                                plot_file=None, 
-                                labels=[], 
-                                param_dict_list=[], 
-                                min_joint_number=10, 
-                                scale_t=False, 
-                                ylim=[-0.3,1.1],
-                                xlim=[None, None]):
-    mapping = {z:i for i, z in enumerate(["x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"])}
-
-    norm = mcolors.Normalize(vmin=0, vmax=9.9)
-
-    colors_sets = {}
-    for i, l in enumerate(labels):
-        colors_sets[l] = cm.tab10(norm(i)) 
-
-    # =========== figure =========== #
-    fig, _ = plt.subplots(figsize=(8,4))
-    ax0 = plt.subplot2grid((1,1), (0, 0)) 
-    axs = [ax0]
-
-    for ax in axs:
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        # set the x-spine
-        ax.spines['left'].set_position('zero')
-
-        # turn off the right spine/ticks
-        ax.spines['right'].set_color('none')
-        ax.yaxis.tick_left()
-
-
-    # =========== plot =========== #
-    # decide if exponential will be plotted
-    for correlations, param_dict, label in zip(correlations_list, param_dict_list, labels):
-        gamma = None
-        if x[0] == "l" and y[0] == "l":
-            gamma = param_dict["gamma_lambda"]
-        elif x[0] == "q" and y[0] == "q":
-            gamma = param_dict["gamma_q"]
-
-        # =========== correlation =========== #
-        rs = []
-        errs = []
-
-        dts = []
-        corr_naive = []
-
-        for i, corr in enumerate(correlations):
-            if corr.n>min_joint_number:
-                dts.append(corr.dt)
-
-                rs.append(corr.corr_mle[mapping[x],mapping[y]])
-                errs.append(corr.corr_mle_err[mapping[x],mapping[y]])
-
-                corr_naive.append(corr.corr_naive[mapping[x],mapping[y]])
-
-        dts = np.array(dts).astype(float)
-        if scale_t:
-            dts/= (np.log(2)/param_dict["mean_lambda"])
-            if gamma!=None:
-                gamma*= (np.log(2)/param_dict["mean_lambda"])
-
-        else:
-            if param_dict!=None:
-                ax0.axvline(np.log(2)/param_dict["mean_lambda"], color=colors_sets[label], alpha=0.5)
-
-        ax0.errorbar(dts, rs, yerr=errs, lw=2, color=colors_sets[label], label=label)
-        
-        if gamma!=None:
-            ax0.plot(dts, np.exp(-dts*gamma), ls='--', color=colors_sets[label], alpha=0.6)
-        else:
-            ax0.plot(dts, dts*0, color=colors_sets[label])
-
-
-    # ===== layout ===== #
-    ax0.set_ylabel(r"$\langle {:s}, {:s}\rangle$".format(x,y))
-    ax0.set_ylim(ylim)
-    ax0.set_xlim(xlim)
-    ax0.legend()
-    if scale_t:
-        ax0.set_xlabel("norm. dt")
-
-    else:
-        ax0.set_xlabel("dt (min)")
-
-    fig.tight_layout(h_pad=4)
-    if plot_file != None:
-        plot_output = plot_file.format(y[0], x[0])
-        print("Saved in", plot_output)
-        fig.savefig(plot_output, dpi=300, facecolor="white")
-    else:
-        plt.show()
+def get_condition(filename):
+    for cond in ["acetate_", "glycerol_",  "glucose_", "glucoseaa_"]:
+        if cond in filename:
+            return cond[:-1]
+    return None
 
 
 # ================================= #
-
 def main():
     parser = argparse.ArgumentParser(
         description="Run gfp_gaussian for all files in dir (written for Theo's data sets)")
@@ -634,130 +437,46 @@ def main():
     parser.add_argument('-o',
                         dest='output_dir',
                         help='directory for output',
-                        required=True)
+                        default=None)
 
-    parser.add_argument('-g',
-                        dest='group',
-                        help='group',
-                        default=None,
-                        required=False)
 
     args = parser.parse_args()
 
     joint_filenames = get_input_files(args.dir, keyword="joints")
 
-    mk_missing_dir(args.output_dir)
-    min_joint_number=50
-    
-    if args.group == None:
-        #### SEPERATE ####
-        for joint_filename in joint_filenames:
-            try:
-                if "acetate" in joint_filename:
-                    dt = 18.75
-                elif "glycerol" in joint_filename:
-                    dt = 6
-                elif "glucose_" in joint_filename:
-                    dt = 3
-                elif "glucoseaa" in joint_filename:
-                    dt = 1.5
+    if args.output_dir!= None:
+        mk_missing_dir(args.output_dir)
 
-                prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
+    dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
+    dt_max = {"acetate" : 2500,  "glycerol": 2000, "glucose": 2000, "glucoseaa": 1000}
 
-                corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 100*dt, dt), 0.3)
+    for joint_filename in joint_filenames:
+        try:
+            condition = get_condition(joint_filename)
+            prediction_filename = joint_filename.replace("joints", "prediction")
 
-                data_set = joint_filename.split("/")[-1].split("_")[0] + '_' + joint_filename.split("/")[-1].split("_")[1]
-                
-                plot_file = os.path.join(args.output_dir, data_set + "_correlation_{:s}{:s}.pdf")
+            if args.output_dir== None:
+                output_file = joint_filename.replace("joints.csv", "correlations.npz")
+            else:
+                output_file = os.path.join(args.output_dir, 
+                                            joint_filename.split('/')[-1].replace("joints.csv", "correlations.npz"))
 
-                tree_correlation_plot(corr, "l(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
-                tree_correlation_plot(corr, "q(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
+            to_save_dict = read_final_params(joint_filename)
+            corr = files2correlation_function(joint_filename, prediction_filename, 
+                                                np.arange(0, dt_max[condition],  dts[condition]), 0.3)
 
-                tree_correlation_plot(corr, "l(t+dt)", "q(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
-                tree_correlation_plot(corr, "q(t+dt)", "l(t)", plot_file=plot_file, title=data_set, param_dict=read_final_params(joint_filename), min_joint_number=min_joint_number)
-            except:
-                print(joint_filename, "failed")
+            ### Save ###
+            to_save_dict['correlations'] = corr
+            np.savez_compressed(output_file,  **to_save_dict)
 
-    elif args.group == "condition":
-        for condition in ["acetate", "glycerol", "glucose_", "glucoseaa"]:
-            corrs = []  
-            param_dict_list = []
-            labels = []
-            for joint_filename in joint_filenames:
-                if condition in joint_filename:
-                    print(joint_filename)
-                    try:
-                        if "acetate" in joint_filename:
-                            dt = 18.75
-                        elif "glycerol" in joint_filename:
-                            dt = 6
-                        elif "glucose_" in joint_filename:
-                            dt = 3
-                        elif "glucoseaa" in joint_filename:
-                            dt = 1.5
+            print("Saved in ", output_file)
 
-                        prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
-
-                        corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 100*dt, dt), 0.3)
-                        corrs.append(corr)
-                        param_dict_list.append(read_final_params(joint_filename))
-                        labels.append(joint_filename.split('/')[-1].split("_")[0] + "_" + joint_filename.split('/')[-1].split("_")[1])
-                    except Exception as e:
-                    	print("ERROR :", str(e), ";", joint_filename, "failed")
-
-            plot_file = os.path.join(args.output_dir, condition + "_correlation_{:s}{:s}.pdf")
-            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
-            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
             
-            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
-            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, param_dict_list=param_dict_list, min_joint_number=min_joint_number)
+        except Exception as e:
+            print("ERROR :", str(e), ";", joint_filename, "failed")
 
-
-    elif args.group == "promoter":
-        for promoter in ["hi1", "hi3", "med2", "med3", "rplN", "rpmB", "rpsB", "rrnB"]:
-            corrs = []  
-            param_dict_list = []
-            labels = []
-            for joint_filename in joint_filenames:
-                if promoter in joint_filename:
-                    print(joint_filename)
-                    try:
-                        if "acetate" in joint_filename:
-                            dt = 18.75
-                        elif "glycerol" in joint_filename:
-                            dt = 6
-                        elif "glucose_" in joint_filename:
-                            dt = 3
-                        elif "glucoseaa" in joint_filename:
-                            dt = 1.5
-
-                        prediction_filename = joint_filename.split("joints")[0] + "prediction.csv"
-
-                        corr = files2correlation_function(joint_filename, prediction_filename, np.arange(0, 500, dt), 0.3)
-                        corrs.append(corr)
-                        param_dict_list.append(read_final_params(joint_filename))
-                        labels.append(joint_filename.split('/')[-1].split("_")[0] + "_" + joint_filename.split('/')[-1].split("_")[1])
-                    except:
-                        print(joint_filename, "failed")
-
-            plot_file = os.path.join(args.output_dir, promoter + "_correlation_{:s}{:s}.pdf")
-            tree_correlation_plot_list(corrs, "l(t+dt)", "l(t)", plot_file=plot_file, labels=labels, 
-                                        param_dict_list=param_dict_list, min_joint_number=10, scale_t=True, 
-                                        ylim=[-0.9, 1], xlim=[0,2])
-            tree_correlation_plot_list(corrs, "q(t+dt)", "q(t)", plot_file=plot_file, labels=labels, 
-                                        param_dict_list=param_dict_list, min_joint_number=10, scale_t=True, 
-                                        ylim=[-0.9, 1], xlim=[0,2])
-            
-            tree_correlation_plot_list(corrs, "q(t+dt)", "l(t)", plot_file=plot_file, labels=labels, 
-                                        param_dict_list=param_dict_list, min_joint_number=10, scale_t=True, 
-                                        ylim=[-0.9, 1], xlim=[0,2])
-            tree_correlation_plot_list(corrs, "l(t+dt)", "q(t)", plot_file=plot_file, labels=labels, 
-                                        param_dict_list=param_dict_list, min_joint_number=10, scale_t=True, 
-                                        ylim=[-0.9, 1], xlim=[0,2])
 
 
 # ================================================================================ #
 if __name__ == "__main__":
     main()
-
-# %%
