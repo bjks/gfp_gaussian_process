@@ -431,7 +431,7 @@ def main():
 
     parser.add_argument('-d',
                         dest='dir',
-                        help='directory with input files',
+                        help='directory with input files OR joint file',
                         required=True)
 
     parser.add_argument('-o',
@@ -442,7 +442,11 @@ def main():
 
     args = parser.parse_args()
 
-    joint_filenames = get_input_files(args.dir, keyword="joints")
+
+    if os.path.isfile(args.dir):
+        joint_filenames = [args.dir]
+    else:
+        joint_filenames = get_input_files(args.dir, keyword="joints")
 
     if args.output_dir!= None:
         mk_missing_dir(args.output_dir)
