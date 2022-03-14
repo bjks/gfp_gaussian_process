@@ -10,4 +10,4 @@ exper_data
 notebooks
 Notes_dany.md
 bin/*
-*/.pyc
+*/*.pyc
