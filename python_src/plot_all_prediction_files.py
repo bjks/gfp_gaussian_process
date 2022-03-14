@@ -3,7 +3,7 @@ import os
 import sys
 
 from read_ggp_run import *
-
+import glob
 
 def mk_missing_dir(directory):
     if not os.path.exists(directory):
@@ -25,17 +25,12 @@ def get_input_files(directory, keyword=None):
     return final_files
 
 
-def get_prediction_file(directory):
-    entries = os.listdir(directory)
-    final_files = []
-    for e in entries:
-        if e.endswith('prediction.csv'):
-            final_files.append( os.path.join(directory, e) )
-        # if e.endswith('backward.csv'):
-        #     final_files.append( os.path.join(directory, e) )
-        # if e.endswith('forward.csv'):
-        #     final_files.append( os.path.join(directory, e) )
-    return final_files
+def get_prediction_files(path):
+    if os.path.isfile(path):
+        return [path]
+    candidates = sorted(glob.glob(path + '/**/*prediction.csv', recursive=True))
+    # ignore directories that end with '.czi' and only select files!
+    return [c for c in candidates if os.path.isfile(c)]
 
 ########################################################################################################################
 ########################################################################################################################
@@ -47,27 +42,28 @@ def main():
 
     parser.add_argument('-d',
                         dest='dir',
-                        help='dir',
+                        help='Directory that will be searched for prediction files (recursively)',
                         required=True)
 
-    parser.add_argument('-skip',
-                        dest='skip',
-                        help='skip rows in input file',
-                        default=25,
-                        type=int,
+    parser.add_argument('-time_unit',
+                        dest='time_unit',
+                        help='Time unit and rescaling of the time eg t/60, default [min, 1]',
+                        default=["min", "1"],
+                        type=str,
                         required=False)
     
     parser.add_argument('-r',
                         dest='range',
-                        help='range (start, stop, step)',
+                        help='Range for cells that will be plotted (start, stop, step)',
                         nargs='+',
                         type=int,
-                        default=[0, 100, 1],
+                        default=[None, None, 1],
                         required=False)
     
     parser.add_argument('-o',
                         dest='out',
-                        help='Out dir',
+                        help='Output directory, default: same as prediction file',
+                        default=None,
                         required=False)
 
 
@@ -75,16 +71,25 @@ def main():
     # ======================================== #
     # ======================================== #
 
-    input_files = get_prediction_file(args.dir)
+    input_files = get_prediction_files(args.dir)
 
-    mk_missing_dir(args.out)
+    if args.out != None:
+        mk_missing_dir(args.out)
 
     for infile in input_files:
         print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
 
-        out_file = os.path.join(args.out, infile.split("/")[-1][:-4]) + ".png"
-        plot_predictions(infile, start=args.range[0], stop=args.range[1], step=args.range[2], 
-                    time_unit=("h", 1), skip_row=args.skip, xlim=[None, None], outfile=out_file)
+        if args.out != None:
+            out_file = os.path.join(args.out, infile.split("/")[-1][:-4]) + ".png"
+        else:
+            out_file = infile[:-4] + ".png"
+
+        plot_predictions(infile, 
+                        start=args.range[0], stop=args.range[1], step=args.range[2], 
+                        time_unit=(args.time_unit[0], float(args.time_unit[1])), 
+                        skip_row = header_lines(infile, until="cell_id"), 
+                        xlim=[None, None], 
+                        outfile=out_file)
 
 
 # ================================================================================ #

@@ -444,8 +444,10 @@ def main():
 
 
     if os.path.isfile(args.dir):
+        print(args.dir, "is file")
         joint_filenames = [args.dir]
     else:
+        print(args.dir, "is dir")
         joint_filenames = get_input_files(args.dir, keyword="joints")
 
     if args.output_dir!= None:
