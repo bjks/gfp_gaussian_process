@@ -270,7 +270,8 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                     gfp0=None, 
                     tree=True,
                     tmax=np.inf, 
-                    verbose=True):
+                    verbose=False, 
+                    discard_cells=0):
     if gfp0 == None:
         gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
     if log_length0 == None:
@@ -320,7 +321,10 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
 
             if is_cell_division(cell, div_mode, division_log_length, division_time, division_addition):
                 # save the simulated cell
-                cells_simulated.append(cell)
+                if discard_cells==0:
+                    cells_simulated.append(cell)
+                else:
+                    discard_cells -= 1
                 
                 # calc. new init conditions for 2 daugter cells
                 cell1, cell2, no_cells = cell_divsion(cell, parameter_set['var_dx'], 
@@ -330,16 +334,18 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                 # remove the simulated cell from queue and add the new ones 
                 cell_queue.pop(cell_index)
                 cell_queue.append(cell1)
-                if tree:
+                if tree and discard_cells==0:
                     cell_queue.append(cell2)
                 break
             else:
                 pass
-        progress_bar_n = np.around(len(cells_simulated)/n_cells*20).astype(int)
-        progress_bar = '='*progress_bar_n + ' '*(20-progress_bar_n)
+
         if verbose:
+            progress_bar_n = np.around(len(cells_simulated)/n_cells*20).astype(int)
+            progress_bar = '='*progress_bar_n + ' '*(20-progress_bar_n)
             print("\r|", progress_bar,  "| Progress {:3.0f}%".format(len(cells_simulated)/n_cells*100), " No of cells: ", len(cells_simulated), end='')  
-    print('')
+            print('')
+
     return cells_simulated
 
 def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
@@ -514,6 +520,17 @@ def write_param_file(filename, parameters,
             else:            
                 fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-11])))
 
+def write_param_file_noise(filename, parameters, step, log_noise=0):
+    with open(filename, "w") as fin:
+        fin.write("# Generated config file for simulated data with noise: " + str(log_noise) + "\n")
+        for param_name in parameters.keys():
+            if log_noise>0:
+                init = np.exp(np.log(parameters[param_name]) + np.random.normal(0, scale=log_noise))
+            else:
+                init = parameters[param_name]
+            fin.write("{:s} = {:.2E}, {:.2E}\n".format(param_name, init, step[param_name]))
+    return filename
+
 def write_csv_config(filename, segment=None, lane=None):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data\n")
@@ -531,7 +548,7 @@ def write_csv_config(filename, segment=None, lane=None):
         fin.write("rescale_time = 1 \n")
         if segment!=None:
             fin.write("segment_col = " + segment + " \n")
-
+    return filename
 
 def build_data_set_fixed_n(cells_simulated, var_x, var_g, n):
     print("Every", n, "th datapoint is saved")
@@ -757,7 +774,7 @@ def main():
                             division_log_length, 
                             division_time, 
                             division_addition, tree=tree)[args.discard_cells+1:]
-            temp_dataset = build_data_set(cells_simulated, parameter_set['var_x'], parameter_set['var_g'], int(dt_measument/dt))
+            temp_dataset = build_data_set_fixed_dt(cells_simulated, parameter_set['var_x'], parameter_set['var_g'], dt_measument, atol=1e-4)
             temp_dataset['lane'] = i+1
             # add the last "lane" to the data frame
             dataset = dataset.append(temp_dataset)
