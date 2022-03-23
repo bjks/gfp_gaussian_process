@@ -48,7 +48,6 @@ def run_command(arg, dryrun, iscluster):
         else:
             print(arg)
             os.system(com)
-
     # run locally
     else:
         if dryrun:  
@@ -141,7 +140,15 @@ def main():
                         dest='parameters' ,
                         help='Parameter file(s)',
                         nargs='+',
-                        required=True)
+                        default=[],
+                        required=False)
+
+    parser.add_argument('-prefix',
+                        dest='prefix' ,
+                        help='Parameter prefixs',
+                        nargs='+',
+                        default=[],
+                        required=False)
 
     parser.add_argument('-o',
                         dest='out' ,
@@ -162,7 +169,13 @@ def main():
                         dest="tol",
                         help="Tolerance of maximization",
                         required=False,
-                        default="1e-7")
+                        default="1e-12")
+    
+    parser.add_argument('-noise',
+                        dest="noise",
+                        help="Noise model",
+                        required=False,
+                        default="scaled")
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
@@ -191,38 +204,38 @@ def main():
         ggp_arg =   " -c "      + args.csv_config + \
                     " -t "      + args.tol + \
                     " -space "  + args.space + \
+                    " -noise "  + args.noise + \
                     " -i "      + infile 
+
+        if args.out != None:
+            ggp_arg +=  " -o " + args.out
         if args.m:
             ggp_arg += ' -m '
         if args.p:
             ggp_arg += ' -p '
 
         # deal with parameter files
-        if args.parameters[0] == "infer":
-            parameter_files = get_parameter_files(infile, args.out) 
-            if args.newparamfile:
-                parameter_files = create_new_parameter_file(parameter_files)
+        if len(args.parameters)>0:
+            if args.parameters[0] == "infer":
+                parameter_files = get_parameter_files(infile, args.out) 
+                # if args.newparamfile:
+                #     parameter_files = create_new_parameter_file(parameter_files)
 
         else:
-            if args.fallback:
+            if len(args.prefix)>0:
                 parameter_files = []
-                for fallback_file in args.parameters:
-                    parameter_file = infile[:-4] + '_'+ fallback_file.split('/')[-1]
-
-                    print("\n", parameter_file, "\n")
-
-                    if os.path.exists(parameter_file):
-                        parameter_files.append(parameter_file)
-                    else:
-                        parameter_files.append(fallback_file)
-
-            else:
+                for prefix in args.prefix:
+                    parameter_file = infile[:-4] + '_'+ prefix + '.txt'
+                    parameter_files.append(parameter_file)
+            elif len(args.parameters)>0:
                 parameter_files = args.parameters
+            else:
+                print("ERROR: neither 'b' nor 'prefix' set!" )
+                return
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)
         
-        if args.out != None:
-            ggp_arg +=  " -o " + args.out
+        
         # ============ run! ============ #
         run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
 

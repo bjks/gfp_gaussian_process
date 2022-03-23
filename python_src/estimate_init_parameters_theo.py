@@ -74,14 +74,18 @@ def write_params2file(params, filname):
     with open(filname, 'w') as fout:
         fout.write("# Automatically estimated parameter for initialzing MLE search\n")
         for param in params:
-            if type(params[param]) == list:
-                fout.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(param, params[param][0],
-                                                                 params[param][0]/2.,
-                                                                 params[param][1],
-                                                                 params[param][2]) )
-            else:
-                fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param], 
-                                                                    params[param]/2.))
+            if params[param][0] == "bound":
+                fout.write("{:s} = {:.2E}, {:.2E}, {:.2E}, {:.2E}\n".format(param, params[param][1],
+                                                                 params[param][1]/2.,
+                                                                 params[param][2],
+                                                                 params[param][3]) )
+            elif params[param][0] == "free":
+                print(params[param][0], params[param][1])
+                fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param][1], 
+                                                                    params[param][1]/2.))
+            elif params[param][0] == "fixed":
+                fout.write("{:s} = {:.2E}\n".format(param, params[param][1]))
+
 
         
 ########################################################################################################################
@@ -140,14 +144,14 @@ def main():
     for infile in input_files:
 
         if "GFP" in infile:
-            beta_bounds = [[0.0122, 0.00000, 0.02440],
-                            [0.05, 0.001, 0.1]]  
+            beta_bounds = [["fixed", 0.01],
+                            ["fixed", 0.005]]  
         elif "RFP" in infile:
-            beta_bounds = [[0.184, 0.12900, 0.23900],
-                            [0.05, 0.01, 0.1]]
+            beta_bounds = [["fixed", 0.13],
+                            ["fixed", 0.018]]  
         elif "YFP" in infile:
-            beta_bounds = [[0.337, 0.27100, 0.40300],
-                            [0.07, 0.01, 0.1]]
+            beta_bounds = [["fixed", 0.3],
+                            ["fixed", 0.08]]  
 
         data = pd.read_csv(infile, skiprows=0)
         data.loc[: , "time"] = data["time_sec"].to_numpy() / args.rescale_time
@@ -178,24 +182,27 @@ def main():
 
             # OUs
             mean_lambda, variance_lambda = estimate_lambda(cells_data)
-            params["mean_lambda"] = mean_lambda
-            params["gamma_lambda"] = args.gamma_lambda
-            params["var_lambda"] = variance_lambda/(2*args.gamma_lambda[0])
 
-            mean_q, variance_q = estimate_q(cells_data, beta_bounds[seg][0]) 
-            params["mean_q"] = mean_q
-            params["gamma_q"] = args.gamma_q
-            params["var_q"] = variance_q/(2*args.gamma_q[0])
+            params["mean_lambda"] = ["free", mean_lambda]
+            params["gamma_lambda"] = ["bound"] + args.gamma_lambda
+            params["var_lambda"] = ["free", variance_lambda/(2*args.gamma_lambda[0])]
+
+
+            mean_q, variance_q = estimate_q(cells_data, beta_bounds[seg][1]) 
+
+            params["mean_q"] = ["free", mean_q]
+            params["gamma_q"] = ["bound"] + args.gamma_q
+            params["var_q"] = ["free", variance_q/(2*args.gamma_q[0])]
             
             params["beta"] =  beta_bounds[seg]
 
             # measurment noise
-            params["var_x"] = estimate_var_x(cells_data, rel_err=0.01)
-            params["var_g"] = estimate_var_g(cells_data, rel_err=0.01)
+            params["var_x"] = ["free", estimate_var_x(cells_data, rel_err=0.01)]
+            params["var_g"] = ["free", estimate_var_g(cells_data, rel_err=0.01)]
 
             # cell division
-            params["var_dx"] = estimate_var_dx(cells_data, rel_dev=0.5)
-            params["var_dg"] = estimate_var_dg(cells_data, rel_dev=0.5)
+            params["var_dx"] = ["free", estimate_var_dx(cells_data, rel_dev=0.5)]
+            params["var_dg"] = ["free", estimate_var_dg(cells_data, rel_dev=0.5)]
 
             # write to file named as expected by "run_all_Theo.py"
             parameter_file = infile[:-4] + '_'+ prefix + ".txt"

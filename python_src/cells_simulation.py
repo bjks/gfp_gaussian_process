@@ -85,7 +85,8 @@ def ggp_df2cells(dataset, time="time",
             cov_ll="cov_ll",
             cov_qq="cov_qq",
             cell_id="cell_id", 
-            parent_id="parent_id"):
+            parent_id="parent_id", 
+            lane=None):
     """ 
     dataset (pandas data frame as read from csv file) to list of Cell instances, m
     written for ggp output
@@ -94,15 +95,21 @@ def ggp_df2cells(dataset, time="time",
     last_cell = ""
     for _, row in dataset.iterrows(): 
         if row[cell_id] != last_cell:
-            p = row[parent_id]
+            if lane !=None:
+                c = str(row[lane])+'.'+str(row[cell_id])
+                p = str(row[lane])+'.'+str(row[parent_id])
+            else:
+                c = str(row[cell_id])
+                p = str(row[parent_id])
+
             lambda0 = row[lt]
             q0 = row[qt]
 
             new_cell = Cell(row[log_length], row[gfp], 
                         lambda0, q0, 
                         time0=row[time],
-                        cell_id=str(row[cell_id]), 
-                        parent_id=str(p))
+                        cell_id=c, 
+                        parent_id=p)
             cell_list.append(new_cell)
             cell_list[-1].cov_xx = []
             cell_list[-1].cov_gg = []
