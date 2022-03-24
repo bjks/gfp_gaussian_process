@@ -40,19 +40,21 @@ def get_input_files(directory, keyword=None):
     return sorted(final_files)
 
 
-def run_command(arg, dryrun, iscluster):
+def run_command(arg, dryrun, iscluster, verbose):
     # run on cluster
     if iscluster:
         com = "sbatch  --export=COMMAND='" + arg +"'" + " submit_ggp_run.sl"
-        if dryrun:  
-            print(com)
+        if dryrun:
+            if verbose:  
+                print(arg)
         else:
             # print(arg)
             os.system(com)
     # run locally
     else:
-        if dryrun:  
-            print(arg)
+        if dryrun:
+            if verbose:  
+                print(arg)
         else:
             os.system(arg)        
 
@@ -128,9 +130,9 @@ def create_new_parameter_file(parameter_files):
 def look_for_prediction_file(out_dir, infile):
     entries = os.listdir(out_dir)
     for e in entries:
-        core = infile.split('/')[-1]
+        core = infile.split('/')[-1][:-4]
         if core in e and "prediction.csv" in e:
-            return e
+                return os.path.join(out_dir, e)
     return None
 
 
@@ -189,6 +191,8 @@ def main():
                         default="scaled")
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
+    parser.add_argument('--verbose', help="Shows what will be done", action='store_true')
+
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
     # parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
     # parser.add_argument('--newparamfile', help="Creates third parameter file ('segment2') that is identical to the segment1 but contains the beta from segment0", action='store_true')
@@ -254,19 +258,19 @@ def main():
         
         # ============ run! ============ #
         if args.rerun:
-            run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+            run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
         else:
             prediction_file = look_for_prediction_file(out_dir, infile)
 
             # prediction file does not exist
             if prediction_file == None:
-                print(prediction_file, " does not exist")
-                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+                print(" No prediction file found does not exist")
+                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
 
             # prediction file is older than one of the pamafiles
             elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
                 print(prediction_file, " is older than parameter files")
-                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
             
             # prediction file is up to date
             else:
