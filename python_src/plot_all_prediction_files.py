@@ -66,12 +66,8 @@ def main():
                         help='Output directory, default: same as prediction file',
                         default=None,
                         required=False)
-    
-    parser.add_argument('-replot',
-                        dest='replot',
-                        help='Replot plots for files, that already exist (True)',
-                        default=True,
-                        required=False)
+
+    parser.add_argument('--replot', help="Replot plots for files, that already exist", action='store_true')
 
 
     args = parser.parse_args()
