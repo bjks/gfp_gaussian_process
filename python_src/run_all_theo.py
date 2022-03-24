@@ -143,16 +143,16 @@ def main():
                         default=[],
                         required=False)
 
-    parser.add_argument('-prefix',
-                        dest='prefix' ,
-                        help='Parameter prefixs',
+    parser.add_argument('-suffix',
+                        dest='suffix' ,
+                        help='Parameter suffixes',
                         nargs='+',
                         default=[],
                         required=False)
 
     parser.add_argument('-o',
                         dest='out' ,
-                        help='Output dir',
+                        help='Output dir (None)',
                         default=None)
 
     parser.add_argument('-c',
@@ -162,25 +162,25 @@ def main():
 
     parser.add_argument('-space',
                         dest='space' ,
-                        help='Space, log(default) or linear',
+                        help='Space, log or linear (log)',
                         default='log')
 
     parser.add_argument('-t',
                         dest="tol",
-                        help="Tolerance of maximization",
+                        help="Tolerance of maximization (1e-12)",
                         required=False,
                         default="1e-12")
     
     parser.add_argument('-noise',
                         dest="noise",
-                        help="Noise model",
+                        help="Noise model (scaled)",
                         required=False,
                         default="scaled")
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
-    parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
-    parser.add_argument('--newparamfile', help="Creates third parameter file ('segment2') that is identical to the segment1 but contains the beta from segment0", action='store_true')
+    # parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
+    # parser.add_argument('--newparamfile', help="Creates third parameter file ('segment2') that is identical to the segment1 but contains the beta from segment0", action='store_true')
 
     parser.add_argument('-m', help="Run maximization", action='store_true')
     parser.add_argument('-p', help="Run prediction", action='store_true')
@@ -222,15 +222,15 @@ def main():
                 #     parameter_files = create_new_parameter_file(parameter_files)
 
         else:
-            if len(args.prefix)>0:
+            if len(args.suffix)>0:
                 parameter_files = []
-                for prefix in args.prefix:
-                    parameter_file = infile[:-4] + '_'+ prefix + '.txt'
+                for suffix in args.suffix:
+                    parameter_file = infile[:-4] + '_'+ suffix + '.txt'
                     parameter_files.append(parameter_file)
             elif len(args.parameters)>0:
                 parameter_files = args.parameters
             else:
-                print("ERROR: neither 'b' nor 'prefix' set!" )
+                print("ERROR: neither 'b' nor 'suffix' set!" )
                 return
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)

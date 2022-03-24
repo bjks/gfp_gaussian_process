@@ -48,6 +48,7 @@ def main():
     parser.add_argument('-time_unit',
                         dest='time_unit',
                         help='Time unit and rescaling of the time eg t/60, default [min, 1]',
+                        nargs='+',
                         default=["min", "1"],
                         type=str,
                         required=False)
