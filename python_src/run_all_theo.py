@@ -47,7 +47,7 @@ def run_command(arg, dryrun, iscluster):
         if dryrun:  
             print(com)
         else:
-            print(arg)
+            # print(arg)
             os.system(com)
     # run locally
     else:
@@ -260,10 +260,12 @@ def main():
 
             # prediction file does not exist
             if prediction_file == None:
+                print(prediction_file, " does not exist")
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
 
             # prediction file is older than one of the pamafiles
             elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
+                print(prediction_file, " is older than parameter files")
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
             
             # prediction file is up to date
