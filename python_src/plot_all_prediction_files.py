@@ -66,6 +66,12 @@ def main():
                         help='Output directory, default: same as prediction file',
                         default=None,
                         required=False)
+    
+    parser.add_argument('-replot',
+                        dest='replot',
+                        help='Replot plots for files, that already exist (True)',
+                        default=True,
+                        required=False)
 
 
     args = parser.parse_args()
@@ -85,12 +91,13 @@ def main():
         else:
             out_file = infile[:-4] + ".png"
 
-        plot_predictions(infile, 
-                        start=args.range[0], stop=args.range[1], step=args.range[2], 
-                        time_unit=(args.time_unit[0], float(args.time_unit[1])), 
-                        skip_row = header_lines(infile, until="cell_id"), 
-                        xlim=[None, None], 
-                        outfile=out_file)
+        if args.replot or not os.path.exists(out_file):
+            plot_predictions(infile, 
+                            start=args.range[0], stop=args.range[1], step=args.range[2], 
+                            time_unit=(args.time_unit[0], float(args.time_unit[1])), 
+                            skip_row = header_lines(infile, until="cell_id"), 
+                            xlim=[None, None], 
+                            outfile=out_file)
 
 
 # ================================================================================ #
