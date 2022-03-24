@@ -1,6 +1,7 @@
 import argparse
 import os 
 import sys
+from tkinter import E
 
 # Running together with the script:
 # ================================== #
@@ -123,6 +124,16 @@ def create_new_parameter_file(parameter_files):
     else:
         return parameter_files 
 
+
+def look_for_prediction_file(out_dir, infile):
+    entries = os.listdir(out_dir)
+    for e in entries:
+        core = infile.split('/')[-1]
+        if core in e and "prediction.csv" in e:
+            return e
+    return None
+
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -181,6 +192,7 @@ def main():
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
     # parser.add_argument('--fallback', help="Indicate that the parameter files are fallbacks if there are no specific files", action='store_true')
     # parser.add_argument('--newparamfile', help="Creates third parameter file ('segment2') that is identical to the segment1 but contains the beta from segment0", action='store_true')
+    parser.add_argument('--rerun', help="Rerun for files, that already have a prediction file", action='store_true')
 
     parser.add_argument('-m', help="Run maximization", action='store_true')
     parser.add_argument('-p', help="Run prediction", action='store_true')
@@ -209,6 +221,10 @@ def main():
 
         if args.out != None:
             ggp_arg +=  " -o " + args.out
+            out_dir =  args.out
+        else:
+            out_dir = infile[:-4] + '_out'
+
         if args.m:
             ggp_arg += ' -m '
         if args.p:
@@ -237,8 +253,23 @@ def main():
         
         
         # ============ run! ============ #
-        run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+        if args.rerun:
+            run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+        else:
+            prediction_file = look_for_prediction_file(out_dir, infile)
 
+            # prediction file does not exist
+            if prediction_file == None:
+                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+
+            # prediction file is older than one of the pamafiles
+            elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
+                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"])
+            
+            # prediction file is up to date
+            else:
+                print(prediction_file, "is already there and up-to-date!")
+                pass
 
 # ================================================================================ #
 if __name__ == "__main__":
