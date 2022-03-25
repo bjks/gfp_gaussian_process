@@ -90,8 +90,10 @@ def free_up_parameters(paramter_file, free_params):
         for line in file_data:
             if line.split("=")[0].strip() in free_params:
                 fout.write(line.strip() + " , " + str(float(line.split("=")[-1])/2. ) +"\n")
+                print(line.strip() + " , " + str(float(line.split("=")[-1])/2. ) +"\n")
             else:
                 fout.write(line)
+                print(line)
     print("Rewrote", paramter_file)
 
 
