@@ -92,7 +92,6 @@ def free_up_parameters(paramter_file, free_params):
                 param = line.split("=")[0].strip() 
                 init = line.split("=")[-1].split(',')[0]
                 step = str(float( init )/2.)
-                print(newline)
                 newline = param + ' = ' + init + ' , ' + step + "\n"
                 fout.write(newline)
 
