@@ -80,11 +80,24 @@ def write_params2file(params, filname):
                                                                  params[param][2],
                                                                  params[param][3]) )
             elif params[param][0] == "free":
-                print(params[param][0], params[param][1])
                 fout.write("{:s} = {:.2E}, {:.2E}\n".format(param, params[param][1], 
                                                                     params[param][1]/2.))
             elif params[param][0] == "fixed":
                 fout.write("{:s} = {:.2E}\n".format(param, params[param][1]))
+
+
+def get_paramter_file(directory, infile, seg_idx):
+    entries = os.listdir(directory)
+    for e in entries:
+        if infile.split("/")[-1][:-4] in e  and "_parameter_file.txt" in e and "segment" + str(seg_idx):
+            return os.path.join(directory, e)
+
+def get_var_g(filename):
+    with open(filename, 'r') as fout:
+        for line in fout:
+            if line.startswith("var_g"):
+                return line.split("=")[-1]
+
 
 
         
@@ -130,7 +143,13 @@ def main():
                         nargs='+',
                         type=float,
                         default=[5, 0.01, 100],
-                        required=False)               
+                        required=False)   
+
+    parser.add_argument('-gather_var_g',
+                        dest='gather_var_g',
+                        help='gather var_g from file in this dir',
+                        default=None,
+                        required=False)                
 
 
     args = parser.parse_args()
@@ -198,7 +217,10 @@ def main():
 
             # measurment noise
             params["var_x"] = ["free", estimate_var_x(cells_data, rel_err=0.01)]
-            params["var_g"] = ["free", estimate_var_g(cells_data, rel_err=0.01)]
+            if args.gather_var_g != None:
+                params["var_g"] = float(get_var_g(get_paramter_file(args.gather_var_g, infile, seg)))
+            else:
+                params["var_g"] = ["free", 0.01]
 
             # cell division
             params["var_dx"] = ["free", estimate_var_dx(cells_data, rel_dev=0.5)]

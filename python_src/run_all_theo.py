@@ -80,51 +80,66 @@ def get_parameter_files(file, out_dir = None):
 
     return parameter_files
 
-def create_new_parameter_file_from_both(parameter_files):
-    segment0 = []
-    segment1 = []
-    if len(parameter_files) == 2:
-        with open(parameter_files[0],'r') as fin:
-            for _, line in enumerate(fin):
-                if not line.startswith('#'):
-                    segment0.append(line)
-        with open(parameter_files[1],'r') as fin:
-            for _, line in enumerate(fin):
-                if not line.startswith('#'):
-                    segment1.append(line)
 
-        output_file = parameter_files[0].replace("segment0", "segment2" )
-        with open(output_file, 'w') as fout:
-            fout.write("#Automatically generated file identical to segments1 apart from beta which from segments0\n")
-            for i,_ in enumerate(segment0):
-                if segment0[i].startswith("beta"):
-                    fout.write(segment0[i])
-                else:
-                    fout.write(segment1[i])
-        return parameter_files + [output_file]
-    else:
-        return parameter_files 
+def free_up_parameters(paramter_file, free_params):
+    file_data = []
+    with open(paramter_file,'r') as fin:
+        for _, line in enumerate(fin):
+            file_data.append(line)
+    with open(paramter_file,'w') as fout:
+        for line in file_data:
+            if line.split("=")[0].strip() in free_params:
+                fout.write(line + " , " + str(float(line.split("=")[-1])/2. ) )
+            else:
+                fout.write(line)
 
-def create_new_parameter_file(parameter_files):
-    segment1 = []
-    if len(parameter_files) == 2:
-        with open(parameter_files[1],'r') as fin:
-            for _, line in enumerate(fin):
-                if not line.startswith('#'):
-                    segment1.append(line)
 
-        output_file = parameter_files[0].replace("segment0", "segment2" )
-        with open(output_file, 'w') as fout:
-            fout.write("#Automatically generated file identical to segments1 apart from beta\n")
-            for i,_ in enumerate(segment1):
-                if segment1[i].startswith("beta"):
-                    line_splitted = segment1[i].split("=")
-                    fout.write(line_splitted[0] + ' = ' + str(float(line_splitted[1])*4) + '\n')
-                else:
-                    fout.write(segment1[i])
-        return parameter_files + [output_file]
-    else:
-        return parameter_files 
+
+# def create_new_parameter_file_from_both(parameter_files):
+#     segment0 = []
+#     segment1 = []
+#     if len(parameter_files) == 2:
+#         with open(parameter_files[0],'r') as fin:
+#             for _, line in enumerate(fin):
+#                 if not line.startswith('#'):
+#                     segment0.append(line)
+#         with open(parameter_files[1],'r') as fin:
+#             for _, line in enumerate(fin):
+#                 if not line.startswith('#'):
+#                     segment1.append(line)
+
+#         output_file = parameter_files[0].replace("segment0", "segment2" )
+#         with open(output_file, 'w') as fout:
+#             fout.write("#Automatically generated file identical to segments1 apart from beta which from segments0\n")
+#             for i,_ in enumerate(segment0):
+#                 if segment0[i].startswith("beta"):
+#                     fout.write(segment0[i])
+#                 else:
+#                     fout.write(segment1[i])
+#         return parameter_files + [output_file]
+#     else:
+#         return parameter_files 
+
+# def create_new_parameter_file(parameter_files):
+#     segment1 = []
+#     if len(parameter_files) == 2:
+#         with open(parameter_files[1],'r') as fin:
+#             for _, line in enumerate(fin):
+#                 if not line.startswith('#'):
+#                     segment1.append(line)
+
+#         output_file = parameter_files[0].replace("segment0", "segment2" )
+#         with open(output_file, 'w') as fout:
+#             fout.write("#Automatically generated file identical to segments1 apart from beta\n")
+#             for i,_ in enumerate(segment1):
+#                 if segment1[i].startswith("beta"):
+#                     line_splitted = segment1[i].split("=")
+#                     fout.write(line_splitted[0] + ' = ' + str(float(line_splitted[1])*4) + '\n')
+#                 else:
+#                     fout.write(segment1[i])
+#         return parameter_files + [output_file]
+#     else:
+#         return parameter_files 
 
 
 def look_for_prediction_file(out_dir, infile):
@@ -155,6 +170,14 @@ def main():
                         nargs='+',
                         default=[],
                         required=False)
+
+    parser.add_argument('-free_up',
+                        dest='free_up' ,
+                        help='Free up parameters in SP',
+                        nargs='+',
+                        default=[],
+                        required=False)
+
 
     parser.add_argument('-suffix',
                         dest='suffix' ,
@@ -237,9 +260,9 @@ def main():
         # deal with parameter files
         if len(args.parameters)>0:
             if args.parameters[0] == "infer":
-                parameter_files = get_parameter_files(infile, args.out) 
-                # if args.newparamfile:
-                #     parameter_files = create_new_parameter_file(parameter_files)
+                parameter_files = get_parameter_files(infile, args.out)
+                if len(args.free_up)>0:
+                    free_up_parameters(parameter_files[-1], args.free_up)
 
         else:
             if len(args.suffix)>0:
