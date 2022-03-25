@@ -298,18 +298,17 @@ def main():
 
                 # prediction file does not exist
                 if prediction_file == None:
-                    print(" No prediction file found does not exist")
+                    print("The input file", infile, "has nor prediction file yet -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
 
                 # prediction file is older than one of the pamafiles
                 elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
-                    print(prediction_file, " is older than parameter files")
+                    print(prediction_file, " is older than parameter files -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
                 
                 # prediction file is up to date
                 else:
-                    print(prediction_file, "is already there and up-to-date!")
-                    pass
+                    print(prediction_file, "is already there and up-to-date! -> No need to run")
 
 # ================================================================================ #
 if __name__ == "__main__":
