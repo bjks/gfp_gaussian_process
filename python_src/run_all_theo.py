@@ -148,13 +148,14 @@ def free_up_parameters(paramter_file, free_params):
 #         return parameter_files 
 
 
-def look_for_prediction_file(out_dir, infile):
+def look_for_output_file(out_dir, infile, outype):
     entries = os.listdir(out_dir)
     for e in entries:
         core = infile.split('/')[-1][:-4]
-        if core in e and "prediction.csv" in e:
+        if core in e and outype+".csv" in e:
                 return os.path.join(out_dir, e)
     return None
+
 
 
 ########################################################################################################################
@@ -294,21 +295,22 @@ def main():
             if args.rerun:
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
             else:
-                prediction_file = look_for_prediction_file(out_dir, infile)
+                # prediction_file = look_for_prediction_file(out_dir, infile)
+                output_file = look_for_output_file(out_dir, infile, "iterations")
 
                 # prediction file does not exist
-                if prediction_file == None:
-                    print("The input file", infile, "has nor prediction file yet -> RUN")
+                if output_file == None:
+                    print("The input file", infile, "has no output file yet -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
 
                 # prediction file is older than one of the pamafiles
-                elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
-                    print(prediction_file, " is older than parameter files -> RUN")
+                elif os.path.getmtime(output_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(parameter_files[1]):
+                    print(output_file, " is older than parameter files -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
                 
                 # prediction file is up to date
                 else:
-                    print(prediction_file, "is already there and up-to-date! -> No need to run")
+                    print(output_file, "is already there and up-to-date! -> No need to run")
 
 # ================================================================================ #
 if __name__ == "__main__":
