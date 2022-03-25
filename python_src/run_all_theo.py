@@ -257,12 +257,16 @@ def main():
         if args.p:
             ggp_arg += ' -p '
 
+        run_it = True
         # deal with parameter files
         if len(args.parameters)>0:
             if args.parameters[0] == "infer":
                 parameter_files = get_parameter_files(infile, args.out)
-                if len(args.free_up)>0:
-                    free_up_parameters(parameter_files[-1], args.free_up)
+                if len(parameter_files) == 2:
+                    if len(args.free_up)>0:
+                        free_up_parameters(parameter_files[1], args.free_up)
+                else:
+                    run_it = False
 
         else:
             if len(args.suffix)>0:
@@ -280,25 +284,26 @@ def main():
         
         
         # ============ run! ============ #
-        if args.rerun:
-            run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-        else:
-            prediction_file = look_for_prediction_file(out_dir, infile)
-
-            # prediction file does not exist
-            if prediction_file == None:
-                print(" No prediction file found does not exist")
+        if run_it:
+            if args.rerun:
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-
-            # prediction file is older than one of the pamafiles
-            elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
-                print(prediction_file, " is older than parameter files")
-                run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-            
-            # prediction file is up to date
             else:
-                print(prediction_file, "is already there and up-to-date!")
-                pass
+                prediction_file = look_for_prediction_file(out_dir, infile)
+
+                # prediction file does not exist
+                if prediction_file == None:
+                    print(" No prediction file found does not exist")
+                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
+
+                # prediction file is older than one of the pamafiles
+                elif os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(prediction_file) < os.path.getmtime(parameter_files[1]):
+                    print(prediction_file, " is older than parameter files")
+                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
+                
+                # prediction file is up to date
+                else:
+                    print(prediction_file, "is already there and up-to-date!")
+                    pass
 
 # ================================================================================ #
 if __name__ == "__main__":
