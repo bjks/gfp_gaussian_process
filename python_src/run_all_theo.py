@@ -92,6 +92,7 @@ def free_up_parameters(paramter_file, free_params):
                 fout.write(line + " , " + str(float(line.split("=")[-1])/2. ) )
             else:
                 fout.write(line)
+    print("Rewrote", paramter_file)
 
 
 

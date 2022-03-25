@@ -143,13 +143,7 @@ def main():
                         nargs='+',
                         type=float,
                         default=[5, 0.01, 100],
-                        required=False)   
-
-    parser.add_argument('-gather_var_g',
-                        dest='gather_var_g',
-                        help='gather var_g from file in this dir',
-                        default=None,
-                        required=False)                
+                        required=False)                 
 
 
     args = parser.parse_args()
@@ -217,10 +211,7 @@ def main():
 
             # measurment noise
             params["var_x"] = ["free", estimate_var_x(cells_data, rel_err=0.01)]
-            if args.gather_var_g != None:
-                params["var_g"] = float(get_var_g(get_paramter_file(args.gather_var_g, infile, seg)))
-            else:
-                params["var_g"] = ["free", 0.01]
+            params["var_g"] = ["free", 0.01]
 
             # cell division
             params["var_dx"] = ["free", estimate_var_dx(cells_data, rel_dev=0.5)]
