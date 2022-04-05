@@ -269,23 +269,26 @@ def main():
         if len(args.parameters)>0:
             if args.parameters[0] == "infer":
                 parameter_files = get_parameter_files(infile, args.out)
-                if len(parameter_files) == 2:
-                    if len(args.free_up)>0:
-                        free_up_parameters(parameter_files[1], args.free_up)
-                else:
-                    run_it = False
-
-        else:
-            if len(args.suffix)>0:
-                parameter_files = []
-                for suffix in args.suffix:
-                    parameter_file = infile[:-4] + '_'+ suffix + '.txt'
-                    parameter_files.append(parameter_file)
-            elif len(args.parameters)>0:
-                parameter_files = args.parameters
             else:
-                print("ERROR: neither 'b' nor 'suffix' set!" )
-                return
+                parameter_files = args.parameters
+
+            if len(parameter_files) == 2:
+                if len(args.free_up)>0:
+                    free_up_parameters(parameter_files[1], args.free_up)
+            else:
+                run_it = False
+                    
+        suffix_param_files = []
+        if len(args.suffix)>0:
+            parameter_files = []
+            for suffix in args.suffix:
+                parameter_file = infile[:-4] + '_'+ suffix + '.txt'
+                parameter_files.append(parameter_file)
+                suffix_param_files.append(parameter_file)
+            
+        elif len(args.parameters)>0:
+            parameter_files = args.parameters
+
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)
         
@@ -303,14 +306,20 @@ def main():
                     print("The input file", infile, "has no output file yet -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
 
-                # prediction file is older than one of the pamafiles
-                elif os.path.getmtime(output_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(parameter_files[1]):
-                    print(output_file, " is older than parameter files -> RUN")
-                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-                
-                # prediction file is up to date
+                # prediction file is older than one of the paramfiles
                 else:
-                    print(output_file, "is already there and up-to-date! -> No need to run")
+                    if len(suffix_param_files)>0:
+                        is_old = os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[1])
+                    else:
+                        is_old = os.path.getmtime(output_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(parameter_files[1])
+                    
+                    if is_old:
+                        print(output_file, " is older than parameter files -> RUN")
+                        run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
+                    
+                    # output file is up to date
+                    else:
+                        print(output_file, "is already there and up-to-date! -> No need to run")
 
 # ================================================================================ #
 if __name__ == "__main__":

@@ -122,9 +122,9 @@ def main():
                         default=3600,
                         required=False)
 
-    parser.add_argument('-s',
+    parser.add_argument('-suffix',
                         dest='segments',
-                        help='segments',
+                        help='suffix for segments',
                         nargs='+',
                         type=str,
                         default=["parameters"],
