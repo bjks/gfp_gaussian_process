@@ -289,6 +289,9 @@ def main():
         elif len(args.parameters)>0:
             parameter_files = args.parameters
 
+        if len(parameter_file)==2:
+            run_it=False
+            print("Not enough parameter files found -> don't run")
 
         ggp_arg +=  " -b " + get_arg_list(parameter_files)
         
