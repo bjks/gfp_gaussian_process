@@ -90,7 +90,7 @@ def free_up_parameters(paramter_file, free_params):
         for line in file_data:
             if line.split("=")[0].strip() in free_params:
                 param = line.split("=")[0].strip() 
-                init = line.split("=")[-1].split(',')[0]
+                init = str(float(line.split("=")[-1].split(',')[0]))
                 step = str(float( init )/2.)
                 newline = param + ' = ' + init + ' , ' + step + "\n"
                 fout.write(newline)
