@@ -94,7 +94,7 @@ def free_up_parameters(paramter_file, free_params):
                 step = str(float( init )/2.)
                 newline = param + ' = ' + init + ' , ' + step + "\n"
                 fout.write(newline)
-                if param.startswith("gamma"):
+                if param.startswith("gamma_q"):
                     newline = param + ' = ' + init + ' , ' + step + ' , ' + '0.01' + ' , ' + '100' "\n"
             else:
                 fout.write(line)
@@ -304,10 +304,14 @@ def main():
             else:
                 # prediction_file = look_for_prediction_file(out_dir, infile)
                 output_file = look_for_output_file(out_dir, infile, "iterations")
+                output_file_p = look_for_output_file(out_dir, infile, "prediction")
 
                 # prediction file does not exist
                 if output_file == None:
                     print("The input file", infile, "has no output file yet -> RUN")
+                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
+                elif args.p and output_file_p==None:
+                    print("The input file", infile, "has no prediction file yet -> RUN")
                     run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
 
                 # prediction file is older than one of the paramfiles
@@ -316,7 +320,7 @@ def main():
                         is_old = os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[1])
                     else:
                         is_old = os.path.getmtime(output_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(parameter_files[1])
-                    
+                        
                     if is_old:
                         print(output_file, " is older than parameter files -> RUN")
                         run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
