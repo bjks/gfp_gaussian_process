@@ -94,7 +94,8 @@ def free_up_parameters(paramter_file, free_params):
                 step = str(float( init )/2.)
                 newline = param + ' = ' + init + ' , ' + step + "\n"
                 fout.write(newline)
-
+                if param.startswith("gamma"):
+                    newline = param + ' = ' + init + ' , ' + step + ' , ' + '0.01' + ' , ' + '100' "\n"
             else:
                 fout.write(line)
     print("Rewrote", paramter_file)
