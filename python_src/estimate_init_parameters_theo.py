@@ -100,7 +100,13 @@ def get_var_g(filename):
 
 
 
-        
+def look_for_output_file(out_dir, infile, outype):
+    entries = os.listdir(out_dir)
+    for e in entries:
+        core = infile.split('/')[-1][:-4]
+        if core in e and outype+".csv" in e:
+                return os.path.join(out_dir, e)
+    return None
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -130,6 +136,11 @@ def main():
                         default=["parameters"],
                         required=False)
 
+    parser.add_argument('-look_up_prediction',
+                        dest='look_up_prediction',
+                        help='Directory where the predition file might be, if not existing write parameter files',
+                        required=True)
+
     parser.add_argument('-gamma_lambda',
                         dest='gamma_lambda',
                         help='guessed gamma_lambda',
@@ -155,6 +166,11 @@ def main():
     print(len(input_files), "input files in", args.dir)
 
     for infile in input_files:
+        if args.look_up_prediction!=None:
+            p_file = look_for_output_file(args.look_up_prediction, infile, "prediction")
+            if p_file!=None:
+                print("Prediction file exists, do not rewrite parameter files")
+                continue
 
         if "GFP" in infile:
             beta_bounds = [["fixed", 0.01],

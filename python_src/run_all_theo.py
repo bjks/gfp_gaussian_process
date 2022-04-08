@@ -97,6 +97,7 @@ def free_up_parameters(paramter_file, free_params):
                 if param.startswith("gamma_q"):
                     newline = param + ' = ' + init + ' , ' + step + ' , ' + '0.01' + ' , ' + '100' "\n"
             else:
+
                 fout.write(line)
     print("Rewrote", paramter_file)
 
