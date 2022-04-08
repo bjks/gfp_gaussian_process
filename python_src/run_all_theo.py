@@ -282,20 +282,19 @@ def main():
                     
         suffix_param_files = []
         if len(args.suffix)>0:
-            parameter_files = []
             for suffix in args.suffix:
                 parameter_file = infile[:-4] + '_'+ suffix + '.txt'
-                parameter_files.append(parameter_file)
                 suffix_param_files.append(parameter_file)
             
-        elif len(args.parameters)>0:
-            parameter_files = args.parameters
+        if len(args.parameters)>0:
+            ggp_arg +=  " -b " + get_arg_list(parameter_files)
+        else:
+            ggp_arg +=  " -b " + get_arg_list(suffix_param_files)
 
-        if len(parameter_file)==2:
+        if len(parameter_file)!=2:
             run_it=False
             print("Not enough parameter files found -> don't run")
 
-        ggp_arg +=  " -b " + get_arg_list(parameter_files)
         
         
         # ============ run! ============ #
