@@ -233,16 +233,34 @@ def gfp_production(cell, dt, qt, beta):
     cell.gfp.append(next_step)
     return cell 
 
-def cell_divsion(cell, var_dx, var_dg, no_cells):
+def cell_divsion(cell, var_dx, var_dg, no_cells, cell_division_model, dt):
+    if cell_division_model=="binomial":
+        x = cell.log_length[-1]
+        g = cell.gfp[-1]
+        x_d1 = np.random.normal(loc=x - np.log(2), scale=np.sqrt(var_dx))
+        g_d1 = np.random.binomial(g, np.exp(x_d1 - x))
 
-    cell1 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
-                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1],
-                    time0 = cell.time[-1],
-                    cell_id = no_cells + 1, parent_id=cell.cell_id)
-    cell2 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
-                    np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1], 
-                    time0 = cell.time[-1],
-                    cell_id = no_cells + 2, parent_id=cell.cell_id)
+        x_d2 = np.log(np.exp(x)-np.exp(x_d1))
+        g_d2 = g - g_d1
+
+        cell1 = Cell(x_d1,g_d1, cell.lt[-1], cell.qt[-1],
+                        time0 = cell.time[-1]+dt,
+                        cell_id = no_cells + 1, parent_id=cell.cell_id)
+
+        cell2 = Cell(x_d2,g_d2, cell.lt[-1], cell.qt[-1],
+                        time0 = cell.time[-1]+dt,
+                        cell_id = no_cells + 2, parent_id=cell.cell_id)
+
+    elif cell_division_model=="gauss":
+        cell1 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
+                        np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1],
+                        time0 = cell.time[-1]+dt,
+                        cell_id = no_cells + 1, parent_id=cell.cell_id)
+
+        cell2 = Cell(np.random.normal(loc=cell.log_length[-1] - np.log(2), scale=np.sqrt(var_dx)),
+                        np.random.normal(loc=cell.gfp[-1]/2, scale=np.sqrt(var_dg)), cell.lt[-1], cell.qt[-1], 
+                        time0 = cell.time[-1]+dt,
+                        cell_id = no_cells + 2, parent_id=cell.cell_id)
     # print(cell1.cell_id, cell.time[-1], cell1.log_length[0], cell.log_length[-1])
     # print(cell2.cell_id, cell.time[-1], cell2.log_length[0], cell.log_length[-1])
 
@@ -278,7 +296,8 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                     tree=True,
                     tmax=np.inf, 
                     verbose=False, 
-                    discard_cells=0):
+                    discard_cells=0, 
+                    cell_division_model="binomial"):
     if gfp0 == None:
         gfp0 = 3*parameter_set['mean_q']/parameter_set['mean_lambda']
     if log_length0 == None:
@@ -336,7 +355,7 @@ def simulate_cells(dt, n_cells, parameter_set, div_mode,
                 # calc. new init conditions for 2 daugter cells
                 cell1, cell2, no_cells = cell_divsion(cell, parameter_set['var_dx'], 
                                                             parameter_set['var_dg'], 
-                                                            no_cells)
+                                                            no_cells, cell_division_model, dt)
 
                 # remove the simulated cell from queue and add the new ones 
                 cell_queue.pop(cell_index)
@@ -363,7 +382,8 @@ def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
                     gfp0=None, 
                     tree=True,
                     tmax=np.inf, 
-                    verbose=True):
+                    verbose=True, 
+                    cell_division_model="binomial"):
     parameter_set = parameter_sets[0]
 
     if gfp0 == None:
@@ -432,7 +452,7 @@ def simulate_cells_segments(dt, n_cells, parameter_sets, div_mode, t_segment,
                 # calc. new init conditions for 2 daugter cells
                 cell1, cell2, no_cells = cell_divsion(cell, parameter_set['var_dx'], 
                                                             parameter_set['var_dg'], 
-                                                            no_cells)
+                                                            no_cells, cell_division_model, dt)
                 cell1.segment.append(segment)
                 cell2.segment.append(segment)
 

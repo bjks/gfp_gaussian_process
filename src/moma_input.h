@@ -133,7 +133,7 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                     cell_vector[j].daughter2 = &cell_vector[k];
                 }
                 else{
-                    std::cerr   << "(build_cell_genealogy) ERROR: Both daughter pointers are set" 
+                    std::cerr   << "(build_cell_genealogy) ERROR: Both daughter pointers are set, cell_id: " 
                                 << cell_vector[j].cell_id << "\n";
                     std::cerr << "-> daughter1 " << cell_vector[j].daughter1->cell_id << "\n";
                     std::cerr << "-> daughter2 " << cell_vector[j].daughter2->cell_id << "\n";

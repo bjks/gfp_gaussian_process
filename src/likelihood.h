@@ -51,15 +51,6 @@ void sc_likelihood(const std::vector<double> &params_vec,
                     params_vec[9], 
                     params_vec[10]);
 
-    // if (cell.is_root()){
-    //     cell.mean = cell.mean_init_forward;
-    //     cell.cov = cell.cov_init_forward;
-    // }
-    // else{
-    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-    //     mean_cov_after_division(cell, params_vec[9], params_vec[10]);
-    // }
-
     Eigen::VectorXd xg(2);
 
     Eigen::MatrixXd D(2,2);
@@ -91,6 +82,13 @@ void sc_likelihood(const std::vector<double> &params_vec,
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
         }
+        // if (t==cell.time.size()-1) {
+        //     if (cell.daughter1!=nullptr){
+        //         mean_cov_model(cell, cell.daughter1->time(0)-cell.time(t) , params_vec[0], 
+        //                     params_vec[1], params_vec[2], params_vec[3], 
+        //                     params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+        //     }
+        // }
         if (std::isnan(tl)){
             if (_save_ll){
                 _file_iteration << _iteration + 1 << ",";

@@ -139,7 +139,8 @@ def main():
     parser.add_argument('-look_up_prediction',
                         dest='look_up_prediction',
                         help='Directory where the predition file might be, if not existing write parameter files',
-                        required=True)
+                        default=None,
+                        required=False)
 
     parser.add_argument('-gamma_lambda',
                         dest='gamma_lambda',
@@ -227,7 +228,7 @@ def main():
 
             # measurment noise
             params["var_x"] = ["free", estimate_var_x(cells_data, rel_err=0.01)]
-            params["var_g"] = ["free", 0.01]
+            params["var_g"] = ["free", 1]
 
             # cell division
             params["var_dx"] = ["free", estimate_var_dx(cells_data, rel_dev=0.5)]

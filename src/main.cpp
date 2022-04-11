@@ -194,6 +194,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-8"},
         {"-space",  "--search_space",           "search parameter space in {'log'|'linear'} space, default: 'log'"},
         {"-noise",  "--noise_model",            "measurement noise of fp content {'const'|'scaled'} default: 'const'"},
+        {"-div",    "--cell_division",          "cell divison model {'gauss'|'binomial'} default: 'gauss'"},
         {"-m",      "--maximize",               "run maximization"},
         {"-s",      "--scan",                   "run 1d parameter scan"},
         {"-p",      "--predict",                "run prediction"},
@@ -212,6 +213,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     arguments["rel_tolerance_joints"] = "1e-8";
     arguments["search_space"] = "log";
     arguments["noise_model"] = "const";
+    arguments["cell_division"] = "gauss";
 
 
     for(int k=0; k<keys.size(); ++k){
@@ -243,6 +245,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                     arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-noise"])
                     arguments["noise_model"] = argv[i+1];
+                else if(k==key_indices["-div"])
+                    arguments["cell_division"] = argv[i+1];
                 else if(k==key_indices["-space"])
                     arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-m"])
@@ -276,6 +280,10 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     if (arguments["noise_model"] != "const" && arguments["noise_model"] != "scaled"){
         std::cerr << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
+        throw std::invalid_argument("Invalide argument");
+    }
+    if (arguments["cell_division"] != "gauss" && arguments["cell_division"] != "binomial"){
+        std::cerr << "(arg_parser) ERROR: cell_division must be either 'gauss' or 'binomial', not " << arguments["cell_division"];
         throw std::invalid_argument("Invalide argument");
     }
 
@@ -323,6 +331,7 @@ int main(int argc, char** argv){
         std::map<std::string, std::string> arguments = arg_parser(argc, argv);
         _print_level = std::stoi(arguments["print_level"]);
         _noise_model = arguments["noise_model"];
+        _cell_division_model = arguments["cell_division"];
 
         if (arguments.count("help")){
             return EXIT_SUCCESS;    

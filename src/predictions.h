@@ -7,6 +7,7 @@
 #include <cmath>
 
 std::string _noise_model;
+std::string _cell_division_model;
 
 /* 
 * functions corresponding to backward part end with '_r'
@@ -27,8 +28,18 @@ void mean_cov_after_division(MOMAdata &cell, double var_dx, double var_dg){
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    D(0,0) = var_dx;
-    D(1,1) = var_dg;
+
+    if (_cell_division_model == "binomial"){
+        // std::cout << cell.mean[1]*cell.mean[1]/2.*var_dx  << " " << var_dg * cell.mean[1]/4. * (1-var_dx) << "\n";
+        D(0,0) = var_dx;
+        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
+        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
+        // D(1,1) = var_dg * cell.mean(1)/4.;
+    }
+    else{
+        D(0,0) = var_dx;
+        D(1,1) = var_dg;
+    }
 
     cell.mean = F*cell.parent->mean + f;
     cell.cov = D + F * cell.parent->cov * F.transpose();
@@ -98,15 +109,6 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
                         params_vecs[segment][5], 
                         params_vecs[segment][9], 
                         params_vecs[segment][10]);
-    
-    // if (cell.is_root()){
-    //     cell.mean = cell.mean_init_forward;
-    //     cell.cov = cell.cov_init_forward;
-    // }
-    //     int segment = cell.parent->segment[cell.parent->segment.size()-1];
-    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-    //     mean_cov_after_division(cell, params_vecs[segment][9], params_vecs[segment][10]);
-    // }
 
     Eigen::VectorXd xg(2);
 
@@ -143,6 +145,13 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
             mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+        }
+        if (t==cell.time.size()-1) {
+            if (cell.daughter1!=nullptr){
+                mean_cov_model(cell, cell.daughter1->time(0)-cell.time(t) , params_vec[0], 
+                            params_vec[1], params_vec[2], params_vec[3], 
+                            params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+            }
         }
     }
 }
@@ -193,14 +202,33 @@ void mean_cov_after_division_r(MOMAdata &cell, double var_dx, double var_dg){
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 2; // 2! 
     Eigen::Vector4d f(log(2.), 0.0, 0.0, 0.0); // plus sign
+
+    /* Covariance for first duagther cell */
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    D(0,0) = var_dx;
-    D(1,1) = var_dg;
+    if (_cell_division_model == "binomial"){
+        D(0,0) = var_dx;
+        D(1,1) =  8.*var_dx * cell.daughter1->mean[1]*cell.daughter1->mean[1] + 2.*var_dg*cell.daughter1->mean[1];
+        D(0,1) = D(1,0) = 2.*cell.daughter1->mean[1] * var_dx;
+    }
+    else{
+        D(0,0) = var_dx;
+        D(1,1) = var_dg;
+    }
 
     cell.mean = F*cell.daughter1->mean + f;
     cell.cov = D + F * cell.daughter1->cov * F.transpose();
     
     if (cell.daughter2 != nullptr){
+        /* Covariance for second daughter cell */
+        if (_cell_division_model == "binomial"){
+            D(0,0) = var_dx;
+            D(1,1) =  8.*var_dx * cell.daughter2->mean[1]*cell.daughter2->mean[1] + 2.*var_dg*cell.daughter2->mean[1];
+            D(0,1) = D(1,0) = 2.*cell.daughter2->mean[1] * var_dx;
+        }
+        else{
+            D(0,0) = var_dx;
+            D(1,1) = var_dg;
+        }
         Eigen::Vector4d mean2 = F*cell.daughter2->mean + f;
         Eigen::MatrixXd cov2 = D + F * cell.daughter2->cov * F.transpose();
 
@@ -341,16 +369,6 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
                         params_vecs[segment][9], 
                         params_vecs[segment][10]);
 
-    // if (cell.is_leaf()){
-    //     cell.mean = cell.mean_init_backward;
-    //     cell.cov = cell.cov_init_backward;
-    // }
-    // else{
-    //     int segment = cell.segment[cell.segment.size()-1];
-    //     // mean/cov is calculated from mother cell, does not depend on mean/cov of cell itself
-    //     mean_cov_after_division_r(cell, params_vecs[segment][9], params_vecs[segment][10]);
-    // }
-
     Eigen::VectorXd xg(2);
 
     Eigen::MatrixXd D(2,2);
@@ -388,6 +406,13 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
             mean_cov_model_r(cell, cell.time(t)-cell.time(t-1) , params_vec[0], 
                         params_vec[1], params_vec[2], params_vec[3], 
                         params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+        }
+        if (t==0) {
+            if (cell.parent!=nullptr){
+                mean_cov_model(cell, cell.time(t) - cell.parent->time[cell.parent->time.size()-1] , params_vec[0], 
+                            params_vec[1], params_vec[2], params_vec[3], 
+                            params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+            }
         }
     }
 }

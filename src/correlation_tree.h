@@ -167,8 +167,17 @@ Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, 
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    D(0,0) = params_vec[9];
-    D(1,1) = params_vec[10];
+    double var_dx = params_vec[9];
+    double var_dg = params_vec[10];
+    if (_cell_division_model == "binomial"){
+        D(0,0) = var_dx;
+        D(0,1) = D(1,0) = cell.mean[1]/2. * var_dx;
+        D(1,1) = cell.mean[1]*cell.mean[1]/2.*var_dx + var_dg * cell.mean[1]/4. * (1-var_dx);
+    }
+    else{
+        D(0,0) = var_dx;
+        D(1,1) = var_dg;
+    }
 
     /* write joint as seperated gaussian of the conditional z_n+1| z_n 
     (the model itself is formulated like that) and the marginal over z_n */
@@ -193,8 +202,17 @@ Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> 
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    D(0,0) = params_vec[9];
-    D(1,1) = params_vec[10];
+    double var_dx = params_vec[9];
+    double var_dg = params_vec[10];
+    if (_cell_division_model == "binomial"){
+        D(0,0) = var_dx;
+        D(0,1) = D(1,0) = cell.mean[1]/2. * var_dx;
+        D(1,1) = cell.mean[1]*cell.mean[1]/2.*var_dx + var_dg * cell.mean[1]/4. * (1-var_dx);
+    }
+    else{
+        D(0,0) = var_dx;
+        D(1,1) = var_dg;
+    }
 
     /* write conditional as affine gaussian of z_n+1| z_n (the model itself is formulated like that)
     * writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
