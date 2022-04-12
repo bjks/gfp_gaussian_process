@@ -157,6 +157,7 @@ def main():
                         default=[5, 0.01, 100],
                         required=False)                 
 
+    parser.add_argument('--free_beta', help="Set beta to 'free'", action='store_true')
 
     args = parser.parse_args()
 
@@ -173,15 +174,20 @@ def main():
                 print("Prediction file exists, do not rewrite parameter files")
                 continue
 
+        if args.free_beta:
+            type_beta = "free"
+        else:
+            type_beta = "fixed"
+
         if "GFP" in infile:
-            beta_bounds = [["fixed", 0.01],
-                            ["fixed", 0.005]]  
+            beta_bounds = [[type_beta, 0.01],
+                            [type_beta, 0.005]]  
         elif "RFP" in infile:
-            beta_bounds = [["fixed", 0.13],
-                            ["fixed", 0.018]]  
+            beta_bounds = [[type_beta, 0.13],
+                            [type_beta, 0.018]]  
         elif "YFP" in infile:
-            beta_bounds = [["fixed", 0.3],
-                            ["fixed", 0.08]]  
+            beta_bounds = [[type_beta, 0.3],
+                            [type_beta, 0.08]]  
 
         data = pd.read_csv(infile, skiprows=0)
         data.loc[: , "time"] = data["time_sec"].to_numpy() / args.rescale_time

@@ -45,18 +45,18 @@ def run_command(arg, dryrun, iscluster, verbose):
     if iscluster:
         com = "sbatch  --export=COMMAND='" + arg +"'" + " submit_ggp_run.sl"
         if dryrun:
-            if verbose:  
-                print(arg)
+            pass
         else:
             # print(arg)
             os.system(com)
     # run locally
     else:
         if dryrun:
-            if verbose:  
-                print(arg)
+            pass
         else:
-            os.system(arg)        
+            os.system(arg)   
+    if verbose:  
+        print(arg)     
 
 def get_arg_list(args):
     s = ''
