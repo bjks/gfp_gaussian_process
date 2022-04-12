@@ -80,8 +80,8 @@ def main():
     for i, directory in enumerate(args.dir):
         input_files = get_prediction_files(directory)
 
-        if args.out != None:
-            mk_missing_dir(args.out)
+        if len(args.out)>i:
+            mk_missing_dir(args.out[i])
 
         for infile in input_files:
             print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
