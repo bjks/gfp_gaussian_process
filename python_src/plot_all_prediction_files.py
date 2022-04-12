@@ -66,7 +66,9 @@ def main():
     parser.add_argument('-o',
                         dest='out',
                         help='Output directory, default: same as prediction file',
-                        default=None,
+                        nargs='+',
+                        type=str,
+                        default=[],
                         required=False)
 
     parser.add_argument('--replot', help="Replot plots for files, that already exist", action='store_true')
@@ -75,7 +77,7 @@ def main():
     args = parser.parse_args()
     # ======================================== #
     # ======================================== #
-    for directory in args.dir:
+    for i, directory in enumerate(args.dir):
         input_files = get_prediction_files(directory)
 
         if args.out != None:
@@ -84,8 +86,8 @@ def main():
         for infile in input_files:
             print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
 
-            if args.out != None:
-                out_file = os.path.join(args.out, infile.split("/")[-1][:-4]) + ".png"
+            if len(args.out)>i:
+                out_file = os.path.join(args.out[i], infile.split("/")[-1][:-4]) + ".png"
             else:
                 out_file = infile[:-4] + ".png"
 
