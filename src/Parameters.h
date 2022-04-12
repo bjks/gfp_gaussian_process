@@ -178,6 +178,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Parameter_set& params);
 
     bool check_if_complete();
+    bool has_nonfixed();
     void set_final(std::vector<double> vals);
     std::vector<double> get_final();
     std::vector<double> get_init();
@@ -197,6 +198,15 @@ bool Parameter_set::check_if_complete(){
         }
     }
     return true;
+}
+
+bool Parameter_set::has_nonfixed(){ 
+    for (size_t i=0; i<all.size(); ++i){
+        if (!all[i].fixed){
+            return true;
+        }
+    }
+    return false;
 }
 
 void const Parameter_set::to_csv(std::ostream &file){

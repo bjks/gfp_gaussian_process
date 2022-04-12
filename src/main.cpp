@@ -370,16 +370,18 @@ int main(int argc, char** argv){
 
         if (arguments.count("minimize")){
             for(size_t i=0; i<segment_indices.size(); ++i){
-                std::vector<MOMAdata> cells_in_segment = get_segment(cells, segment_indices[i]);
+                if (params_list[i].has_nonfixed()){
+                    std::vector<MOMAdata> cells_in_segment = get_segment(cells, segment_indices[i]);
 
-                /* genealogy built via the parent_id (string) given in data file */
-                build_cell_genealogy(cells_in_segment);
+                    /* genealogy built via the parent_id (string) given in data file */
+                    build_cell_genealogy(cells_in_segment);
 
-                /* inititialize mean and cov for forward and backward direction */
-                init_cells(cells_in_segment);
+                    /* inititialize mean and cov for forward and backward direction */
+                    init_cells(cells_in_segment);
 
-                /* Run actual minimization */
-                run_minimization(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
+                    /* Run actual minimization */
+                    run_minimization(cells_in_segment, params_list[i], arguments, get_segment_file_number(segment_indices, i));
+                }
             }
         }
 
