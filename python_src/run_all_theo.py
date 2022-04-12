@@ -265,6 +265,18 @@ def main():
         suffix_param_files = []
         param_files = []
 
+        # deal with suffix parameter files
+        if len(args.suffix)>0:
+            for suffix in args.suffix:
+                parameter_file = infile[:-4] + '_'+ suffix + '.txt'
+                suffix_param_files.append(parameter_file)
+            # Use parameter files 
+            if len(suffix_param_files)==2:
+                param_files = suffix_param_files
+            else:
+                print("Not enough parameter files found using suffix -> don't run")
+                continue
+
         # deal with -b parameter files
         if len(args.parameters)>0:
             if args.parameters[0] == "infer":
@@ -280,17 +292,6 @@ def main():
                 print("Not enough parameter files found using infer -> don't run")
                 continue
 
-        # deal with suffix parameter files
-        if len(args.suffix)>0:
-            for suffix in args.suffix:
-                parameter_file = infile[:-4] + '_'+ suffix + '.txt'
-                suffix_param_files.append(parameter_file)
-            # Use parameter files 
-            if len(suffix_param_files)==2:
-                param_files = suffix_param_files
-            else:
-                print("Not enough parameter files found using suffix -> don't run")
-                continue
 
         ggp_arg +=  " -b " + get_arg_list(param_files)
   
