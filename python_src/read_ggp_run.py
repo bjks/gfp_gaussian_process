@@ -509,11 +509,12 @@ def plot_predictions(filename, start=None, stop=None, step=None,
         ax[i].grid(True)
     if outfile != None:
         fig.savefig(outfile, dpi=600)
-        fig.clear()
     elif show:
         plt.show()
-    else:
-        return ax
+    fig.clear()
+    plt.close(fig)
+    return ax
+
 # ==================================================== #
 
            
