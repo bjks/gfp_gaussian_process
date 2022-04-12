@@ -42,7 +42,9 @@ def main():
 
     parser.add_argument('-d',
                         dest='dir',
-                        help='Directory that will be searched for prediction files (recursively)',
+                        help='Directory(-ies) that will be searched for prediction files (recursively)',
+                        nargs='+',
+                        type=str,
                         required=True)
 
     parser.add_argument('-time_unit',
@@ -73,27 +75,27 @@ def main():
     args = parser.parse_args()
     # ======================================== #
     # ======================================== #
-
-    input_files = get_prediction_files(args.dir)
-
-    if args.out != None:
-        mk_missing_dir(args.out)
-
-    for infile in input_files:
-        print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
+    for directory in args.dir:
+        input_files = get_prediction_files(directory)
 
         if args.out != None:
-            out_file = os.path.join(args.out, infile.split("/")[-1][:-4]) + ".png"
-        else:
-            out_file = infile[:-4] + ".png"
+            mk_missing_dir(args.out)
 
-        if args.replot or not os.path.exists(out_file):
-            plot_predictions(infile, 
-                            start=args.range[0], stop=args.range[1], step=args.range[2], 
-                            time_unit=(args.time_unit[0], float(args.time_unit[1])), 
-                            skip_row = header_lines(infile, until="cell_id"), 
-                            xlim=[None, None], 
-                            outfile=out_file)
+        for infile in input_files:
+            print(infile, 'cells:', args.range[0], args.range[1], args.range[2])
+
+            if args.out != None:
+                out_file = os.path.join(args.out, infile.split("/")[-1][:-4]) + ".png"
+            else:
+                out_file = infile[:-4] + ".png"
+
+            if args.replot or not os.path.exists(out_file):
+                plot_predictions(infile, 
+                                start=args.range[0], stop=args.range[1], step=args.range[2], 
+                                time_unit=(args.time_unit[0], float(args.time_unit[1])), 
+                                skip_row = header_lines(infile, until="cell_id"), 
+                                xlim=[None, None], 
+                                outfile=out_file)
 
 
 # ================================================================================ #

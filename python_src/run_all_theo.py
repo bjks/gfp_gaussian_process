@@ -261,74 +261,81 @@ def main():
         else:
             out_dir = infile[:-4] + '_out'
 
-        if args.m:
-            ggp_arg += ' -m '
-        if args.p:
-            ggp_arg += ' -p '
+        infered_parameter_files = []
+        suffix_param_files = []
+        param_files = []
 
-        run_it = True
-        # deal with parameter files
+        # deal with -b parameter files
         if len(args.parameters)>0:
             if args.parameters[0] == "infer":
-                parameter_files = get_parameter_files(infile, args.out)
+                infered_parameter_files = get_parameter_files(infile, args.out)
             else:
-                parameter_files = args.parameters
+                infered_parameter_files = args.parameters
 
-            if len(parameter_files) == 2:
+            if len(infered_parameter_files) == 2:
                 if len(args.free_up)>0:
-                    free_up_parameters(parameter_files[1], args.free_up)
-            else:
-                run_it = False
-                    
-        suffix_param_files = []
+                    free_up_parameters(infered_parameter_files[1], args.free_up)
+
+
+        # deal with suffix parameter files
         if len(args.suffix)>0:
             for suffix in args.suffix:
                 parameter_file = infile[:-4] + '_'+ suffix + '.txt'
                 suffix_param_files.append(parameter_file)
             
-        if len(args.parameters)>0:
-            ggp_arg +=  " -b " + get_arg_list(parameter_files)
+        # Use parameter files 
+        if len(infered_parameter_files)==2:
+            param_files = infered_parameter_files
+        elif len(suffix_param_files)==2:
+            param_files = suffix_param_files
         else:
-            ggp_arg +=  " -b " + get_arg_list(suffix_param_files)
-
-        if len(parameter_file)!=2:
-            run_it=False
             print("Not enough parameter files found -> don't run")
+            continue
 
-        
-        
+        ggp_arg +=  " -b " + get_arg_list(param_files)
+  
+  
         # ============ run! ============ #
-        if run_it:
-            if args.rerun:
+        if args.rerun:
+            run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
+        else:
+            run = False
+
+            # prediction_file = look_for_prediction_file(out_dir, infile)
+            output_file_iterations = look_for_output_file(out_dir, infile, "iterations")
+            output_file_prediction = look_for_output_file(out_dir, infile, "prediction")
+
+
+            # check iterations file does not exist
+            if args.m:
+                ggp_arg += ' -m '
+                if output_file_iterations == None:
+                    print("The input file", infile, "has no iterations file yet -> RUN")
+                    run = True
+                else:
+                    iterations_is_old = os.path.getmtime(output_file_iterations) < os.path.getmtime(suffix_param_files[0]) \
+                                    or os.path.getmtime(output_file_iterations) < os.path.getmtime(suffix_param_files[1])
+                    if iterations_is_old:
+                        run = True
+
+            # check prediction file does not exist
+            if args.p:
+                ggp_arg += ' -p '
+                if output_file_prediction==None:
+                    print("The input file", infile, "has no prediction file yet -> RUN")
+                    run = True
+                else:
+                    prediction_is_old = os.path.getmtime(output_file_prediction) < os.path.getmtime(suffix_param_files[0]) \
+                                    or os.path.getmtime(output_file_prediction) < os.path.getmtime(suffix_param_files[1])
+                    if prediction_is_old:
+                        run = True
+
+            if run:
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
             else:
-                # prediction_file = look_for_prediction_file(out_dir, infile)
-                output_file = look_for_output_file(out_dir, infile, "iterations")
-                output_file_p = look_for_output_file(out_dir, infile, "prediction")
-
-                # prediction file does not exist
-                if output_file == None:
-                    print("The input file", infile, "has no output file yet -> RUN")
-                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-                elif args.p and output_file_p==None:
-                    print("The input file", infile, "has no prediction file yet -> RUN")
-                    run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-
-                # prediction file is older than one of the paramfiles
-                else:
-                    if len(suffix_param_files)>0:
-                        is_old = os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(suffix_param_files[1])
-                    else:
-                        is_old = os.path.getmtime(output_file) < os.path.getmtime(parameter_files[0]) or os.path.getmtime(output_file) < os.path.getmtime(parameter_files[1])
-                        
-                    if is_old:
-                        print(output_file, " is older than parameter files -> RUN")
-                        run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
-                    
-                    # output file is up to date
-                    else:
-                        print(output_file, "is already there and up-to-date! -> No need to run")
-
+                print("Everything is already there and up-to-date! -> No need to run")
 # ================================================================================ #
 if __name__ == "__main__":
     main()
+
+
