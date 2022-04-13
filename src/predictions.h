@@ -409,7 +409,7 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
         }
         if (t==0) {
             if (cell.parent!=nullptr){
-                mean_cov_model(cell, cell.time(t) - cell.parent->time[cell.parent->time.size()-1] , params_vec[0], 
+                mean_cov_model_r(cell, cell.time(t) - cell.parent->time[cell.parent->time.size()-1] , params_vec[0], 
                             params_vec[1], params_vec[2], params_vec[3], 
                             params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
             }
