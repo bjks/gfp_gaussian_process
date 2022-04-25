@@ -237,8 +237,8 @@ def cell_divsion(cell, var_dx, var_dg, no_cells, cell_division_model, dt):
     if cell_division_model=="binomial":
         x = cell.log_length[-1]
         g = cell.gfp[-1]
-        x_d1 = np.random.normal(loc=x - np.log(2), scale=np.sqrt(var_dx))
-        g_d1 = np.random.binomial(g, np.exp(x_d1 - x))
+        x_d1 = np.random.normal(loc=x-np.log(2), scale=np.sqrt(var_dx))
+        g_d1 = np.random.binomial(g/var_dg, np.exp(x_d1 - x))*var_dg
 
         x_d2 = np.log(np.exp(x)-np.exp(x_d1))
         g_d2 = g - g_d1
