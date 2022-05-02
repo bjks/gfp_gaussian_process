@@ -180,8 +180,8 @@ def main():
             type_beta = "fixed"
 
         if "GFP" in infile:
-            beta_bounds = [[type_beta, 0.01],
-                            [type_beta, 0.005]]  
+            beta_bounds = [[type_beta, 0.01], # GM
+                            [type_beta, 0.005]] # SP
         elif "RFP" in infile:
             beta_bounds = [[type_beta, 0.13],
                             [type_beta, 0.018]]  
