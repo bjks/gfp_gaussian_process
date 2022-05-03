@@ -241,10 +241,17 @@ def cell_divsion(cell, var_dx, var_dg, no_cells, cell_division_model, dt):
         if var_dg==0:
             g_d1 = g * np.exp(x_d1 - x)
         else:
-            g_d1 = np.random.binomial(g/var_dg, np.exp(x_d1 - x))*var_dg
+            if g <= 0:
+                g_d1 = 0
+            else:   
+                g_d1 = np.random.binomial(g/var_dg, np.exp(x_d1 - x))*var_dg
 
         x_d2 = np.log(np.exp(x)-np.exp(x_d1))
-        g_d2 = g - g_d1
+        
+        if g <= 0:
+            g_d2 = 0
+        else:
+            g_d2 = g - g_d1
 
         cell1 = Cell(x_d1,g_d1, cell.lt[-1], cell.qt[-1],
                         time0 = cell.time[-1]+dt,
