@@ -557,7 +557,7 @@ def write_param_file(filename, parameters,
             else:            
                 fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-11])))
 
-def write_param_file_noise(filename, parameters, step, log_noise=0, rel_step=None):
+def write_param_file_noise(filename, parameters, log_noise=0, rel_step=None):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data with noise: " + str(log_noise) + "\n")
         for param_name in parameters.keys():
