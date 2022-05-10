@@ -160,19 +160,28 @@ Gaussian include_measurement(Gaussian joint,
 Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, MOMAdata cell, size_t t){
     /* given a P(z_n | D_n) the joint P(z_n+1, z_n | D_n) is returned where z_n is before and z_n+1 is after cell division */
     
+    cell.mean = cell.mean_forward[t];
+    cell.cov = cell.cov_forward[t];
+
+    mean_cov_model(cell, cell.daughter1->time(0) - cell.time(t), 
+                        params_vec[0], params_vec[1], params_vec[2], 
+                        params_vec[3], params_vec[4], params_vec[5], 
+                        params_vec[6]);
+
+    double var_dx = params_vec[9];
+    double var_dg = params_vec[10];
+
     /* create F, f, D */
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 0.5;
-    
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
-    
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    double var_dx = params_vec[9];
-    double var_dg = params_vec[10];
+
+
     if (_cell_division_model == "binomial"){
         D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean[1]/2. * var_dx;
-        D(1,1) = cell.mean[1]*cell.mean[1]/2.*var_dx + var_dg * cell.mean[1]/4. * (1-var_dx);
+        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
+        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
     }
     else{
         D(0,0) = var_dx;
@@ -193,21 +202,29 @@ Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, 
 }
 
 
-Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> &params_vec, MOMAdata cell){
-    
+Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> &params_vec, MOMAdata cell, size_t t){    
+    cell.mean = cell.mean_forward[t];
+    cell.cov = cell.cov_forward[t];
+
+    mean_cov_model(cell, cell.daughter1->time(0) - cell.time(t), 
+                        params_vec[0], params_vec[1], params_vec[2], 
+                        params_vec[3], params_vec[4], params_vec[5], 
+                        params_vec[6]);
+
+    double var_dx = params_vec[9];
+    double var_dg = params_vec[10];
+
     /* create F, f, D */
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 0.5;
-    
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
-    
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    double var_dx = params_vec[9];
-    double var_dg = params_vec[10];
+
+
     if (_cell_division_model == "binomial"){
         D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean[1]/2. * var_dx;
-        D(1,1) = cell.mean[1]*cell.mean[1]/2.*var_dx + var_dg * cell.mean[1]/4. * (1-var_dx);
+        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
+        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
     }
     else{
         D(0,0) = var_dx;
@@ -426,10 +443,10 @@ bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
 
         else{
             /* -------- New prior for cell(s) after division ------- */
-            conditional = consecutive_conditional_cell_division(params_vecs[cell.segment[cell.time.size()-1]], cell); // P(z_n+2 | z_n+1, D_n+1 )
-            cell.joint = next_joint(cell.joint, conditional);
-
             if (cell.daughter1 != nullptr){
+                conditional = consecutive_conditional_cell_division(params_vecs[cell.segment[cell.time.size()-1]], cell, n+m); // P(z_n+2 | z_n+1, D_n+1 )
+                cell.joint = next_joint(cell.joint, conditional);
+                
                 cell.daughter1->joint = cell.joint;
             }
             if (cell.daughter2 != nullptr){
@@ -450,17 +467,21 @@ void joint_distributions_recr(  const std::vector<std::vector<double>> &params_v
                                 MOMAdata *cell, 
                                 int n, 
                                 Joint_vector &joint_vector, 
-                                double tolerance_joint){
+                                double tolerance_joint, 
+                                bool is_joint_at_division){
     /*  
     * Recursive implementation that applies the function calc_joint_distributions to every cell in the genealogy
     */
     if (cell == nullptr)
         return;
-    bool stop = calc_joint_distributions(params_vecs, *cell, n, joint_vector, tolerance_joint);
-    if (stop)
-        return;
-    joint_distributions_recr(params_vecs, cell->daughter1, -1, joint_vector, tolerance_joint);
-    joint_distributions_recr(params_vecs, cell->daughter2, -1, joint_vector, tolerance_joint);
+    if (!is_joint_at_division){
+        bool stop = calc_joint_distributions(params_vecs, *cell, n, joint_vector, tolerance_joint);
+        if (stop){
+            return;
+        }
+    }
+    joint_distributions_recr(params_vecs, cell->daughter1, -1, joint_vector, tolerance_joint, false);
+    joint_distributions_recr(params_vecs, cell->daughter2, -1, joint_vector, tolerance_joint, false);
 }
 
 
@@ -481,17 +502,18 @@ void sc_joint_distributions(const std::vector<std::vector<double>> &params_vecs,
         // P(z_n+1, z_n | D_n) (using Theta_n)
         if (n<cell.time.size()-1){
             cell.joint = consecutive_joint(params_vecs[cell.segment[n]], cell, n);
+            joint_distributions_recr(params_vecs, &cell, n, joint_vector, tolerance_joint, false);
         }
         else{
-            cell.joint = consecutive_joint_cell_division(params_vecs[cell.segment[n]], cell, n);
             if (cell.daughter1 != nullptr){
+                cell.joint = consecutive_joint_cell_division(params_vecs[cell.segment[n]], cell, n);
                 cell.daughter1->joint = cell.joint;
             }
             if (cell.daughter2 != nullptr){
                 cell.daughter2->joint = cell.joint;
             }
+            joint_distributions_recr(params_vecs, &cell, n, joint_vector, tolerance_joint, true);
         }
-        joint_distributions_recr(params_vecs, &cell, n, joint_vector, tolerance_joint);
 
         /* ============= OUTPUT ============= */
         // if (cell.is_leaf() && n==cell.time.size()-1){

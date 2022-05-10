@@ -427,7 +427,7 @@ def get_condition(filename):
 # ================================= #
 def main():
     parser = argparse.ArgumentParser(
-        description="Run gfp_gaussian for all files in dir (written for Theo's data sets)")
+        description="Correlation from joint matrix")
 
     parser.add_argument('-d',
                         dest='dir',

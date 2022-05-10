@@ -38,10 +38,9 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
     if (_cell_division_model == "binomial"){
-        // std::cout << cell.mean[1]*cell.mean[1]/2.*var_dx  << " " << var_dg * cell.mean[1]/4. * (1-var_dx) << "\n";
         D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
-        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
+        D(0,1) = D(1,0) = cell.parent->mean(1)/2. * var_dx;
+        D(1,1) = cell.parent->mean(1)*cell.parent->mean(1)/2.*var_dx + var_dg * cell.parent->mean(1)/4. * (1-var_dx);
     }
     else{
         D(0,0) = var_dx;
@@ -94,7 +93,7 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
     int segment;
 
     if (cell.is_root()){
-        segment = 0;
+        segment = cell.segment[0];
     }
     else{
         segment = cell.parent->segment[cell.parent->segment.size()-1];
@@ -206,8 +205,8 @@ void mean_cov_after_division_r(MOMAdata &cell, std::vector<double> params_vec){
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
     if (_cell_division_model == "binomial"){
         D(0,0) = var_dx;
-        D(1,1) =  8.*var_dx * cell.daughter1->mean[1]*cell.daughter1->mean[1] + 2.*var_dg*cell.daughter1->mean[1];
-        D(0,1) = D(1,0) = 2.*cell.daughter1->mean[1] * var_dx;
+        D(1,1) =  8.*var_dx * cell.daughter1->mean(1)*cell.daughter1->mean(1) + 2.*var_dg*cell.daughter1->mean(1);
+        D(0,1) = D(1,0) = 2.*cell.daughter1->mean(1) * var_dx;
     }
     else{
         D(0,0) = var_dx;
@@ -221,8 +220,8 @@ void mean_cov_after_division_r(MOMAdata &cell, std::vector<double> params_vec){
         /* Covariance for second daughter cell */
         if (_cell_division_model == "binomial"){
             D(0,0) = var_dx;
-            D(1,1) =  8.*var_dx * cell.daughter2->mean[1]*cell.daughter2->mean[1] + 2.*var_dg*cell.daughter2->mean[1];
-            D(0,1) = D(1,0) = 2.*cell.daughter2->mean[1] * var_dx;
+            D(1,1) =  8.*var_dx * cell.daughter2->mean(1)*cell.daughter2->mean(1) + 2.*var_dg*cell.daughter2->mean(1);
+            D(0,1) = D(1,0) = 2.*cell.daughter2->mean(1) * var_dx;
         }
         else{
             D(0,0) = var_dx;
