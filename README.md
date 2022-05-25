@@ -1,6 +1,6 @@
 # gfp_gaussian_process
 
-__Version: 0.3__
+__Version: 0.4__
 
 ---------
 Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
@@ -31,6 +31,7 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
   - [Version](#version)
     - [Changed in 0.2.0](#changed-in-020)
     - [Changed in 0.3.0](#changed-in-030)
+    - [Changes in 0.4.0](#changes-in-040)
   - [TODO](#todo)
 
 ---
@@ -75,9 +76,10 @@ make install
 -l, --print_level                  print level {0,1,2}, default: 0
 -o, --outdir                       specify output direction and do not use default
 -t, --tolerance_maximization       absolute tolerance of maximization between optimization steps, default: 1e-3
--r, --rel_tolerance_joints         relative tolerance of joint calculation: default 1e-8
+-r, --rel_tolerance_joints         relative tolerance of joint calculation: default 1e-12
 -space, --search_space             search parameter space in {'log'|'linear'} space, default: 'log'
 -noise, --noise_model              measurement noise of fp content {'const'|'scaled'} default: 'const'
+-div, --cell_division              cell divison model {'gauss'|'binomial'} default: 'gauss'
 -m, --maximize                     run maximization
 -s, --scan                         run 1d parameter scan
 -p, --predict                      run prediction
@@ -132,11 +134,11 @@ will use the parameters in the file `parametersA.txt` for the segment with index
 - `csv_config` sets the file that contains information on which columns will be used from the input file (see 2.3.1)
 - `print_level (0)` set to 0 supresses input of the likelihood calculation, `1` prints every step of the maximization/scan/error bar calculation. This is purely meant for debugging!
 - `tolerance_maximization (1e-3)` sets the stopping critirium by setting the tolerance of maximization: Stop when an optimization step changes the function value by less than tolerance. By setting very low tolerances one might encounder rounding issues, in that case the last valid step is taken and a warning is printed to stderr.
-- `rel_tolerance_joints (1e-8)` sets the stopping critirium for the joint calculation. The calculation is stopped when the cross covariances beween the two time points is smaller than the product of the corresponding means times the set tolerance. $\frac{\text{Cov}(z_{n+m}, z_n)_{i,j}}{ \langle z_{n+m}\rangle_i \langle z_n\rangle_j} < \text{tolerance }$
+- `rel_tolerance_joints (1e-12)` sets the stopping critirium for the joint calculation. The calculation is stopped when the cross covariances beween the two time points is smaller than the product of the corresponding means times the set tolerance. $\frac{\text{Cov}(z_{n+m}, z_n)_{i,j}}{ \langle z_{n+m}\rangle_i \langle z_n\rangle_j} < \text{tolerance }$
 - `outdir` overwrites default output directory, which is (given the infile `dir/example.csv/`) `dir/example_out/`
 - `search_space (log)` set the search space of the parameters to be either in log space of linear space. The parameter file does not need to be changed as everything is done internally. 
-- `noise_model` defines how the measurement noise  depends on the content of fluorescence proteins. 'const' means that the measurement is constant with a variance `var_g`. `scaled` means the variance of the measurement scales linearly with the flourescence protein content. In this case `var_g` is the prefactor of the scaling. 
-
+- `noise_model (scaled)` defines how the measurement noise  depends on the content of fluorescence proteins. `const` means that the measurement is constant with a variance `var_g`. `scaled` means the variance of the measurement scales linearly with the flourescence protein content. In this case `var_g` is the prefactor of the scaling. 
+- `cell_division (binomial)` defines the model for cell division. `binomial` splits the FP content according to the cell sizes of the daughter cells and binomial sampling. In this case the parameter `var_dg` is the conversion factor between the FP input and the physical number of independent moldecules that can be distributed accros cells. `gauss` refers to a model where the FP content of the daughter cells are drawn from a gaussian with variance `var_dg` centered around half of the mother cell FP content
 
 #### 2.3.1 Csv_config file
 The following settings define how the input file will be read.
@@ -263,6 +265,10 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 ### Changed in 0.3.0
 - introduction of a scaled noise model
 
+### Changes in 0.4.0
+- introduction of binomial cell division model
+- cell is growing and producing between n and n+1 even if it is dividing, division happend just before n+1
+
 ## TODO
 - [x] prepare for cluster
 - [x] write new simulation including asymmetric cell division and tree structure
@@ -283,4 +289,4 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 - [x] include marginals (ie predictions) to correlation function calculation for Cov < tolerance 
 - [x] calculate correlations on a tree (downstream of the ggp code)
 - [x] include scaled noise to correlation part
-
+- [x] binomial cell division model
