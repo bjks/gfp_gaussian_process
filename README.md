@@ -220,7 +220,7 @@ __Output:__
 ### 5.4 joints
 Runs the calculation of the joint probabilities of pairs of data points. The 2 point probabilities are needed to calculate correlation fuctions.
 
-Running the calculation of the joint distributions also runs the prediction part and generates those files, too. Setting both flags is therefore redundant but also not harmful.
+Running the calculation of the joint distributions also runs the prediction part and generates those files. Setting both flags is therefore redundant but also not harmful.
 
 The number of joints $P(z_{n+m}, z_n)$ that are calculated for each $z_n$ is determined by the `rel_tolerance_joints` that is set (see 2.2.3).  
 
@@ -230,11 +230,11 @@ __Output:__
 
 | cell_id | parent_id | time | cell1_0 | cell1_1 | cell1_2 | cell1_3 | cell2_4 | cell2_5
 |---------|-----------|------|---------|---------|---------|---------|---------| --------|
-| cell1 |       | 0 |  |$P(z_1, z_0)$  | $P(z_2, z_0)$ | $P(z_3, z_0)$ | $P(z_4, z_0)$  |$P(z_5, z_0)$ |
-| cell1 |       | 1 |  |               | $P(z_2, z_1)$ | $P(z_3, z_1)$ | $P(z_4, z_1)$  |$P(z_5, z_1)$ |
-| cell1 |       | 2 |  |               |               | $P(z_3, z_2)$ | $P(z_4, z_2)$  |$P(z_5, z_2)$ |
-| cell2 | cell1 | 3 |  |               |               |               | $P(z_4, z_3)$  |$P(z_5, z_3)$ |
-| cell2 | cell1 | 4 |  |               |               |               |                |$P(z_5, z_4)$ |
+| cell1 |       | 0 |  |P(z_1, z_0)    | P(z_2, z_0)   | P(z_3, z_0) | P(z_4, z_0)  |P(z_5, z_0) |
+| cell1 |       | 1 |  |               | P(z_2, z_1)   | P(z_3, z_1) | P(z_4, z_1)  |P(z_5, z_1) |
+| cell1 |       | 2 |  |               |               | P(z_3, z_2) | P(z_4, z_2)  |P(z_5, z_2) |
+| cell2 | cell1 | 3 |  |               |               |             | P(z_4, z_3)  |P(z_5, z_3) |
+| cell2 | cell1 | 4 |  |               |               |             |              |P(z_5, z_4) |
 
 
 - Each joint probablilty cosists of its means and the upper triangle of its covaraince matrix and thus of $8+36=44$ values in total.
