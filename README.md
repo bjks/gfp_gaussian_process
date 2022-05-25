@@ -225,16 +225,16 @@ Running the calculation of the joint distributions also runs the prediction part
 The number of joints $P(z_{n+m}, z_n)$ that are calculated for each $z_n$ is determined by the `rel_tolerance_joints` that is set (see 2.2.3).  
 
 __Output:__
-- Will create a file named `_joints.csv` containing all calculated joints formatted as a upper triangle matrix. Rows corresponds to the earlier time point in the joint, while columns correspond to the later time point named `celllid_time`, where `cellid` corresponds to whatever is defined as the cell id and time is time 
+- Will create a file named `_joints.csv` containing all calculated joints formatted as a upper triangle matrix. Rows corresponds to the earlier time point in the joint, while columns correspond to the later time point named `celllid_time`, where `cellid` corresponds to whatever is defined as the cellid and time is time 
   
 
-| cell_id | parent_id | time | cell1_1 | cell1_2 | cell1_3 | cell2_4 | cell2_5
-|---------|-----------|------|---------|---------|---------|---------|---------|
-| cell1 |       | 0 | $P(z_1, z_0)$  | $P(z_2, z_0)$ | $P(z_3, z_0)$ | $P(z_4, z_0)$  |$P(z_5, z_0)$ |
-| cell1 |       | 1 |                | $P(z_2, z_1)$ | $P(z_3, z_1)$ | $P(z_4, z_1)$  |$P(z_5, z_1)$ |
-| cell1 |       | 2 |                |               | $P(z_3, z_2)$ | $P(z_4, z_2)$  |$P(z_5, z_2)$ |
-| cell2 | cell1 | 3 |                |               |               | $P(z_4, z_3)$  |$P(z_5, z_3)$ |
-| cell2 | cell1 | 4 |                |               |               |                |$P(z_5, z_4)$ |
+| cell_id | parent_id | time | cell1_0 | cell1_1 | cell1_2 | cell1_3 | cell2_4 | cell2_5
+|---------|-----------|------|---------|---------|---------|---------|---------| --------|
+| cell1 |       | 0 |  |$P(z_1, z_0)$  | $P(z_2, z_0)$ | $P(z_3, z_0)$ | $P(z_4, z_0)$  |$P(z_5, z_0)$ |
+| cell1 |       | 1 |  |               | $P(z_2, z_1)$ | $P(z_3, z_1)$ | $P(z_4, z_1)$  |$P(z_5, z_1)$ |
+| cell1 |       | 2 |  |               |               | $P(z_3, z_2)$ | $P(z_4, z_2)$  |$P(z_5, z_2)$ |
+| cell2 | cell1 | 3 |  |               |               |               | $P(z_4, z_3)$  |$P(z_5, z_3)$ |
+| cell2 | cell1 | 4 |  |               |               |               |                |$P(z_5, z_4)$ |
 
 
 - Each joint probablilty cosists of its means and the upper triangle of its covaraince matrix and thus of $8+36=44$ values in total.
@@ -268,6 +268,7 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 ### Changes in 0.4.0
 - introduction of binomial cell division model
 - cell is growing and producing between n and n+1 even if it is dividing, division happend just before n+1
+- joint matrix has as identical row and column indices
 
 ## TODO
 - [x] prepare for cluster
