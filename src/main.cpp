@@ -60,7 +60,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
                           arguments["search_space"], 
                           arguments["noise_model"],
                           arguments["cell_division"],
-                          "0.4.0");
+                          "0.4.1");
 
     std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);
     create_parameter_file(outfile_params, params);
@@ -191,8 +191,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-c",      "--csv_config",             "file that sets the colums that will be used from the input file"},
         {"-l",      "--print_level",            "print level {0,1,2}, default: 0"},
         {"-o",      "--outdir",                 "specify output direction and do not use default"},
-        {"-t",      "--tolerance_maximization",  "absolute tolerance of maximization between optimization steps, default: 1e-3"},
-        {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-12"},
+        {"-t",      "--tolerance_maximization",  "absolute tolerance of maximization between optimization steps, default: 1e-10"},
+        {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-10"},
         {"-space",  "--search_space",           "search parameter space in {'log'|'linear'} space, default: 'log'"},
         {"-noise",  "--noise_model",            "measurement noise of fp content {'scaled'|'const'} default: 'scaled'"},
         {"-div",    "--cell_division",          "cell divison model {'binomial'|'gauss'} default: 'binomial'"},
@@ -210,8 +210,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::map<std::string, std::string> arguments;
     /* defaults: */
     arguments["print_level"] = "0";
-    arguments["tolerance_maximization"] = "1e-3";
-    arguments["rel_tolerance_joints"] = "1e-12";
+    arguments["tolerance_maximization"] = "1e-10";
+    arguments["rel_tolerance_joints"] = "1e-10";
     arguments["search_space"] = "log";
     arguments["noise_model"] = "scaled";
     arguments["cell_division"] = "binomial";

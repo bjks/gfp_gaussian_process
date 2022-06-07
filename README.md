@@ -32,6 +32,7 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
     - [Changed in 0.2.0](#changed-in-020)
     - [Changed in 0.3.0](#changed-in-030)
     - [Changes in 0.4.0](#changes-in-040)
+    - [Changes in 0.4.1](#changes-in-041)
   - [TODO](#todo)
 
 ---
@@ -75,8 +76,8 @@ make install
 -c, --csv_config                   file that sets the colums that will be used from the input file
 -l, --print_level                  print level {0,1,2}, default: 0
 -o, --outdir                       specify output direction and do not use default
--t, --tolerance_maximization       absolute tolerance of maximization between optimization steps, default: 1e-3
--r, --rel_tolerance_joints         relative tolerance of joint calculation: default 1e-12
+-t, --tolerance_maximization       absolute tolerance of maximization between optimization steps, default: 1e-10
+-r, --rel_tolerance_joints         relative tolerance of joint calculation: default 1e-10
 -space, --search_space             search parameter space in {'log'|'linear'} space, default: 'log'
 -noise, --noise_model              measurement noise of fp content {'const'|'scaled'} default: 'const'
 -div, --cell_division              cell divison model {'gauss'|'binomial'} default: 'gauss'
@@ -237,7 +238,7 @@ __Output:__
 | cell2 | cell1 | 4 |  |               |               |             |              |P(z_5, z_4) |
 
 
-- Each joint probablilty cosists of its means and the upper triangle of its covaraince matrix and thus of $8+36=44$ values in total.
+- Each joint probablilty cosists of its means and the upper triangle of its covaraince matrix and thus of 8+36=44 values in total.
 
 
 ## 6 Error messages
@@ -269,6 +270,9 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 - introduction of binomial cell division model
 - cell is growing and producing between n and n+1 even if it is dividing, division happend just before n+1
 - joint matrix has as identical row and column indices
+
+### Changes in 0.4.1
+- changed tolerance defaults to 1e-10
 
 ## TODO
 - [x] prepare for cluster
