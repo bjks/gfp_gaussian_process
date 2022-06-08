@@ -557,15 +557,20 @@ def write_param_file(filename, parameters,
             else:            
                 fin.write("{:s} = {:.2E}, {:.2E}\n".format(k, v, np.max([v*init_scale, 1e-11])))
 
-def write_param_file_noise(filename, parameters, log_noise=0, rel_step=None):
+def write_param_file_noise(filename, parameters, log_noise=0, rel_step=None, fixed=[]):
     with open(filename, "w") as fin:
         fin.write("# Generated config file for simulated data with noise: " + str(log_noise) + "\n")
         for param_name in parameters.keys():
-            if log_noise>0:
-                init = np.exp(np.log(parameters[param_name]) + np.random.normal(0, scale=log_noise))
+            if param_name not in fixed:
+                if log_noise>0:
+                    init = np.exp(np.log(parameters[param_name]) + np.random.normal(0, scale=log_noise))
+                else:
+                    init = parameters[param_name]
+                fin.write("{:s} = {:.2E}, {:.2E}\n".format(param_name, init, init*rel_step))
             else:
                 init = parameters[param_name]
-            fin.write("{:s} = {:.2E}, {:.2E}\n".format(param_name, init, init*rel_step))
+                fin.write("{:s} = {:.2E}\n".format(param_name, init))
+
     return filename
 
 def write_csv_config(filename, segment=None, lane=None):
