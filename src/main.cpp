@@ -195,7 +195,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-r",      "--rel_tolerance_joints",    "relative tolerance of joint calculation: default 1e-10"},
         {"-space",  "--search_space",           "search parameter space in {'log'|'linear'} space, default: 'log'"},
         {"-noise",  "--noise_model",            "measurement noise of fp content {'scaled'|'const'} default: 'scaled'"},
-        {"-div",    "--cell_division",          "cell divison model {'binomial'|'gauss'} default: 'binomial'"},
+        {"-div",    "--cell_division_model",          "cell divison model {'binomial'|'gauss'} default: 'binomial'"},
         {"-m",      "--maximize",               "run maximization"},
         {"-s",      "--scan",                   "run 1d parameter scan"},
         {"-p",      "--predict",                "run prediction"},
@@ -214,7 +214,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     arguments["rel_tolerance_joints"] = "1e-10";
     arguments["search_space"] = "log";
     arguments["noise_model"] = "scaled";
-    arguments["cell_division"] = "binomial";
+    arguments["cell_division_model"] = "binomial";
 
 
     for(int k=0; k<keys.size(); ++k){
@@ -247,7 +247,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                 else if(k==key_indices["-noise"])
                     arguments["noise_model"] = argv[i+1];
                 else if(k==key_indices["-div"])
-                    arguments["cell_division"] = argv[i+1];
+                    arguments["cell_division_model"] = argv[i+1];
                 else if(k==key_indices["-space"])
                     arguments["search_space"] = argv[i+1];
                 else if(k==key_indices["-m"])
@@ -331,8 +331,6 @@ int main(int argc, char** argv){
         /* process command line arguments */
         std::map<std::string, std::string> arguments = arg_parser(argc, argv);
         _print_level = std::stoi(arguments["print_level"]);
-        _noise_model = arguments["noise_model"];
-        _cell_division_model = arguments["cell_division"];
 
         if (arguments.count("help")){
             return EXIT_SUCCESS;    
@@ -355,7 +353,10 @@ int main(int argc, char** argv){
 
         /* Read data from input file */
         std::cout << "-> Reading" << "\n";
-        std::vector<MOMAdata> cells =  read_data(arguments["infile"], config);
+        std::vector<MOMAdata> cells =  read_data(arguments["infile"], 
+                                                config, 
+                                                arguments["noise_model"],
+                                                arguments["cell_division_model"]);
 
         /* Count segments and check if we have enough parameter files */
         std::vector<int> segment_indices = get_segment_indices(cells);

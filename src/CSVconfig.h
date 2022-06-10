@@ -15,8 +15,8 @@ public:
     std::string length_col = "length_um";
     bool length_islog = false;
     std::string fp_col = "gfp";
+    double fp_auto = 0;
     std::string delm = ",";
-    int step = 1;
     std::string segment_col = "";
     std::string filter_col = "";
 
@@ -59,11 +59,17 @@ public:
                 else if (parts[0] == "fp_col"){
                     fp_col = parts[1];
                 }
+                else if (parts[0] == "fp_auto"){
+                    try{
+                        fp_auto = std::stod(parts[1]);
+                    }
+                    catch(std::exception &e){
+                        std::cerr << "(CSVconfig) ERROR: fp_auto in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
+                        throw;
+                    }
+                }
                 else if (parts[0] == "delm"){
                     delm = parts[1];
-                }
-                else if (parts[0] == "step"){
-                    step = std::stoi(parts[1]);
                 }
                 else if (parts[0] == "cell_tags"){
                     cell_tags.clear();
@@ -104,15 +110,15 @@ std::ostream& operator<<(std::ostream& os, const CSVconfig& config){
                 << pad_str("length_col:", col) <<  config.length_col << "\n" 
                 << pad_str("length_islog:", col) <<  config.length_islog << "\n" 
                 << pad_str("fp_col:", col) << config.fp_col << "\n" 
+                << pad_str("fp_auto:", col)  << config.fp_auto << "\n" 
                 << pad_str("delm:", col) << config.delm << "\n"; 
-    os          << pad_str("step:", col) << config.step << "\n";
 
     if (!config.segment_col.empty())
         os << pad_str("segment_col:", col) << config.segment_col << "\n";
     if (!config.filter_col.empty())
         os << pad_str("filter_col:", col) << config.filter_col << "\n";
     
-    os          << pad_str("cell_tags:", col) ;
+    os << pad_str("cell_tags:", col) ;
     for(size_t i=0; i < config.cell_tags.size(); i++){
         os << config.cell_tags[i] << ' ';
     }

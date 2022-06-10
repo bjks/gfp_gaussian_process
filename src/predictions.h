@@ -6,9 +6,6 @@
 #include <math.h>
 #include <cmath>
 
-std::string _noise_model;
-std::string _cell_division_model;
-
 /* 
 * functions corresponding to backward part end with '_r'
 */
@@ -37,7 +34,7 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
-    if (_cell_division_model == "binomial"){
+    if (cell.cell_division_model == "binomial"){
         D(0,0) = var_dx;
         D(0,1) = D(1,0) = cell.parent->mean(1)/2. * var_dx;
         D(1,1) = cell.parent->mean(1)*cell.parent->mean(1)/2.*var_dx + var_dg * cell.parent->mean(1)/4. * (1-var_dx);
@@ -116,8 +113,8 @@ void sc_prediction_forward(const std::vector<std::vector<double>> &params_vecs,
         xg(1) = cell.fp(t)         - cell.mean(1);
 
         /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
-        if (_noise_model == "scaled"){
-            D <<  params_vec[7], 0, 0,  abs(params_vec[8]*cell.mean(1));
+        if (cell.noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*(cell.mean(1)+cell.fp_auto);
         }
         else {
             D <<  params_vec[7], 0, 0,  params_vec[8];
@@ -203,7 +200,7 @@ void mean_cov_after_division_r(MOMAdata &cell, std::vector<double> params_vec){
 
     /* Covariance for first duagther cell */
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-    if (_cell_division_model == "binomial"){
+    if (cell.cell_division_model == "binomial"){
         D(0,0) = var_dx;
         D(1,1) =  8.*var_dx * cell.daughter1->mean(1)*cell.daughter1->mean(1) + 2.*var_dg*cell.daughter1->mean(1);
         D(0,1) = D(1,0) = 2.*cell.daughter1->mean(1) * var_dx;
@@ -218,7 +215,7 @@ void mean_cov_after_division_r(MOMAdata &cell, std::vector<double> params_vec){
 
     if (cell.daughter2 != nullptr){
         /* Covariance for second daughter cell */
-        if (_cell_division_model == "binomial"){
+        if (cell.cell_division_model == "binomial"){
             D(0,0) = var_dx;
             D(1,1) =  8.*var_dx * cell.daughter2->mean(1)*cell.daughter2->mean(1) + 2.*var_dg*cell.daughter2->mean(1);
             D(0,1) = D(1,0) = 2.*cell.daughter2->mean(1) * var_dx;
@@ -361,8 +358,8 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
         params_vec = params_vecs[cell.segment[t]];
 
         /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
-        if (_noise_model == "scaled"){
-            D <<  params_vec[7], 0, 0,  abs(params_vec[8]*cell.mean(1));
+        if (cell.noise_model== "scaled"){
+            D <<  params_vec[7], 0, 0, params_vec[8]*(cell.mean(1)+cell.fp_auto);
         }
         else {
             D <<  params_vec[7], 0, 0,  params_vec[8];

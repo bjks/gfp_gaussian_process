@@ -41,6 +41,11 @@ public:
     Eigen::VectorXd fp;
     Eigen::VectorXi segment;
 
+    // settings
+    std::string noise_model;
+    std::string cell_division_model;
+    double fp_auto;
+
     // initial guess for mean and cov, to avoid recalculation
     Eigen::VectorXd mean_init_forward = Eigen::VectorXd::Zero(4);
     Eigen::MatrixXd cov_init_forward = Eigen::MatrixXd::Zero(4, 4);
@@ -65,6 +70,7 @@ public:
     // correlation function
     std::vector<Eigen::MatrixXd> correlation;
     Gaussian joint;
+    
 
     // member functions
     bool is_leaf() const;
@@ -392,7 +398,7 @@ double last_element(Eigen::VectorXd &v){
     return v[v.size()-1];
 }
 
-std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config){
+std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config, std::string noise_model, std::string cell_division_model){
     /* 
     * Parses csv file line by line and returns the data as a vector of MOMAdata instances.
     * Returns data as vector of MOMAdata instances. Pointers for genealogy are not set yet!
@@ -477,6 +483,9 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config){
                     data[last_idx].cell_id = curr_cell;
                     // compose the cell id of the parent using the parent_tags
                     data[last_idx].parent_id = get_cell_id(line_parts, header_indices, config.parent_tags);
+                    data[last_idx].noise_model = noise_model;
+                    data[last_idx].cell_division_model = cell_division_model;
+                    data[last_idx].fp_auto = config.fp_auto;
                 }
 
                 append_vec(data[last_idx].time,  stod_reject_nan(line_parts[header_indices[config.time_col]])/config.rescale_time);

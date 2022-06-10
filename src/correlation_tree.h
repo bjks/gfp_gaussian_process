@@ -178,7 +178,7 @@ Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, 
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
 
-    if (_cell_division_model == "binomial"){
+    if (cell.cell_division_model == "binomial"){
         D(0,0) = var_dx;
         D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
         D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
@@ -221,7 +221,7 @@ Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> 
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
 
-    if (_cell_division_model == "binomial"){
+    if (cell.cell_division_model== "binomial"){
         D(0,0) = var_dx;
         D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
         D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
@@ -417,8 +417,8 @@ bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
 
         /* ------------ Posterior ------------ */ 
         /* include x and g -> P(z_n+1, z_n | D_n1+1) */        
-        if (_noise_model == "scaled"){
-            D <<  params_vec[7], 0, 0,  abs(params_vec[8]*cell.mean(1));
+        if (cell.noise_model == "scaled"){
+            D <<  params_vec[7], 0, 0,  params_vec[8]*(cell.mean(1)+cell.fp_auto);
         }
         else {
             D <<  params_vec[7], 0, 0,  params_vec[8];
