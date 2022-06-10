@@ -418,7 +418,7 @@ bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
         /* ------------ Posterior ------------ */ 
         /* include x and g -> P(z_n+1, z_n | D_n1+1) */        
         if (_noise_model == "scaled"){
-            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+            D <<  params_vec[7], 0, 0,  abs(params_vec[8]*cell.mean(1));
         }
         else {
             D <<  params_vec[7], 0, 0,  params_vec[8];

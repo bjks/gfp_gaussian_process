@@ -592,16 +592,6 @@ def write_csv_config(filename, segment=None, lane=None):
             fin.write("segment_col = " + segment + " \n")
     return filename
 
-def build_data_set_fixed_n(cells_simulated, var_x, var_g, n):
-    print("Every", n, "th datapoint is saved")
-    dataset = pd.DataFrame()
-    for i in range(len(cells_simulated)):
-        next_celldf = cells_simulated[i].to_df(n)
-        next_celldf['log_length_noise'] = next_celldf['log_length'] + np.random.normal(loc=np.zeros_like( next_celldf['log_length']), scale=np.sqrt(var_x))
-        next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
-                                                                        scale=np.sqrt(var_g))
-        dataset = dataset.append(next_celldf)
-    return dataset
 
 def build_data_set_fixed_dt(cells_simulated, var_x, var_g, dt, atol=1e-4):
     dataset = pd.DataFrame()
@@ -622,7 +612,7 @@ def build_data_set_scale_gfp_noise(cells_simulated, var_x, var_g, dt, atol=1e-4)
         next_celldf = cells_simulated[i].to_df(1)
         next_celldf['log_length_noise'] = next_celldf['log_length'] + np.random.normal(loc=np.zeros_like( next_celldf['log_length']), scale=np.sqrt(var_x))
         next_celldf['gfp_noise'] = next_celldf['gfp'] + np.random.normal(loc=np.zeros_like( next_celldf['gfp']), 
-                                                                        scale=np.sqrt(var_g * next_celldf['gfp']))
+                                                                        scale=np.sqrt(var_g * np.abs(next_celldf['gfp'])))
         dataset = dataset.append(next_celldf)
     
     return dataset[ np.abs( (dataset['time_min'] + atol/2) % dt) < atol ] 

@@ -57,7 +57,7 @@ void sc_likelihood(const std::vector<double> &params_vec,
 
         /* if chosen, noise in fp is scaled with sqrt of the fp content itself */
         if (_noise_model == "scaled"){
-            D <<  params_vec[7], 0, 0,  params_vec[8]*cell.mean(1);
+            D <<  params_vec[7], 0, 0,  abs(params_vec[8]*cell.mean(1));
         }
         else {
             D <<  params_vec[7], 0, 0,  params_vec[8];
