@@ -283,8 +283,8 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         std::cerr << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
         throw std::invalid_argument("Invalide argument");
     }
-    if (arguments["cell_division"] != "gauss" && arguments["cell_division"] != "binomial"){
-        std::cerr << "(arg_parser) ERROR: cell_division must be either 'gauss' or 'binomial', not " << arguments["cell_division"];
+    if (arguments["cell_division_model"] != "gauss" && arguments["cell_division_model"] != "binomial"){
+        std::cerr << "(arg_parser) ERROR: cell_division_model must be either 'gauss' or 'binomial', not " << arguments["cell_division_model"];
         throw std::invalid_argument("Invalide argument");
     }
 
@@ -416,10 +416,8 @@ int main(int argc, char** argv){
         std::cout << "Done." << std::endl;
         return EXIT_SUCCESS;
     }
-    catch (...) {
-        std::cout << "Quit because of an error\n";
+    catch (std::exception &e) {
+        std::cout << "Quit because of an error: " << e.what() <<"\n";
         return EXIT_FAILURE;
     }
 }
-
-

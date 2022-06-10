@@ -300,7 +300,7 @@ void save_final_likelihood(std::string outfile,
                             double tolerance, 
                             std::string search_space,
                             std::string noise_model,
-                            std::string cell_division,
+                            std::string cell_division_model,
                             std::string version){
     std::ofstream file(outfile,std::ios_base::app);
     long ndata_points = count_data_points(cells);
@@ -312,7 +312,7 @@ void save_final_likelihood(std::string outfile,
     file << "tolerance," << tolerance << "\n";
     file << "search_space," << search_space << "\n";
     file << "noise_model," << noise_model << "\n";
-    file << "cell_division," << cell_division << "\n";
+    file << "cell_division_model," << cell_division_model << "\n";
     file << "version," << version << "\n";
     file.close();
 }
