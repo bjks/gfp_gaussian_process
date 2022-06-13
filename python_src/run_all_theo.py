@@ -228,7 +228,7 @@ def main():
             if len(suffix_param_files)==2:
                 param_files = suffix_param_files
             else:
-                print("Not enough parameter files found using suffix -> don't run")
+                print("Not enough parameter files found for",infile," using suffix -> don't run")
                 continue
 
         # deal with -b parameter files
@@ -288,7 +288,7 @@ def main():
             if run:
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
             else:
-                print("Everything is already there and up-to-date! -> No need to run")
+                print("Everything for",infile," is already there and up-to-date! -> No need to run")
 # ================================================================================ #
 if __name__ == "__main__":
     main()
