@@ -87,6 +87,7 @@ def free_up_parameters(paramter_file, free_params):
         for _, line in enumerate(fin):
             file_data.append(line)
     with open(paramter_file,'w') as fout:
+        fout.write("# Parameter file after free up\n")
         for line in file_data:
             if line.split("=")[0].strip() in free_params:
                 param = line.split("=")[0].strip() 
@@ -101,54 +102,6 @@ def free_up_parameters(paramter_file, free_params):
             else:
                 fout.write(line)
     print("Rewrote", paramter_file)
-
-
-
-# def create_new_parameter_file_from_both(parameter_files):
-#     segment0 = []
-#     segment1 = []
-#     if len(parameter_files) == 2:
-#         with open(parameter_files[0],'r') as fin:
-#             for _, line in enumerate(fin):
-#                 if not line.startswith('#'):
-#                     segment0.append(line)
-#         with open(parameter_files[1],'r') as fin:
-#             for _, line in enumerate(fin):
-#                 if not line.startswith('#'):
-#                     segment1.append(line)
-
-#         output_file = parameter_files[0].replace("segment0", "segment2" )
-#         with open(output_file, 'w') as fout:
-#             fout.write("#Automatically generated file identical to segments1 apart from beta which from segments0\n")
-#             for i,_ in enumerate(segment0):
-#                 if segment0[i].startswith("beta"):
-#                     fout.write(segment0[i])
-#                 else:
-#                     fout.write(segment1[i])
-#         return parameter_files + [output_file]
-#     else:
-#         return parameter_files 
-
-# def create_new_parameter_file(parameter_files):
-#     segment1 = []
-#     if len(parameter_files) == 2:
-#         with open(parameter_files[1],'r') as fin:
-#             for _, line in enumerate(fin):
-#                 if not line.startswith('#'):
-#                     segment1.append(line)
-
-#         output_file = parameter_files[0].replace("segment0", "segment2" )
-#         with open(output_file, 'w') as fout:
-#             fout.write("#Automatically generated file identical to segments1 apart from beta\n")
-#             for i,_ in enumerate(segment1):
-#                 if segment1[i].startswith("beta"):
-#                     line_splitted = segment1[i].split("=")
-#                     fout.write(line_splitted[0] + ' = ' + str(float(line_splitted[1])*4) + '\n')
-#                 else:
-#                     fout.write(segment1[i])
-#         return parameter_files + [output_file]
-#     else:
-#         return parameter_files 
 
 
 def look_for_output_file(out_dir, infile, outype):
