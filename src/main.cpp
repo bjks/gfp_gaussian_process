@@ -52,7 +52,6 @@ void run_minimization(std::vector<MOMAdata> &cells,
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
-    std::cout << arguments["cell_division_model"] << "\n";
     save_final_likelihood(outfile_estim, 
                           cells, 
                           ll_max, 
