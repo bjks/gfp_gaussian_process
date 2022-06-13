@@ -52,6 +52,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
+    std::cout << arguments["cell_division_model"] << "\n";
     save_final_likelihood(outfile_estim, 
                           cells, 
                           ll_max, 
@@ -59,7 +60,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
                           std::stod(arguments["tolerance_maximization"]), 
                           arguments["search_space"], 
                           arguments["noise_model"],
-                          arguments["cell_division"],
+                          arguments["cell_division_model"],
                           "0.4.1");
 
     std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);

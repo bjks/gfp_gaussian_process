@@ -577,8 +577,10 @@ std::vector<MOMAdata> get_segment(std::vector<MOMAdata> cells, int segment){
     std::vector<MOMAdata> cells_in_segment;
     for(size_t i=0; i<cells.size(); ++i){
         MOMAdata cell;
-        cell.cell_id = cells[i].cell_id;
-        cell.parent_id = cells[i].parent_id;
+        cell.cell_id                = cells[i].cell_id;
+        cell.parent_id              = cells[i].parent_id;
+        cell.noise_model            = cells[i].noise_model;
+        cell.cell_division_model    = cells[i].cell_division_model;
 
         for(size_t t=0; t<cells[i].time.size(); ++t){
             if(cells[i].segment[t] == segment){

@@ -180,14 +180,14 @@ def main():
             type_beta = "fixed"
 
         if "GFP" in infile:
-            beta_bounds = [[type_beta, 0.01], # GM
-                            [type_beta, 0.005]] # SP
+            beta_bounds = [[type_beta, 0.022], # GM
+                            [type_beta, 0.0073]] # SP
         elif "RFP" in infile:
-            beta_bounds = [[type_beta, 0.13],
-                            [type_beta, 0.018]]  
+            beta_bounds = [[type_beta, 0.2],
+                            [type_beta, 0.043]]  
         elif "YFP" in infile:
-            beta_bounds = [[type_beta, 0.3],
-                            [type_beta, 0.08]]  
+            beta_bounds = [[type_beta, 0.35],
+                            [type_beta, 0.055]]  
 
         data = pd.read_csv(infile, skiprows=0)
         data.loc[: , "time"] = data["time_sec"].to_numpy() / args.rescale_time
@@ -238,7 +238,7 @@ def main():
 
             # cell division
             params["var_dx"] = ["free", estimate_var_dx(cells_data, rel_dev=0.5)]
-            params["var_dg"] = ["free", estimate_var_dg(cells_data, rel_dev=0.5)]
+            params["var_dg"] = ["free", 1   ]
 
             # write to file named as expected by "run_all_Theo.py"
             parameter_file = infile[:-4] + '_'+ prefix + ".txt"

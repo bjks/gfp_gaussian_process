@@ -91,13 +91,14 @@ def free_up_parameters(paramter_file, free_params):
             if line.split("=")[0].strip() in free_params:
                 param = line.split("=")[0].strip() 
                 init = str(float(line.split("=")[-1].split(',')[0]))
-                step = str(float( init )/2.)
-                newline = param + ' = ' + init + ' , ' + step + "\n"
-                fout.write(newline)
+                step = str(float( init )/10.)
                 if param.startswith("gamma_q"):
                     newline = param + ' = ' + init + ' , ' + step + ' , ' + '0.01' + ' , ' + '100' "\n"
-            else:
+                else:
+                    newline = param + ' = ' + init + ' , ' + step + "\n"
 
+                fout.write(newline)
+            else:
                 fout.write(line)
     print("Rewrote", paramter_file)
 
@@ -289,7 +290,7 @@ def main():
                     free_up_parameters(infered_parameter_files[1], args.free_up)
                 param_files = infered_parameter_files
             else:
-                print("Not enough parameter files found using infer -> don't run")
+                print("Not enough parameter files found for",infile,"using infer -> don't run")
                 continue
 
 

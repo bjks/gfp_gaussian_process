@@ -33,7 +33,6 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
-
     if (cell.cell_division_model == "binomial"){
         D(0,0) = var_dx;
         D(0,1) = D(1,0) = cell.parent->mean(1)/2. * var_dx;
@@ -63,7 +62,6 @@ void init_sc_distribution(MOMAdata &cell, const std::vector<double> &params_vec)
 
         cell.cov(2,2) = params_vec[2]/(2.*params_vec[1]);
         cell.cov(3,3) = params_vec[5]/(2.*params_vec[4]);
-
     }
     else{
         mean_cov_after_division(cell, params_vec);
