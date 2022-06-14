@@ -289,12 +289,15 @@ def main():
                     prediction_is_old = os.path.getmtime(output_file_prediction) < os.path.getmtime(suffix_param_files[0]) \
                                     or os.path.getmtime(output_file_prediction) < os.path.getmtime(suffix_param_files[1])
                     if prediction_is_old:
+                        print("Parameter file was modified for ", infile, " -> RUN")
+
                         run = True
 
             if run:
                 run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
             else:
-                print("Everything for",infile," is already there and up-to-date! -> No need to run")
+                # print("Everything for",infile," is already there and up-to-date! -> No need to run")
+                pass
 # ================================================================================ #
 if __name__ == "__main__":
     main()
