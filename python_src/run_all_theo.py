@@ -277,6 +277,7 @@ def main():
                     iterations_is_old = os.path.getmtime(output_file_iterations) < os.path.getmtime(suffix_param_files[0]) \
                                     or os.path.getmtime(output_file_iterations) < os.path.getmtime(suffix_param_files[1])
                     if iterations_is_old:
+                        print("Parameter file was modified for ", infile, " -> RUN")
                         run = True
 
             # check prediction file does not exist
@@ -290,7 +291,6 @@ def main():
                                     or os.path.getmtime(output_file_prediction) < os.path.getmtime(suffix_param_files[1])
                     if prediction_is_old:
                         print("Parameter file was modified for ", infile, " -> RUN")
-
                         run = True
 
             if run:
