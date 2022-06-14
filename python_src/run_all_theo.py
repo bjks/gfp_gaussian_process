@@ -175,6 +175,11 @@ def main():
                         help="Noise model (scaled)",
                         required=False,
                         default="scaled")
+    parser.add_argument('-div',
+                        dest="div",
+                        help="Division model (binomial)",
+                        required=False,
+                        default="binomial")
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
     parser.add_argument('--verbose', help="Shows what will be done", action='store_true')
@@ -207,6 +212,7 @@ def main():
                     " -t "      + args.tol + \
                     " -space "  + args.space + \
                     " -noise "  + args.noise + \
+                    " -div "    + args.div + \
                     " -i "      + infile 
 
         if args.out != None:
