@@ -22,7 +22,10 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     * this function is applied to cells that do have parent cells
     */
 
-    mean_cov_model(*cell.parent, cell.time(0)-cell.parent->time(cell.parent->time.size()-1), 
+    cell.mean = cell.parent->mean;
+    cell.cov = cell.parent->cov;
+
+    mean_cov_model(cell, cell.time(0)-cell.parent->time(cell.parent->time.size()-1), 
                         params_vec[0], params_vec[1], params_vec[2], 
                         params_vec[3], params_vec[4], params_vec[5], 
                         params_vec[6]);
@@ -33,18 +36,19 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
+
     if (cell.cell_division_model == "binomial"){
         D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.parent->mean(1)/2. * var_dx;
-        D(1,1) = cell.parent->mean(1)*cell.parent->mean(1)/2.*var_dx + var_dg * cell.parent->mean(1)/4. * (1-var_dx);
+        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
+        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
     }
     else{
         D(0,0) = var_dx;
         D(1,1) = var_dg;
     }
 
-    cell.mean = F*cell.parent->mean + f;
-    cell.cov = D + F * cell.parent->cov * F.transpose();
+    cell.mean = F*cell.mean + f;
+    cell.cov = D + F * cell.cov * F.transpose();
 }
 
 void init_sc_distribution(MOMAdata &cell, const std::vector<double> &params_vec){
