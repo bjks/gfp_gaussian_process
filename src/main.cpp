@@ -1,10 +1,16 @@
-#include "likelihood.h"
-#include "minimizer_nlopt.h"
+#include <fstream>
+#include <string>
+
 #include <filesystem>
 #include <iostream> 
 #include <iterator> 
 #include <iomanip> 
 
+std::ofstream _file_log;
+
+#include "likelihood.h"
+#include "minimizer_nlopt.h"
+// #include "tests.h"
 
 // #include <boost/iostreams/filtering_streambuf.hpp>
 // #include <boost/iostreams/copy.hpp>
@@ -20,14 +26,14 @@ void run_minimization(std::vector<MOMAdata> &cells,
                     std::string> arguments, 
                     int segment){
 
-    std::cout << "-> Minimizaton" << "\n";
+    _file_log << "-> Minimizaton" << "\n";
 
     /* set and setup (global) output file */
     std::string outfile_ll = outfile_name_minimization_process(arguments, params, segment);
     _file_iteration = std::ofstream(outfile_ll, std::ios_base::app);
 
     setup_outfile_likelihood(outfile_ll, params);
-    std::cout << "Outfile: " << outfile_ll << "\n";
+    _file_log << "Outfile: " << outfile_ll << "\n";
 
     /* minimization for tree starting from cells[0] */
     std::string min_algo = "LN_NELDERMEAD";
@@ -46,9 +52,9 @@ void run_minimization(std::vector<MOMAdata> &cells,
     _file_iteration.close();
 
     /* estimate errors of params via hessian */
-    std::cout << "-> Error estimation" << "\n";
+    _file_log << "-> Error estimation" << "\n";
     std::string outfile_estim = outfile_name_minimization_final(arguments, params, segment);
-    std::cout << "Outfile: " << outfile_estim << "\n";
+    _file_log << "Outfile: " << outfile_estim << "\n";
 
     params.to_csv(outfile_estim);
     save_error_bars(outfile_estim, params, cells);
@@ -72,7 +78,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells,
                     Parameter_set params,
                     std::map<std::string, std::string> arguments, 
                     int segment){
-    std::cout << "-> 1d Scan" << "\n";
+    _file_log << "-> 1d Scan" << "\n";
     _save_ll = true;
     for(size_t i=0; i<params.all.size(); ++i){
         if (params.all[i].bound){
@@ -90,7 +96,7 @@ void run_bound_1dscan(std::vector<MOMAdata> &cells,
             _file_iteration = std::ofstream(outfile_scan, std::ios_base::app);
 
             setup_outfile_likelihood(outfile_scan, params);
-            std::cout << "Outfile: " << outfile_scan << "\n";
+            _file_log << "Outfile: " << outfile_scan << "\n";
 
             /* set sampling vector np.arange style*/
             std::vector<double> sampling = arange<double>(params.all[i].lower, 
@@ -110,7 +116,7 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
                             std::vector<Parameter_set> params_list, 
                             std::map<std::string, std::string> arguments,
                             const CSVconfig &config){
-    std::cout << "-> prediction" << "\n";
+    _file_log << "-> prediction" << "\n";
     
     std::string outfile   = outfile_name_prediction(arguments, params_list);
     std::string outfile_b = outfile_name_prediction(arguments, params_list, "_backward");
@@ -122,15 +128,15 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     }
 
     // forward...
-    std::cout << "Outfile forward: " << outfile_f << "\n";
+    _file_log << "Outfile forward: " << outfile_f << "\n";
     prediction_forward(params_vecs, cells);
 
     // backward...
-    std::cout << "Outfile backward: " << outfile_b << "\n";
+    _file_log << "Outfile backward: " << outfile_b << "\n";
     prediction_backward(params_vecs, cells);
 
     // combine the two 
-    std::cout << "Outfile: " << outfile << "\n";
+    _file_log << "Outfile: " << outfile << "\n";
     combine_predictions(cells);
 
     /* save */
@@ -145,7 +151,7 @@ void run_joint_distribution(std::vector<MOMAdata> &cells,
                     std::vector<Parameter_set> params_list, 
                     std::map<std::string, std::string> arguments, 
                     const CSVconfig &config){
-    std::cout << "-> joint posteriors" << "\n";
+    _file_log << "-> joint posteriors" << "\n";
 
     std::vector<std::vector<double>> params_vecs;
     for (size_t i=0; i<params_list.size(); ++i){
@@ -262,9 +268,9 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                 }
                 else if (k==key_indices["-h"]){
                     arguments["help"] = "1";
-                    std::cout << "Usage: ./gfp_gaussian [-options]\n";
+                    _file_log << "Usage: ./gfp_gaussian [-options]\n";
                     for(size_t j=0; j<keys.size(); ++j)
-                        std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 35) << keys[j][2] <<"\n";
+                        _file_log << pad_str(keys[j][0] + ", "+ keys[j][1], 35) << keys[j][2] <<"\n";
                 }
             }
         }
@@ -275,31 +281,31 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     /* Check if meaningfull search space argument */
     if (arguments["search_space"] != "log" && arguments["search_space"] != "linear"){
-        std::cerr << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
+        _file_log << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
         throw std::invalid_argument("Invalide argument");
     }
 
     if (arguments["noise_model"] != "const" && arguments["noise_model"] != "scaled"){
-        std::cerr << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
+        _file_log << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
         throw std::invalid_argument("Invalide argument");
     }
     if (arguments["cell_division_model"] != "gauss" && arguments["cell_division_model"] != "binomial"){
-        std::cerr << "(arg_parser) ERROR: cell_division_model must be either 'gauss' or 'binomial', not " << arguments["cell_division_model"];
+        _file_log << "(arg_parser) ERROR: cell_division_model must be either 'gauss' or 'binomial', not " << arguments["cell_division_model"];
         throw std::invalid_argument("Invalide argument");
     }
 
     /* Check is required filenames are parsed and files exist */
     if (!arguments.count("infile")){
-        std::cerr << "(arg_parser) ERROR: Required infile flag not set!\n";
+        _file_log << "(arg_parser) ERROR: Required infile flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
     else if(! std::filesystem::exists(arguments["infile"])){
-        std::cerr << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
+        _file_log << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
 
     if (!arguments.count("parameter_bounds")){
-        std::cerr << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
+        _file_log << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
 
@@ -307,25 +313,43 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
     for (size_t i=0; i<param_files.size(); ++i){
         if(!std::filesystem::exists(param_files[i])){   
-            std::cerr << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
+            _file_log << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
             throw std::invalid_argument("Invalide argument");
         }
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
     if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
-        std::cerr << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
+        _file_log << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
     return arguments;
 }
 
+std::string outfile_name_log(std::map<std::string, std::string> arguments, 
+                                    std::vector<Parameter_set> params_list, std::string suffix=""){
+    /* Filename for a log file */
+    std::string outfile = out_dir(arguments);
+    outfile += file_base(arguments["infile"]);
+    for (size_t i=0; i<params_list.size(); ++i){
+        outfile += outfile_param_code(params_list[i]);
+    }
+    return outfile + suffix + ".log";
+}
 
 /* =============================================================================== */
 /*                                  MAIN                                           */
 /* =============================================================================== */
 
 int main(int argc, char** argv){
+
+    // test_mean_cov_model();
+    // return 0;
+    std::string outfile_log;
+    std::string outfile_log_success;
+    std::string outfile_log_error;
+
+    std::cout << "Running... \n";
 
     try{
         /* process command line arguments */
@@ -339,20 +363,28 @@ int main(int argc, char** argv){
         /* Read parameters as a vector of Parameter_set instances */
         std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
         std::vector<Parameter_set> params_list;
+        
+        outfile_log  = outfile_name_log(arguments, params_list);
+        outfile_log_success  = outfile_name_log(arguments, params_list, "_success");
+        outfile_log_error  = outfile_name_log(arguments, params_list, "_error");
+        
+        _file_log = std::ofstream(outfile_log, std::ios_base::app);
+        std::cout << "Temporary log file '" << outfile_log <<  "' created\n";
+
         for (size_t i=0; i<param_files.size(); ++i){
             Parameter_set params(param_files[i]);
             params.check_if_complete();
-            std::cout << params << "\n";
+            _file_log << params << "\n";
 
             params_list.push_back(params);
         }
 
         /* Read csv config file */
         CSVconfig config(arguments["csv_config"]);
-        std::cout << config << "\n";
+        _file_log << config << "\n";
 
         /* Read data from input file */
-        std::cout << "-> Reading" << "\n";
+        _file_log << "-> Reading" << "\n";
         std::vector<MOMAdata> cells =  read_data(arguments["infile"], 
                                                 config, 
                                                 arguments["noise_model"],
@@ -361,7 +393,7 @@ int main(int argc, char** argv){
         /* Count segments and check if we have enough parameter files */
         std::vector<int> segment_indices = get_segment_indices(cells);
         if (segment_indices.size() != param_files.size()){
-            std::cerr   << "(main) ERROR: There are " << segment_indices.size() 
+            _file_log   << "(main) ERROR: There are " << segment_indices.size() 
                         << " segments, but " << param_files.size() << " parameter files!\n";
             throw std::invalid_argument("Invalide argument");
         }
@@ -413,11 +445,23 @@ int main(int argc, char** argv){
             run_joint_distribution(cells, params_list, arguments, config);
         }
 
-        std::cout << "Done." << std::endl;
+        _file_log << "Done." << std::endl;
+
+        std::cout << "Done. Log file: " << outfile_log_success << std::endl;
+
+        std::rename(outfile_log.c_str(), outfile_log_success.c_str());
+        _file_log.close();
+
         return EXIT_SUCCESS;
     }
     catch (std::exception &e) {
-        std::cout << "Quit because of an error: " << e.what() <<"\n";
+        std::rename(outfile_log.c_str(), outfile_log_error.c_str());
+        _file_log << "Quit because of an error: " << e.what() <<"\n";
+        _file_log.close();
+
+        std::cout << "Quit because of an error: " << e.what() << "\n";
+        std::cout << "Error log file: " << outfile_log_error << std::endl;
+
         return EXIT_FAILURE;
     }
 }

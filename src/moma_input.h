@@ -139,10 +139,10 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
                     cell_vector[j].daughter2 = &cell_vector[k];
                 }
                 else{
-                    std::cerr   << "(build_cell_genealogy) ERROR: Both daughter pointers are set, cell_id: " 
+                    _file_log   << "(build_cell_genealogy) ERROR: Both daughter pointers are set, cell_id: " 
                                 << cell_vector[j].cell_id << "\n";
-                    std::cerr << "-> daughter1 " << cell_vector[j].daughter1->cell_id << "\n";
-                    std::cerr << "-> daughter2 " << cell_vector[j].daughter2->cell_id << "\n";
+                    _file_log << "-> daughter1 " << cell_vector[j].daughter1->cell_id << "\n";
+                    _file_log << "-> daughter2 " << cell_vector[j].daughter2->cell_id << "\n";
                     throw std::invalid_argument("Invalid argument");
                 }
             }
@@ -153,7 +153,7 @@ void build_cell_genealogy(std::vector<MOMAdata> &cell_vector){
 void print_cells(std::vector<MOMAdata> const &cell_vector){
     /* prints all cells */
     for (MOMAdata cell: cell_vector){
-        std::cout << cell;
+        _file_log << cell;
     }
 }
 
@@ -416,44 +416,44 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config, std::st
     
     // check if the columns that are set actually exist in header 
     if (!header_indices.count(config.time_col)){
-        std::cerr << "(read_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
+        _file_log << "(read_data) ERROR: (time_col) is not an column in input file: " << config.time_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.length_col)){
-        std::cerr << "(read_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
+        _file_log << "(read_data) ERROR: (length_col) is not an column in input file: " << config.length_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!header_indices.count(config.fp_col)){
-        std::cerr << "(read_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
+        _file_log << "(read_data) ERROR: (fp_col) is not an column in input file: " << config.fp_col << "\n";
         throw std::invalid_argument("Invalid argument");
         return data;
     }
     if (!config.segment_col.empty()){
         if (!header_indices.count(config.segment_col)){
-            std::cerr << "(read_data) ERROR: (segment_col) is not an column in input file: " << config.segment_col << "\n";
+            _file_log << "(read_data) ERROR: (segment_col) is not an column in input file: " << config.segment_col << "\n";
             throw std::invalid_argument("Invalid argument");
             return data;
         }
     }
     if (!config.filter_col.empty()){
         if (!header_indices.count(config.filter_col)){
-            std::cerr << "(read_data) ERROR: (filter_col) is not an column in input file: " << config.filter_col << "\n";
+            _file_log << "(read_data) ERROR: (filter_col) is not an column in input file: " << config.filter_col << "\n";
             throw std::invalid_argument("Invalid argument");
             return data;
         }
     }
     for(size_t i=0; i<config.cell_tags.size(); ++i){
         if (!header_indices.count(config.cell_tags[i])){
-            std::cerr << "(read_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
+            _file_log << "(read_data) ERROR: at least one of (cell_tags) is not an column in input file: " << config.cell_tags[i] << "\n";
             throw std::invalid_argument("Invalid argument");   
             return data;
         }
     }
     for(size_t i=0; i<config.parent_tags.size(); ++i){
         if (!header_indices.count(config.parent_tags[i])){
-            std::cerr << "(read_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
+            _file_log << "(read_data) ERROR: at least one of (parent_tags) is not an column in input file: " << config.parent_tags[i] << "\n";
             throw std::invalid_argument("Invalid argument");
             return data;
         }
@@ -509,12 +509,12 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config, std::st
             }
         }
         catch(std::exception &e){
-            std::cerr << "(read_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
+            _file_log << "(read_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
             throw;
         }
     }
     file.close();
-    std::cout << last_idx + 1 << " cells and " << line_count << " data points found in file " << filename << std::endl; 
+    _file_log << last_idx + 1 << " cells and " << line_count << " data points found in file " << filename << std::endl; 
     return data;
 }
 
@@ -542,20 +542,20 @@ std::vector<int> get_segment_indices(std::vector<MOMAdata> cells){
         }
     }
     if (*std::min_element(segs.begin(), segs.end()) != 0){
-        std::cerr << "(get_segment_indices) ERROR: The segment indices do not start at 0:";
+        _file_log << "(get_segment_indices) ERROR: The segment indices do not start at 0:";
         for (size_t i=0; i<segs.size(); ++i){
-            std::cerr << " " << segs[i];
+            _file_log << " " << segs[i];
         }
-        std::cerr << "\n";
+        _file_log << "\n";
         throw std::invalid_argument("Invalid argument");
     }
 
     if (segs.size()-1 != *std::max_element(segs.begin(), segs.end())){
-        std::cerr << "(get_segment_indices) ERROR: The segment indices are not consecutive:";
+        _file_log << "(get_segment_indices) ERROR: The segment indices are not consecutive:";
         for (size_t i=0; i<segs.size(); ++i){
-            std::cerr << " " << segs[i];
+            _file_log << " " << segs[i];
         }
-        std::cerr << "\n";
+        _file_log << "\n";
         throw std::invalid_argument("Invalid argument");
     }
     return segs;

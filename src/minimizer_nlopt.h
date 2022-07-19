@@ -79,7 +79,7 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
     double ll_min;
     _save_ll = true;
 
-    std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
+    _file_log << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
     _iteration = 0;
 
     // actual minimization
@@ -88,19 +88,19 @@ double minimize_wrapper(double (*target_func)(const std::vector<double> &x, std:
     }
 
     catch(nlopt::roundoff_limited &e){
-        std::cerr << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
+        _file_log << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
 Although the tolerance criterium was not met, the last valid step is used for parameter estimation. (" << e.what() << ")\n";
     }
 
     catch(std::exception &e) {
-        std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed (" << e.what() << ")" << std::endl;
+        _file_log << "(minimize_wrapper) ERROR: Log likelihood optimization failed (" << e.what() << ")" << std::endl;
         throw;
     }
     _save_ll = false; // stop ll output
 
-    std::cout << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
+    _file_log << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
     params.set_final(parameter_state);
-    std::cout << params << std::endl;
+    _file_log << params << std::endl;
     return -ll_min;
 }
 
@@ -184,7 +184,7 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
     double ll_min;
     _save_ll = true;
 
-    std::cout << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
+    _file_log << "Optimization algorithm: " << opt.get_algorithm_name() << " Tolerance: " << tolerance << "\n";
     _iteration = 0;
 
    // actual minimization
@@ -193,24 +193,24 @@ double minimize_wrapper_log_params(double (*target_func)(const std::vector<doubl
     }
 
     catch(nlopt::roundoff_limited &e){
-        std::cerr << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
+        _file_log << "(minimize_wrapper) WARNING: Log likelihood maximization is limited by rounding precision and was stopped. \
 Although the tolerance criterium was not met, the last valid step is used for parameter estimation. (" << e.what() << ")\n";
     }
 
     catch(std::exception &e) {
-        std::cerr << "(minimize_wrapper) ERROR: Log likelihood optimization failed (" << e.what() << ")" << std::endl;
+        _file_log << "(minimize_wrapper) ERROR: Log likelihood optimization failed (" << e.what() << ")" << std::endl;
         throw;
     }
     _save_ll = false; // stop ll output
 
-    std::cout << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
+    _file_log << "Found maximum: log likelihood = " << std::setprecision(20) << -ll_min << std::setprecision(10) << "\n";
 
     // save final value for each parameter
     for(size_t i=0; i<parameter_state.size(); ++i){
         parameter_state[i] = exp(parameter_state[i]);
     }
     params.set_final(parameter_state);
-    std::cout << params << std::endl;
+    _file_log << params << std::endl;
     return -ll_min;
 }
 

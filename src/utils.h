@@ -23,7 +23,7 @@ bool string2bool(const std::string & s){
     else if (s=="False" || s=="false" || s=="FALSE" || s=="0")
         return false;
     else{
-        std::cerr << "(string2bool) ERROR: no valid bool conversion of " << s << "\n";
+        _file_log << "(string2bool) ERROR: no valid bool conversion of " << s << "\n";
         throw std::invalid_argument("Invalid argument");
     }
 }

@@ -79,7 +79,7 @@ public:
             }
         }
         catch(std::exception &e){
-            std::cerr << "(set_paramter) ERROR: Parameter settings of '" << parts[0] << "' cannot be processed (" << e.what() <<")" << std::endl;
+            _file_log << "(set_paramter) ERROR: Parameter settings of '" << parts[0] << "' cannot be processed (" << e.what() <<")" << std::endl;
             throw;
         }
     }
@@ -192,7 +192,7 @@ public:
 bool Parameter_set::check_if_complete(){
     for (size_t i=0; i<all.size(); ++i){
         if (!all[i].set){
-            std::cerr << "(check_if_complete) ERROR: Parameter " << all[i].name << " not found in parameter file\n";
+            _file_log << "(check_if_complete) ERROR: Parameter " << all[i].name << " not found in parameter file\n";
             throw std::invalid_argument("Invalide argument");
             return false;
         }

@@ -22,7 +22,7 @@ double zerotauint(double a, double b, double c, double t1, double t0=0){
 
 double onetauint(double a, double b, double c, double t1, double t0=0){
     //int_t0^t1 s*exp[a*s**2+b*s+c]ds rewritten with Dawson functions 
-    double x= (-2.*sqrt(a) * exp(-pow(b,2.)/(4.*a) + c + pow(b,2.)/(4.*a)) * (exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
+    double x= (-2.*sqrt(a) * exp(c) * (exp(t0*(b + a*t0)) - exp(t1*(b + a*t1))) +\
            b*2.* \
            (exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t0)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t0)/(2.*sqrt(a))) \
            -exp(-pow(b,2.)/(4.*a) + c + pow((b + 2.*a*t1)/(2.*sqrt(a)), 2.)) * Faddeeva::Dawson((b + 2.*a*t1)/(2.*sqrt(a)))));

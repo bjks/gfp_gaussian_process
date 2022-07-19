@@ -542,7 +542,7 @@ void collect_joint_distributions(const std::vector<std::vector<double>> &params_
     out << "\n";
 
     for (size_t i=0; i<cells.size(); ++i){
-        std::cout << "-> cell: " << i << "\n";
+        _file_log << "-> cell: " << i << "\n";
         sc_joint_distributions(params_vecs, cells[i], out, joint_vector, tolerance_joint);
     }
 }

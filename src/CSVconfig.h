@@ -46,7 +46,7 @@ public:
                         rescale_time = std::stod(parts[1]);
                     }
                     catch(std::exception &e){
-                        std::cerr << "(CSVconfig) ERROR: rescale_time in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
+                        _file_log << "(CSVconfig) ERROR: rescale_time in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
                         throw;
                     }
                 }
@@ -64,7 +64,7 @@ public:
                         fp_auto = std::stod(parts[1]);
                     }
                     catch(std::exception &e){
-                        std::cerr << "(CSVconfig) ERROR: fp_auto in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
+                        _file_log << "(CSVconfig) ERROR: fp_auto in 'csv_file' cannnot be processed (" << e.what() <<")" << std::endl;
                         throw;
                     }
                 }

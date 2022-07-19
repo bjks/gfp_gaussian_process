@@ -83,14 +83,19 @@ void sc_likelihood(const std::vector<double> &params_vec,
                 }
                 _file_iteration << std::setprecision(30) << tl << std::setprecision(15) << "\n";
             }
-
-            std::cout << _iteration + 1 << ": ";
+            
+            _file_log << "\n(sc_likelihood) ERROR: Log likelihood is Nan\n";
+            _file_log << "____________________________________________\n";
+            _file_log << "cell_id: " << cell.cell_id << ", at time " << cell.time(t) << "\n";
+            _file_log << _iteration + 1 << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
-                std::cout << params_vec[i]  << ", ";
+                _file_log << params_vec[i]  << ", ";
             }
-            std::cout << "ll=" <<  std::setprecision(10) << tl  << "\n";
 
-            std::cerr << "(sc_likelihood) ERROR: Log likelihood is Nan\n";
+            _file_log << "ll=" <<  std::setprecision(10) << tl  << "\n";
+
+            _file_iteration.close();
+
             throw std::domain_error("Likelihood is Nan");
         }
     }
@@ -143,11 +148,11 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
 
     /* Print output dependend on set _print_level */
     if (_print_level>0){
-            std::cout << _iteration << ": ";
+            _file_log << _iteration << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
-                std::cout << std::setprecision(20) << params_vec[i]  << ", ";
+                _file_log << std::setprecision(20) << params_vec[i]  << ", ";
             }
-            std::cout << "ll=" << std::setprecision(30) << tl << std::setprecision(15) << "\n";
+            _file_log << "ll=" << std::setprecision(30) << tl << std::setprecision(15) << "\n";
     }
     return -tl;
 }
