@@ -255,7 +255,10 @@ def main():
 
         ggp_arg +=  " -b " + get_arg_list(param_files)
   
-  
+        if args.m:
+            ggp_arg += ' -m '
+        if args.p:
+            ggp_arg += ' -p '
         # ============ run! ============ #
         if args.rerun:
             run_command(config["bin"] + ' ' + ggp_arg, args.dryrun, config["iscluster"], args.verbose)
@@ -269,7 +272,6 @@ def main():
 
             # check iterations file does not exist
             if args.m:
-                ggp_arg += ' -m '
                 if output_file_iterations == None:
                     print("The input file", infile, "has no iterations file yet -> RUN")
                     run = True
@@ -282,7 +284,6 @@ def main():
 
             # check prediction file does not exist
             if args.p:
-                ggp_arg += ' -p '
                 if output_file_prediction==None:
                     print("The input file", infile, "has no prediction file yet -> RUN")
                     run = True
