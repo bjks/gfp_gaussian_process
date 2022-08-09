@@ -183,7 +183,6 @@ class Correlation:
         corr_mle (np.array((8,8))): MLE correlation matrix, ie the normalized covariance (None when initialized)
         corr_mle_err (np.array((8,8))): Error of MLE correlation matrix, ie the normalized covariance (None when initialized)
 
-
     '''
     def __init__(self, dt = 0):
         self.dt = dt
