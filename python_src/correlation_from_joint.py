@@ -8,6 +8,9 @@ import os
 import matplotlib.colors as mcolors
 from matplotlib import cm
 import pandas as pd
+from multiprocessing import set_start_method
+from multiprocessing import get_context
+from multiprocessing import Pool
 
 
 def get_input_files(directory, keyword=None, ext=".csv"):
@@ -188,19 +191,34 @@ class Correlation:
         self.dt = dt
         self.n = 0
 
-        self.mm = np.zeros((8,8))
         self.m = np.zeros((8))
+        self.mm = np.zeros((8,8))
+
+        self.c = np.zeros((2))
+        self.cc = np.zeros((2,2))
         
         # Those will be set in average and normalize, resprectively 
         self.cov = None
+        self.cov_concentration = None
         
+        # z vector 
         self.corr_naive = None
+        self.cov_mle = None
+        self.cov_mle_err = None
 
         self.corr_mle = None
         self.corr_mle_err = None
 
+        # Concentration
+        self.corr_concentration_naive = None
+        self.cov_concentration_mle = None
+        self.cov_concentration_mle_err = None
 
-    def add(self, joint, naive=False):
+        self.corr_concentration_mle = None
+        self.corr_concentration_mle_err = None
+
+
+    def add_gaussian(self, joint):
         """add (sum) posterior to current sum of moments: mm = <xy> and m = <x>
 
         Args:
@@ -208,13 +226,14 @@ class Correlation:
         """
         self.n += 1
         self.m += joint.m
-        if naive:
-            self.mm += joint.m * joint.m[:,np.newaxis] + np.diag(joint.C)
-        else:
-            self.mm += joint.m * joint.m[:,np.newaxis] + joint.C
+        self.mm += joint.m * joint.m[:,np.newaxis] + joint.C
+
         # Equivalent to:
         # for i in range(8): for j in range(8): self.mm[i,j] += joint.m[i] * joint.m[j] + joint.C[i,j]
-
+       
+        c = joint.m[[1,5]]/np.exp(joint.m[[0,4]])
+        self.c += c
+        self.cc += c * c[:,np.newaxis]
 
 
     # the following functions are simple implementations but they is not often run
@@ -222,27 +241,40 @@ class Correlation:
         """calculated covariance <xy> - <x><y>, sets cov
         """
         self.cov = np.zeros((8,8))
-        if self.n >0:
+        self.cov_concentration = np.zeros((2,2))
+        if self.n>0:
             for i in range(8):
                 for j in range(8):
                     self.cov[i,j] = self.mm[i,j]/self.n -  self.m[i]/self.n * self.m[j]/self.n
+            for i in range(2):
+                for j in range(2):
+                    self.cov_concentration[i,j] = self.cc[i,j]/self.n -  self.c[i]/self.n * self.c[j]/self.n
         else:
             for i in range(8):
                 for j in range(8):
                     self.cov[i,j] = np.nan
+            for i in range(2):
+                for j in range(2):
+                    self.cov_concentration[i,j] = np.nan
+        # print("cov ", self.cov_concentration, np.shape(self.cov_concentration))
 
 
     def naive(self):
         """naive calculation of normalized correlation, sets corr_naive
         """
         self.corr_naive = np.zeros((8,8))
+        self.corr_concentration_naive = np.zeros((2,2))
+
         if self.n>0:
             for i in range(8):
                 for j in range(8):
                     self.corr_naive[i,j] = self.cov[i,j] / np.sqrt(self.cov[i,i] * self.cov[j,j])
+            for i in range(2):
+                for j in range(2):
+                    self.corr_concentration_naive[i,j] =  self.cov_concentration[i,j] \
+                                             / np.sqrt(self.cov_concentration[i,i] * self.cov_concentration[j,j])
 
-
-    def mle(self, covarince0):
+    def mle(self, covarince0, covarince_concentration0, norm=True):
         """MLE of the correlation with error bars, sets corr_mle and corr_mle_err
 
         Args:
@@ -250,28 +282,67 @@ class Correlation:
                                             i.e. diagonal is variance estiamte of the 
                                             underlying distr. x and y are drawn from
         """
-        self.corr_mle = np.zeros((8,8))
-        self.corr_mle_err = np.zeros((8,8))
+        if norm:
+            self.corr_mle = np.zeros((8,8))
+            self.corr_mle_err = np.zeros((8,8))
+            self.corr_concentration_mle = np.zeros((2,2))
+            self.corr_concentration_mle_err = np.zeros((2,2))
 
-        r = np.linspace(-1+1e-8,1-1e-8,10000)
+        else:
+            self.cov_mle = np.zeros((8,8))
+            self.cov_mle_err = np.zeros((8,8))
+
+            self.cov_concentration_mle = np.zeros((2,2))
+            self.cov_concentration_mle_err = np.zeros((2,2))
+
+        r = np.linspace(-1+1e-12,1-1e-12,10000)
 
         if self.n>0:
+            ## z vector
             for i in range(8):
                 for j in range(8):
                     V_yx = self.cov[j,i] # cov is symmetric
                     V_xx = self.cov[i,i]
                     V_yy = self.cov[j,j]
+
                     sigma_y = np.sqrt(covarince0[j,j])
                     sigma_x = np.sqrt(covarince0[i,i])
 
                     ll = log_likelihood_function(V_yy, V_yx, V_xx, 
                                                 sigma_y, sigma_x, r, self.n)
                     r_max = r[np.argmax(ll)]
+                    err = log_likelihood_error(V_yy,V_yx,V_xx, sigma_y, sigma_x, r_max, self.n)                        
+
+                    if norm:
+                        self.corr_mle[i,j] = r_max
+                        self.corr_mle_err[i,j] = err
+                    else:
+                        r_max = r_max * sigma_y *sigma_x
+                        err *= sigma_y *sigma_x
+                        self.cov_mle[i,j] = r_max
+                        self.cov_mle_err[i,j] = err
+            ## Concentration
+            for i in range(2):
+                for j in range(2):
+                    V_yx = self.cov_concentration[j,i] # cov is symmetric
+                    V_xx = self.cov_concentration[i,i]
+                    V_yy = self.cov_concentration[j,j]
+                    sigma_y = np.sqrt(covarince_concentration0[j,j])
+                    sigma_x = np.sqrt(covarince_concentration0[i,i])
+
+                    ll = log_likelihood_function(V_yy, V_yx, V_xx, 
+                                                sigma_y, sigma_x, r, self.n)
+                    r_max = r[np.argmax(ll)]
                     err = log_likelihood_error(V_yy,V_yx,V_xx, sigma_y, sigma_x, r_max, self.n)
 
-                    self.corr_mle[i,j] = r_max
-                    self.corr_mle_err[i,j] = err
-
+                    if norm:
+                        self.corr_concentration_mle[i,j] = r_max
+                        self.corr_concentration_mle_err[i,j] = err
+                    else:
+                        r_max = r_max * sigma_y *sigma_x
+                        err *= sigma_y *sigma_x
+                        self.cov_concentration_mle[i,j] = r_max
+                        self.cov_concentration_mle_err[i,j] = err
 
 ### CELL PATHS ###
 def cell_paths(start_cell, cell_list):
@@ -305,7 +376,7 @@ def cell_lineage_lookup(cells, parents):
     return paths2matrix(paths, cells)
 
 
-def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=False, only_marg=False): 
+def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=False): 
     """reads joint_file and prediction_file as input and calculates the correlation function
 
     Args:
@@ -347,7 +418,7 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=
                 
                 idx = np.argwhere(np.isclose(dts, 0, atol=tol)) # in case 0 is not the dt this is needed
                 if len(idx)>0:
-                    correlations[idx[0,0]].add(joint, naive=naive_exp)
+                    correlations[idx[0,0]].add_gaussian(joint)
 
                 if cell_id != last_cell:
                     cell_ids.append(cell_id)
@@ -379,13 +450,13 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=
                     if joint != None and not only_marg:     
                         idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))
                         if len(idx)>0:
-                            correlations[idx[0,0]].add(joint, naive=naive_exp)
+                            correlations[idx[0,0]].add_gaussian(joint)
                     else:
                         if cell_lineage_lookup_table.loc[cell_id_row, cell_id_cols[j]] and j>i:
                             idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))  
                             if len(idx)>0:
                                 joint = Gaussian(np.array(marginals[j] + marginals[i]), n=2)
-                                correlations[idx[0,0]].add(joint, naive=naive_exp)
+                                correlations[idx[0,0]].add_gaussian(joint)
                         else:
                             pass
                         
@@ -408,7 +479,8 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, naive_exp=
     for i, dt in enumerate(dts):
         correlations[i].average()
         correlations[i].naive()
-        correlations[i].mle(correlations[0].cov)
+        correlations[i].mle(correlations[0].cov, correlations[0].cov_concentration, norm=True)
+        correlations[i].mle(correlations[0].cov, correlations[0].cov_concentration, norm=False)
 
     return correlations
 
@@ -419,6 +491,7 @@ def get_condition(filename):
         if cond in filename:
             return cond[:-1]
     return None
+
 
 
 # ================================= #
@@ -453,8 +526,25 @@ def main():
     dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
     dt_max = {"acetate" : 2500,  "glycerol": 2000, "glucose": 2000, "glucoseaa": 1000}
 
+    # try:
+    #     n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE']
+    #     print("slurm: number of cpus {}".format(os.environ['SLURM_JOB_CPUS_PER_NODE']))
+    # except Exception as e:
+    #     n_cores = 1
+    #     print("SLURM_JOB_CPUS_PER_NODE unknown")
+
+
+    # with get_context("spawn").Pool(n_cores) as p:
+    #     print("\tstart multiprocessing")
+    #     out = p.map(minimize_A, args)
+    #     print("\tclose")
+    #     p.close()
+    #     print("\tjoin")
+    #     p.join()
+
+
     for joint_filename in joint_filenames:
-        try:
+        # try:
             condition = get_condition(joint_filename)
             prediction_filename = joint_filename.replace("joints", "prediction")
 
@@ -473,10 +563,11 @@ def main():
             np.savez_compressed(output_file,  **to_save_dict)
 
             print("Saved in ", output_file)
+            break
 
             
-        except Exception as e:
-            print("ERROR :", str(e), ";", joint_filename, "failed")
+        # except Exception as e:
+        #     print("ERROR :", str(e), ";", joint_filename, "failed")
 
 
 
