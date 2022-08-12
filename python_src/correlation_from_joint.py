@@ -12,6 +12,10 @@ from multiprocessing import set_start_method
 from multiprocessing import get_context
 from multiprocessing import Pool
 
+import itertools
+
+
+
 
 def get_input_files(directory, keyword=None, ext=".csv"):
     entries = os.listdir(directory)
@@ -493,6 +497,31 @@ def get_condition(filename):
     return None
 
 
+def process_file(joint_filename, args):
+    try:
+        dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
+        dt_max = {"acetate" : 2500,  "glycerol": 2000, "glucose": 2000, "glucoseaa": 1000}
+
+        condition = get_condition(joint_filename)
+        prediction_filename = joint_filename.replace("joints", "prediction")
+
+        if args.output_dir== None:
+            output_file = joint_filename.replace("joints.csv", "correlations.npz")
+        else:
+            output_file = os.path.join(args.output_dir, 
+                                        joint_filename.split('/')[-1].replace("joints.csv", "correlations.npz"))
+
+        to_save_dict = read_final_params(joint_filename)
+        corr = files2correlation_function(joint_filename, prediction_filename, 
+                                            np.arange(0, dt_max[condition],  dts[condition]), 0.3)
+
+        ### Save ###
+        to_save_dict['correlations'] = corr
+        np.savez_compressed(output_file,  **to_save_dict)
+
+        print("Saved in ", output_file)
+    except Exception as e:
+        print("ERROR :", str(e), ";", joint_filename, "failed")
 
 # ================================= #
 def main():
@@ -523,52 +552,24 @@ def main():
     if args.output_dir!= None:
         mk_missing_dir(args.output_dir)
 
-    dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
-    dt_max = {"acetate" : 2500,  "glycerol": 2000, "glucose": 2000, "glucoseaa": 1000}
-
-    # try:
-    #     n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE']
-    #     print("slurm: number of cpus {}".format(os.environ['SLURM_JOB_CPUS_PER_NODE']))
-    # except Exception as e:
-    #     n_cores = 1
-    #     print("SLURM_JOB_CPUS_PER_NODE unknown")
 
 
-    # with get_context("spawn").Pool(n_cores) as p:
-    #     print("\tstart multiprocessing")
-    #     out = p.map(minimize_A, args)
-    #     print("\tclose")
-    #     p.close()
-    #     print("\tjoin")
-    #     p.join()
+    try:
+        n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE']
+        print("slurm: number of cpus {}".format(os.environ['SLURM_JOB_CPUS_PER_NODE']))
+    except Exception as e:
+        n_cores = 1
+        print("SLURM_JOB_CPUS_PER_NODE unknown, use one 1 core")
 
 
-    for joint_filename in joint_filenames:
-        # try:
-            condition = get_condition(joint_filename)
-            prediction_filename = joint_filename.replace("joints", "prediction")
+    with get_context("spawn").Pool(n_cores) as p:
+        print("Start multiprocessing")
 
-            if args.output_dir== None:
-                output_file = joint_filename.replace("joints.csv", "correlations.npz")
-            else:
-                output_file = os.path.join(args.output_dir, 
-                                            joint_filename.split('/')[-1].replace("joints.csv", "correlations.npz"))
+        p.starmap(process_file, zip(joint_filenames, itertools.repeat(args)))
 
-            to_save_dict = read_final_params(joint_filename)
-            corr = files2correlation_function(joint_filename, prediction_filename, 
-                                                np.arange(0, dt_max[condition],  dts[condition]), 0.3)
-
-            ### Save ###
-            to_save_dict['correlations'] = corr
-            np.savez_compressed(output_file,  **to_save_dict)
-
-            print("Saved in ", output_file)
-            break
-
-            
-        # except Exception as e:
-        #     print("ERROR :", str(e), ";", joint_filename, "failed")
-
+        p.close()
+        p.join()
+        print("Join")
 
 
 # ================================================================================ #
