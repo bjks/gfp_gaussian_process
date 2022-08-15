@@ -480,7 +480,7 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=
                         time_point_cols.append(float(entry.split('_')[1]))
                         
     # finally calculate cov, corr_naive, corr_mle, corr_mle_error
-    for i, dt in enumerate(dts):
+    for i, _ in enumerate(dts):
         correlations[i].average()
         correlations[i].naive()
         correlations[i].mle(correlations[0].cov, correlations[0].cov_concentration, norm=True)
@@ -489,14 +489,13 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=
     return correlations
 
 
-
 def get_condition(filename):
     for cond in ["acetate_", "glycerol_",  "glucose_", "glucoseaa_"]:
         if cond in filename:
             return cond[:-1]
     return None
 
-
+# ================================================================== #
 def process_file(joint_filename, args):
     try:
         dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
@@ -523,7 +522,9 @@ def process_file(joint_filename, args):
     except Exception as e:
         print("ERROR :", str(e), ";", joint_filename, "failed")
 
-# ================================= #
+# ================================================================== #
+# ================================================================== #
+# ================================================================== #
 def main():
     parser = argparse.ArgumentParser(
         description="Correlation from joint matrix")
@@ -541,7 +542,6 @@ def main():
 
     args = parser.parse_args()
 
-
     if os.path.isfile(args.dir):
         print(args.dir, "is file")
         joint_filenames = [args.dir]
@@ -552,21 +552,18 @@ def main():
     if args.output_dir!= None:
         mk_missing_dir(args.output_dir)
 
-
-
     try:
         n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE']
-        print("slurm: number of cpus {}".format(os.environ['SLURM_JOB_CPUS_PER_NODE']))
+        print("slurm: number of cpus {}".format(n_cores))
     except Exception as e:
         n_cores = 1
         print("SLURM_JOB_CPUS_PER_NODE unknown, use one 1 core")
 
 
+    print(n_cores)
     with get_context("spawn").Pool(n_cores) as p:
         print("Start multiprocessing")
-
         p.starmap(process_file, zip(joint_filenames, itertools.repeat(args)))
-
         p.close()
         p.join()
         print("Join")
