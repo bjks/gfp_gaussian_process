@@ -37,7 +37,7 @@ class Cell:
 def df2cells(dataset, time="time_min", 
             log_length="log_length", gfp="gfp", 
             cell_id="cell_id", parent_id="parent_id", 
-            lt=None, qt=None):
+            lt=None, qt=None, lane=None):
     """ 
     dataset (pandas data frame as read from csv file) to list of Cell instances 
     either using columns with measurment noise or without
@@ -46,6 +46,14 @@ def df2cells(dataset, time="time_min",
     last_cell = ""
     for _, row in dataset.iterrows(): 
         if row[cell_id] != last_cell:
+            
+            if lane !=None:
+                c = str(row[lane])+'.'+str(row[cell_id])
+                p = str(row[lane])+'.'+str(row[parent_id])
+            else:
+                c = str(row[cell_id])
+                p = str(row[parent_id])
+                
             if parent_id == None:   p = -1
             else:                   p = row[parent_id]
 
@@ -58,7 +66,7 @@ def df2cells(dataset, time="time_min",
             new_cell = Cell(row[log_length], row[gfp], 
                         lambda0, q0, 
                         time0=row[time],
-                        cell_id=row[cell_id], 
+                        cell_id=c, 
                         parent_id=p)
             cell_list.append(new_cell)
         else:
