@@ -129,7 +129,7 @@ def main():
                      "iscluster": True}
 
 
-    input_files = get_input_files(args.dir, args.suffix)
+    input_files = get_input_files(args.dir)
     print("Inout files: ", *input_files)
 
     for infile in input_files:
@@ -144,7 +144,7 @@ def main():
         if args.j:
             ggp_arg += ' -j '
 
-        parameter_file = get_parameter_file(infile) 
+        parameter_file = get_parameter_file(infile, args.suffix) 
 
         ggp_arg +=  " -b " + parameter_file
 
