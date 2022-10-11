@@ -489,19 +489,23 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=
     return correlations
 
 
-def get_condition(filename):
-    for cond in ["acetate_", "glycerol_",  "glucose_", "glucoseaa_"]:
-        if cond in filename:
-            return cond[:-1]
+def get_condition(filename, args):
+    for k in args.key:
+        if k in filename.split("/")[-1].split(args.delimiter):
+            return k
+    print("ERROR: key not found in filename")
     return None
 
 # ================================================================== #
 def process_file(joint_filename, args):
     try:
-        dts = {"acetate" : 18.75,  "glycerol": 6, "glucose": 3, "glucoseaa": 1.5}
-        dt_max = {"acetate" : 2500,  "glycerol": 2000, "glucose": 2000, "glucoseaa": 1000}
+        dts = {}
+        dt_max = {}
+        for i, k in enumerate(args.key):
+            dts[k] = args.dt[i]
+            dt_max[k] = args.dt[i]*args.n_data
 
-        condition = get_condition(joint_filename)
+        condition = get_condition(joint_filename, args)
         prediction_filename = joint_filename.replace("joints", "prediction")
 
         if args.output_dir== None:
@@ -509,10 +513,9 @@ def process_file(joint_filename, args):
         else:
             output_file = os.path.join(args.output_dir, 
                                         joint_filename.split('/')[-1].replace("joints.csv", "correlations.npz"))
-
         to_save_dict = read_final_params(joint_filename)
         corr = files2correlation_function(joint_filename, prediction_filename, 
-                                            np.arange(0, dt_max[condition],  dts[condition]), 0.3)
+                                            np.arange(0, dt_max[condition],  dts[condition]), dts[condition]*0.2)
 
         ### Save ###
         to_save_dict['correlations'] = corr
@@ -539,6 +542,35 @@ def main():
                         help='directory for output',
                         default=None)
 
+    parser.add_argument('-k',
+                        dest='key',
+                        help='Keywords marking the files for a given dt (["acetate", "glycerol", "glucose", "glucoseaa"])',
+                        nargs='+',
+                        type=str,
+                        default=["acetate", "glycerol", "glucose", "glucoseaa"],
+                        required=False)
+
+    parser.add_argument('-dt',
+                        dest='dt',
+                        help='dt corresponding to keys provided by -k ([18.75, 6, 3, 1.5])',
+                        nargs='+',
+                        type=float,
+                        default=[18.75, 6, 3, 1.5],
+                        required=False)
+
+    parser.add_argument('-n_data',
+                        dest='n_data',
+                        help='Maximal number of data points that the maximial dt can be appart (200)',
+                        type=float,
+                        default=200,
+                        required=False)
+
+    parser.add_argument('-delimiter',
+                        dest='delimiter',
+                        help='Delimiter in filename ("_")',
+                        type=str,
+                        default='_',
+                        required=False)
 
     args = parser.parse_args()
 
