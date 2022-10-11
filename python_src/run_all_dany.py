@@ -62,8 +62,8 @@ def get_arg_list(args):
     return s + ' '
 
 
-def get_parameter_file(file, suffix = "_parameters"):
-    parameter_file = file[:-4] + suffix + '.txt'
+def get_parameter_file(file, suffix):
+    parameter_file = file[:-4] + suffix
     return parameter_file
 
 
@@ -80,25 +80,34 @@ def main():
                         help='directory with input files',
                         required=True)
     
-    parser.add_argument('-o',
-                        dest='out' ,
-                        help='Output dir',
-                        default=None)
-
     parser.add_argument('-c',
                         dest='csv_config' ,
                         help='Csv config file',
                         required=True)
 
+    parser.add_argument('-o',
+                        dest='out' ,
+                        help='Output dir (None)',
+                        default=None, 
+                        required=False)
+
+    parser.add_argument('-s',
+                        dest='suffix' ,
+                        help='Suffix of parameter files ("_parameters.txt")',
+                        default="_parameters.txt", 
+                        required=False)
+
     parser.add_argument('-space',
                         dest='space' ,
-                        help='Space, log(default) or linear',
-                        default='log')
+                        help='Space, log or linear (log)',
+                        default='log', 
+                        required=False)
 
     parser.add_argument('-t',
                         dest="tol",
-                        help="Tolerance of maximization",
-                        default="1e-7")
+                        help="Tolerance of maximization (1e-15)",
+                        default="1e-15", 
+                        required=False)
     
     parser.add_argument('--dryrun', help="Shows what will be done", action='store_true')
     parser.add_argument('--local', help="Do not submit job, but run directly", action='store_true')
@@ -120,7 +129,7 @@ def main():
                      "iscluster": True}
 
 
-    input_files = get_input_files(args.dir)
+    input_files = get_input_files(args.dir, args.suffix)
 
     for infile in input_files:
         ggp_arg =   " -c "      + args.csv_config + \
