@@ -130,6 +130,7 @@ def main():
 
 
     input_files = get_input_files(args.dir, args.suffix)
+    print("Inout files: ", *input_files)
 
     for infile in input_files:
         ggp_arg =   " -c "      + args.csv_config + \
