@@ -593,7 +593,7 @@ def main():
 
 
     print(n_cores)
-    with get_context("spawn").Pool(n_cores) as p:
+    with get_context("spawn").Pool(int(n_cores)) as p:
         print("Start multiprocessing")
         p.starmap(process_file, zip(joint_filenames, itertools.repeat(args)))
         p.close()

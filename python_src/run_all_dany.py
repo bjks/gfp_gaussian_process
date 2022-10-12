@@ -129,8 +129,14 @@ def main():
                      "iscluster": True}
 
 
-    input_files = get_input_files(args.dir)
-    print("Inout files: ", *input_files)
+    if os.path.isfile(args.dir):
+        print(args.dir, "is file")
+        input_files = [args.dir]
+    else:
+        print(args.dir, "is dir")
+        input_files = get_input_files(args.dir)
+
+    print("Input files: ", *input_files)
 
     for infile in input_files:
         ggp_arg =   " -c "      + args.csv_config + \
