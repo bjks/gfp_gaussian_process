@@ -33,6 +33,8 @@ labels = {"l(t+dt)": "$\lambda(t+dt)$",
             "q(t+dt)": "$q(t+dt)$", 
             "q(t)": "$q(t)$"}
 
+def flips_zn_zm(x):
+    return np.roll(x, 4, axis=(1,2))
 
 class Correlation_function:
     '''
@@ -91,15 +93,47 @@ class Correlation_function:
         self.dt = np.array(dt).astype(float)
         self.n = np.array(n)
 
+        
+        # add negative dt direction       
+        ## z_n
+        self.dt = np.append(-self.dt[::-1], self.dt)
+        self.n = np.append(self.n[::-1], self.n)
+        
+        corr_naive  = np.concatenate((flips_zn_zm(corr_naive[::-1]), corr_naive), axis=0)
+                
+        corr_mle  = np.concatenate((flips_zn_zm(corr_mle[::-1]), corr_mle), axis=0)
+        corr_mle_err  = np.concatenate((flips_zn_zm(corr_mle_err[::-1]), corr_mle_err), axis=0)
+      
+        cov_mle  = np.concatenate((flips_zn_zm(cov_mle[::-1]), cov_mle), axis=0)
+        cov_mle_err  = np.concatenate((flips_zn_zm(cov_mle_err[::-1]), cov_mle_err), axis=0)
+        
+        
+
+        ## concetration
+        corr_concentration_naive  = np.concatenate((flips_zn_zm(corr_concentration_naive[::-1]),
+                                                    corr_concentration_naive), axis=0)
+                
+        corr_concentration_mle  = np.concatenate((flips_zn_zm(corr_concentration_mle[::-1]), 
+                                                  corr_concentration_mle), axis=0)
+        corr_concentration_mle_err  = np.concatenate((flips_zn_zm(corr_concentration_mle_err[::-1]), 
+                                                      corr_concentration_mle_err), axis=0)
+      
+        cov_concentration_mle  = np.concatenate((flips_zn_zm(cov_concentration_mle[::-1]), 
+                                                 cov_concentration_mle), axis=0)
+        cov_concentration_mle_err  = np.concatenate((flips_zn_zm(cov_concentration_mle_err[::-1]), 
+                                                     cov_concentration_mle_err), axis=0)
+        
+        
         ## Cor(z,z)
         self.corr_naive = np.stack(corr_naive, axis=2)
-
+        
         self.corr_mle = np.stack(corr_mle, axis=2)
         self.corr_mle_err = np.stack(corr_mle_err, axis=2)
-
+        
         self.cov_mle = np.stack(cov_mle, axis=2)
         self.cov_mle_err = np.stack(cov_mle_err, axis=2)
-
+    
+        
         # Corr(c,c)
         self.corr_concentration_naive = np.stack(corr_concentration_naive, axis=2)
 
@@ -111,26 +145,29 @@ class Correlation_function:
 
 
     def filter_by_n(self, n=0):
-        filter = np.where(self.n>=n, True, False)
+        filter_n = np.where(self.n>=n, True, False)
         
-        self.dt = self.dt[filter]
-        self.n = self.n[filter]
+        self.dt = self.dt[filter_n]
+        self.n = self.n[filter_n]
 
         # zz
-        self.corr_naive = self.corr_naive[:, :, filter]
-        self.corr_mle = self.corr_mle[:, :, filter]
-        self.corr_mle_err = self.corr_mle_err[:, :, filter]
+        self.corr_naive = self.corr_naive[:, :, filter_n]
+       
+        self.corr_mle = self.corr_mle[:, :, filter_n]
+        self.corr_mle_err = self.corr_mle_err[:, :, filter_n]
 
-        self.cov_mle = self.cov_mle[:, :, filter]
-        self.cov_mle_err = self.cov_mle_err[:, :, filter]
+        self.cov_mle = self.cov_mle[:, :, filter_n]
+        self.cov_mle_err = self.cov_mle_err[:, :, filter_n]
 
+        
         # cc
-        self.corr_concentration_naive = self.corr_concentration_naive[:, :, filter]
-        self.corr_concentration_mle = self.corr_concentration_mle[:, :, filter]
-        self.corr_concentration_mle_err = self.corr_concentration_mle_err[:, :, filter]
+        self.corr_concentration_naive = self.corr_concentration_naive[:, :, filter_n]
+        
+        self.corr_concentration_mle = self.corr_concentration_mle[:, :, filter_n]
+        self.corr_concentration_mle_err = self.corr_concentration_mle_err[:, :, filter_n]
 
-        self.cov_concentration_mle = self.cov_concentration_mle[:, :, filter]
-        self.cov_concentration_mle_err = self.cov_concentration_mle_err[:, :, filter]
+        self.cov_concentration_mle = self.cov_concentration_mle[:, :, filter_n]
+        self.cov_concentration_mle_err = self.cov_concentration_mle_err[:, :, filter_n]
 
 
     def get_corr_naive(self, zi, zj):
@@ -324,7 +361,7 @@ def plot_xy_correlation(corr_func, x, y,
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         # set the x-spine
-        ax.spines['left'].set_position('zero')
+#         ax.spines['left'].set_position('zero')
 
         # turn off the right spine/ticks
         ax.spines['right'].set_color('none')
@@ -396,7 +433,8 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
                                 log=False, 
                                 min_joint_number=0, 
                                 fit=False, 
-                                highlight_zero=False,
+                                highlight_x0=False,
+                                highlight_y0=False,
                                 cov=False):
 
     if cov:
@@ -427,7 +465,7 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         # set the x-spine
-        ax.spines['left'].set_position('zero')
+#         ax.spines['left'].set_position('zero')
 
         # turn off the right spine/ticks
         ax.spines['right'].set_color('none')
@@ -471,33 +509,33 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
                 ax0.axvline(np.log(2)/mean_lambda, color=color, alpha=0.5)
 
 
-        if fit:
-            def exponentials(t, *p):
-                # return a1*np.exp(-t*gamma) + a2*np.exp(-t*b2)
-                return p[0] * np.exp(-dts*p[1])
+#         if fit:
+#             def exponentials(t, *p):
+#                 # return a1*np.exp(-t*gamma) + a2*np.exp(-t*b2)
+#                 return p[0] * np.exp(-dts*p[1])
 
-            # ax0.plot(dts, exponentials(dts, *popt), color=color, ls='--', alpha=0.6)
-            filter = np.where(dts>0.5, True, False) *  np.where(dts<1.5, True, False)
-            def my_error(p):
-                yfit = exponentials(dts, *p)[filter]
-                return (yfit-rs[filter])**2/(errs[filter])**2
+#             # ax0.plot(dts, exponentials(dts, *popt), color=color, ls='--', alpha=0.6)
+#             filter = np.where(dts>0.5, True, False) *  np.where(dts<1.5, True, False)
+#             def my_error(p):
+#                 yfit = exponentials(dts, *p)[filter]
+#                 return (yfit-rs[filter])**2/(errs[filter])**2
 
-            popt, pcov = optimize.leastsq(my_error,x0=[1, gamma/2.])
-            ax0.plot(dts[filter], exponentials(dts, *popt)[filter], color=color, ls='--', alpha=1)
-            label += r" $\tau={:.2f}$".format(1/gamma)
-            label += r" $\tau^\prime={:.2f}$".format(1/popt[1])
-            # ax0.plot(dts[dts<0.5], np.exp(-gamma*dts)[dts<0.5], color=color, ls='--', alpha=1)
+#             popt, pcov = optimize.leastsq(my_error,x0=[1, gamma/2.])
+#             ax0.plot(dts[filter], exponentials(dts, *popt)[filter], color=color, ls='--', alpha=1)
+#             label += r" $\tau={:.2f}$".format(1/gamma)
+#             label += r" $\tau^\prime={:.2f}$".format(1/popt[1])
+#             # ax0.plot(dts[dts<0.5], np.exp(-gamma*dts)[dts<0.5], color=color, ls='--', alpha=1)
 
-        else:
-            if gamma!=None:
-                ax0.plot(dts, rs[0]*np.exp(-dts*gamma), ls='--', color=color, alpha=1)
+#         else:
+        if gamma!=None:
+            r0 = rs[dts==0][0]
+            ax0.plot(dts, r0*np.exp(-dts*gamma), ls='--', color=color, alpha=1)
 
         if xlim!=[None,None]:
             dt_filter = (dts<=xlim[-1])*(dts>=xlim[0])
             dts=dts[dt_filter]
             rs=rs[dt_filter]
             errs=errs[dt_filter]
-        
         
         ### correlation plot with \without error bars
         if err_style == "bar":
@@ -508,9 +546,12 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
         elif err_style == None:
             ax0.plot(dts, rs, lw=2, color=color, label=label)
         else:
-            ax0.plot(dts, dts*0, color=color)   
-    if highlight_zero:
-        ax0.axhline(y=0, ls='--', color="grey",)
+            ax0.plot(dts, dts*0, color=color)  
+            
+    if highlight_x0:
+        ax0.axhline(y=0, ls='--', color="grey")
+    if highlight_y0:
+        ax0.axvline(x=0, ls='--', color="grey")
     # ===== layout ===== #
     if ylim != [None, None]:
         new_ylim = ylim
