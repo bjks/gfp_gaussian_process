@@ -496,6 +496,81 @@ def get_condition(filename, args):
     print("ERROR: key not found in filename")
     return None
 
+
+def corr_to_csv(correlations, output_file):
+    
+    ["x(t+dt)", "g(t+dt)", "l(t+dt)", "q(t+dt)", "x(t)", "g(t)", "l(t)", "q(t)"]
+    
+    
+    columns = ["dt", 
+               "cov_l(t+dt)l(t)", "cov_l(t+dt)l(t)_err", 
+               "cov_l(t+dt)q(t)", "cov_l(t+dt)q(t)_err",
+               "cov_q(t+dt)l(t)", "cov_q(t+dt)l(t)_err", 
+               "cov_q(t+dt)q(t)", "cov_q(t+dt)q(t)_err", 
+               "cov_c(t+dt)c(t)", "cov_c(t+dt)c(t)_err",
+               ###
+               "corr_l(t+dt)l(t)", "corr_l(t+dt)l(t)_err",
+               "corr_l(t+dt)q(t)", "corr_l(t+dt)q(t)_err",
+               "corr_q(t+dt)l(t)", "corr_q(t+dt)l(t)_err", 
+               "corr_q(t+dt)q(t)", "corr_q(t+dt)q(t)_err", 
+               "corr_c(t+dt)c(t)", "corr_c(t+dt)c(t)_err", 
+               ###
+               "corr_naive_l(t+dt)l(t)",
+               "corr_naive_l(t+dt)q(t)",
+               "corr_naive_q(t+dt)l(t)", 
+               "corr_naive_q(t+dt)q(t)",
+               "corr_naive_c(t+dt)c(t)"]
+    
+    with open(output_file, 'w') as f:
+        for i,c in enumerate(columns):
+            f.write(c)
+            if i<len(columns)-1:
+                f.write(",")
+        f.write("\n")
+        
+        for corr in correlations:
+            f.write(str(corr.dt)+",")
+            
+            f.write(str(corr.cov_mle[2, 6])+",")
+            f.write(str(corr.cov_mle_err[2, 6])+",")
+            
+            f.write(str(corr.cov_mle[2, 7])+",")
+            f.write(str(corr.cov_mle_err[2, 7])+",")
+            
+            f.write(str(corr.cov_mle[3, 6])+",")
+            f.write(str(corr.cov_mle_err[3, 6])+",")
+            
+            f.write(str(corr.cov_mle[3, 7])+",")
+            f.write(str(corr.cov_mle_err[3, 7])+",")
+            
+            f.write(str(corr.cov_concentration_mle[0, 1])+",")
+            f.write(str(corr.cov_concentration_mle_err[0, 1])+",")
+            
+            #######
+            f.write(str(corr.corr_mle[2, 6])+",")
+            f.write(str(corr.corr_mle_err[2, 6])+",")
+            
+            f.write(str(corr.corr_mle[2, 7])+",")
+            f.write(str(corr.corr_mle_err[2, 7])+",")
+            
+            f.write(str(corr.corr_mle[3, 6])+",")
+            f.write(str(corr.corr_mle_err[3, 6])+",")
+            
+            f.write(str(corr.corr_mle[3, 7])+",")
+            f.write(str(corr.corr_mle_err[3, 7])+",")
+            
+            f.write(str(corr.corr_concentration_mle[0, 1])+",")
+            f.write(str(corr.corr_concentration_mle_err[0, 1])+",")
+            
+            #######
+            f.write(str(corr.corr_naive[2, 6])+",")
+            f.write(str(corr.corr_naive[2, 7])+",")
+            f.write(str(corr.corr_naive[3, 6])+",")
+            f.write(str(corr.corr_naive[3, 7])+",")
+            f.write(str(corr.corr_concentration_naive[0, 1])+",")
+            
+            f.write("\n")
+    
 # ================================================================== #
 def process_file(joint_filename, args):
     try:
@@ -509,19 +584,24 @@ def process_file(joint_filename, args):
         prediction_filename = joint_filename.replace("joints", "prediction")
 
         if args.output_dir== None:
-            output_file = joint_filename.replace("joints.csv", "correlations.npz")
+            output_file_npz = joint_filename.replace("joints.csv", "correlations.npz")
         else:
-            output_file = os.path.join(args.output_dir, 
+            output_file_npz = os.path.join(args.output_dir, 
                                         joint_filename.split('/')[-1].replace("joints.csv", "correlations.npz"))
+            
+        output_file_csv = output_file_npz[:-4] + ".csv"
         to_save_dict = read_final_params(joint_filename)
         corr = files2correlation_function(joint_filename, prediction_filename, 
                                             np.arange(0, dt_max[condition],  dts[condition]), dts[condition]*0.2)
 
         ### Save ###
+        
+        corr_to_csv(corr, output_file_csv)
+        
         to_save_dict['correlations'] = corr
-        np.savez_compressed(output_file,  **to_save_dict)
+        np.savez_compressed(output_file_npz,  **to_save_dict)
 
-        print("Saved in ", output_file)
+        print("Saved in", output_file_npz, "/", output_file_csv)
     except Exception as e:
         print("ERROR :", str(e), ";", joint_filename, "failed")
 

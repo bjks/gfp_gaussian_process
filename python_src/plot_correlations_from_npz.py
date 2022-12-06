@@ -27,7 +27,11 @@ plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
 
 
-
+color_by_condition = {"glycerol": 'tab:orange', 
+                          "glucose": 'tab:green', 
+                          "glucoseaa": 'tab:red', 
+                          "acetate": 'tab:blue'}
+    
 labels = {"l(t+dt)": "$\lambda(t+dt)$", 
             "l(t)": "$\lambda(t)$", 
             "q(t+dt)": "$q(t+dt)$", 
@@ -435,7 +439,9 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
                                 fit=False, 
                                 highlight_x0=False,
                                 highlight_y0=False,
-                                cov=False):
+                                cov=False, 
+                                 color_by="condition",
+                                legend=True):
 
     if cov:
         get_func=Correlation_function.get_cov_mle
@@ -480,7 +486,13 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
     new_ylim = [np.inf,0]
     # =========== plot =========== #
     for i, cf in enumerate(correlation_function_list):
-
+        condition = labels[i].split('_')[0]
+      
+        if color_by=="condition":
+            color = color_by_condition[condition]
+        else:
+            color = cm.tab10(color_norm(i)) 
+        
         correlation_function = copy.deepcopy(cf)
         correlation_function.filter_by_n(min_joint_number)
         label = labels[i].replace('_', ' ')
@@ -489,7 +501,6 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
         mean_lambda = mean_lambdas[i]
         norm = normalize[i]
         
-        color = cm.tab10(color_norm(i)) 
 
         # =========== correlation =========== #
         dts = correlation_function.dt
@@ -580,7 +591,8 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
 #         ax0.legend(ncol=2, bbox_to_anchor=(1,1), loc="upper right")
 #     else:
 #         ax0.legend(ncol=2, bbox_to_anchor=(1,0.), loc="lower right")
-    ax0.legend(ncol=2)
+    if legend:
+        ax0.legend(ncol=2, loc="lower left")
 
     if scale_t:
         ax0.set_xlabel(r'time lag $dt/$(mean doubling time)')
