@@ -26,12 +26,17 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
 
+marker_by_condition = {"glycerol": 'o', "glucose": '^', "glucoseaa": 's', "acetate": 'p'}
 
-color_by_condition = {"glycerol": 'tab:orange', 
-                          "glucose": 'tab:green', 
-                          "glucoseaa": 'tab:red', 
-                          "acetate": 'tab:blue'}
-    
+color_by_promoter = {'hi1': 'tab:blue', 'hi3': 'tab:orange', 'med2': 'tab:green', 'med3': 'tab:red', 
+                    'rrnB': 'tab:purple', 'rpsB': 'tab:brown', 'rpmB': 'tab:pink', 'rplN': 'tab:olive'}
+
+color_by_condition = {"acetate": 'tab:blue',
+                    "glycerol": 'tab:orange', 
+                    "glucose": 'tab:green', 
+                    "glucoseaa": 'tab:red'}
+
+
 labels = {"l(t+dt)": "$\lambda(t+dt)$", 
             "l(t)": "$\lambda(t)$", 
             "q(t+dt)": "$q(t+dt)$", 
@@ -592,7 +597,8 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
 #     else:
 #         ax0.legend(ncol=2, bbox_to_anchor=(1,0.), loc="lower right")
     if legend:
-        ax0.legend(ncol=2, loc="lower left")
+        ax0.legend(loc='lower center', bbox_to_anchor=(0.5, 1), ncol=4)
+#         ax0.legend(ncol=2, loc="lower left")
 
     if scale_t:
         ax0.set_xlabel(r'time lag $dt/$(mean doubling time)')

@@ -1,4 +1,5 @@
 import numpy as np 
+import pandas as pd
 import matplotlib.pyplot as plt
 # import matplotlib as mpl
 import argparse
@@ -15,6 +16,67 @@ from multiprocessing import Pool
 import itertools
 
 
+# ---------------------------------------------------------------------------------------------------------- #
+# GGP_cell class to read prediction_files easily
+# ---------------------------------------------------------------------------------------------------------- #
+class GGP_cell:
+    def __init__(self, cell_id = 0, parent_id=-1):
+        self.parent_id = parent_id
+        self.cell_id = cell_id
+        self.log_length = []
+        self.gfp = []
+        self.time = []
+
+        self.mean_x = []
+        self.mean_g = []
+        self.mean_l = []
+        self.mean_q = []
+
+        self.cov_xx = []
+        self.cov_gg = []
+        self.cov_ll = []
+        self.cov_qq = []
+
+def df2ggp_cells(dataset, 
+            time="time", 
+            log_length="log_length", gfp="fp", 
+            mean_x="mean_x", mean_g="mean_g", 
+            mean_l="mean_l", mean_q="mean_q",
+            cov_xx="cov_xx",
+            cov_gg="cov_gg",
+            cov_ll="cov_ll",
+            cov_qq="cov_qq",
+            cell_id="cell_id", 
+            parent_id="parent_id"):
+    """ 
+    dataset (pandas data frame as read from csv file) to list of GGP_cell instances, m
+    written for ggp output
+    """
+    cell_list = []
+    last_cell = ""
+    for _, row in dataset.iterrows(): 
+        if row[cell_id] != last_cell:
+            new_cell = GGP_cell(
+                        cell_id=row[cell_id], 
+                        parent_id=row[parent_id])
+            cell_list.append(new_cell)
+
+        cell_list[-1].log_length.append(row[log_length])
+        cell_list[-1].gfp.append(row[gfp])
+        cell_list[-1].time.append(row[time])
+
+        cell_list[-1].mean_x.append(row[mean_x])
+        cell_list[-1].mean_g.append(row[mean_g])
+        cell_list[-1].mean_l.append(row[mean_l])
+        cell_list[-1].mean_q.append(row[mean_q])
+
+        cell_list[-1].cov_xx.append(row[cov_xx])
+        cell_list[-1].cov_gg.append(row[cov_gg])
+        cell_list[-1].cov_ll.append(row[cov_ll])
+        cell_list[-1].cov_qq.append(row[cov_qq])
+
+        last_cell = row[cell_id]
+    return cell_list
 
 
 def get_input_files(directory, keyword=None, ext=".csv"):
@@ -380,7 +442,12 @@ def cell_lineage_lookup(cells, parents):
     return paths2matrix(paths, cells)
 
 
-def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=False): 
+def files2correlation_function(joint_file, 
+                               prediction_file, 
+                               dts, 
+                               tol, 
+                               normalize_time=False, 
+                               cell_cylce_time=None): 
     """reads joint_file and prediction_file as input and calculates the correlation function
 
     Args:
@@ -451,13 +518,17 @@ def files2correlation_function(joint_file, prediction_file, dts, tol, only_marg=
                 joints_vecs = [Gaussian(c) if c[0]!='' else None for c in chunks] # eg [G, None, G, G, None]
                 for j, joint in enumerate(joints_vecs):
                     time_plus_dt = time_point_cols[j] 
-                    if joint != None and not only_marg:     
-                        idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))
+                    dt = time_plus_dt - time_row
+                    if normalize_time:
+                        dt /= cell_cylce_time[cell_id_row]
+                    if joint != None:     
+                        idx = np.argwhere(np.isclose(dts, dt, atol=tol))
                         if len(idx)>0:
                             correlations[idx[0,0]].add_gaussian(joint)
                     else:
                         if cell_lineage_lookup_table.loc[cell_id_row, cell_id_cols[j]] and j>i:
-                            idx = np.argwhere(np.isclose(dts, time_plus_dt - time_row, atol=tol))  
+                            
+                            idx = np.argwhere(np.isclose(dts, dt, atol=tol))  
                             if len(idx)>0:
                                 joint = Gaussian(np.array(marginals[j] + marginals[i]), n=2)
                                 correlations[idx[0,0]].add_gaussian(joint)
@@ -571,9 +642,24 @@ def corr_to_csv(correlations, output_file):
             
             f.write("\n")
     
+    
+
+def header_lines(filename, until="cell_id"):
+    with open(filename,'r') as fin:
+        for i, line in enumerate(fin):
+            if line.startswith(until):
+                return i
+
+            
+def get_cell_cycle_times(cells):
+    cell_cycle_times = {}
+    for cell in cells:
+        cell_cycle_times[cell.cell_id] = cell.time[-1] - cell.time[0] 
+    return cell_cycle_times
+    
 # ================================================================== #
-def process_file(joint_filename, args):
-    try:
+def process_file(joint_filename, args):    
+#     try:
         dts = {}
         dt_max = {}
         for i, k in enumerate(args.key):
@@ -582,7 +668,7 @@ def process_file(joint_filename, args):
 
         condition = get_condition(joint_filename, args)
         prediction_filename = joint_filename.replace("joints", "prediction")
-
+        
         if args.output_dir== None:
             output_file_npz = joint_filename.replace("joints.csv", "correlations.npz")
         else:
@@ -591,20 +677,33 @@ def process_file(joint_filename, args):
             
         output_file_csv = output_file_npz[:-4] + ".csv"
         to_save_dict = read_final_params(joint_filename)
-        corr = files2correlation_function(joint_filename, prediction_filename, 
-                                            np.arange(0, dt_max[condition],  dts[condition]), dts[condition]*0.2)
+        print(args.normalize_time)
+        if not args.normalize_time:
+            corr = files2correlation_function(joint_filename, 
+                                              prediction_filename, 
+                                              np.arange(0, dt_max[condition],  dts[condition]), 
+                                              dts[condition]*0.2)
+        else:
+            cells_data = pd.read_csv(prediction_filename, skiprows=header_lines(prediction_filename))
+            cells = df2ggp_cells(cells_data)
+            corr = files2correlation_function(joint_filename, 
+                                              prediction_filename, 
+                                              np.arange(0, 3, 0.05),
+                                              0.024, 
+                                              normalize_time=True, 
+                                              cell_cylce_time=get_cell_cycle_times(cells))
+        
 
         ### Save ###
         
         corr_to_csv(corr, output_file_csv)
         
-        
         to_save_dict['correlations'] = corr
         np.savez_compressed(output_file_npz,  **to_save_dict)
 
         print("Saved in", output_file_npz, "/", output_file_csv)
-    except Exception as e:
-        print("ERROR :", str(e), ";", joint_filename, "failed")
+#     except Exception as e:
+#         print("ERROR :", str(e), ";", joint_filename, "failed")
 
 # ================================================================== #
 # ================================================================== #
@@ -652,6 +751,11 @@ def main():
                         type=str,
                         default='_',
                         required=False)
+    
+    parser.add_argument('-norm',
+                        dest='normalize_time',
+                        help="Normalize time with cell cycle time", 
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -672,7 +776,6 @@ def main():
         n_cores = 1
         print("SLURM_JOB_CPUS_PER_NODE unknown, use one 1 core")
 
-
     print(n_cores)
     with get_context("spawn").Pool(int(n_cores)) as p:
         print("Start multiprocessing")
@@ -682,6 +785,26 @@ def main():
         print("Join")
 
 
+class ARGS:
+    def __init__(self):
+        pass
+        
+def profile_main():
+    args = ARGS()
+    args.dt = [18.75, 6, 3, 1.5]
+    args.key = ["acetate", "glycerol", "glucose", "glucoseaa"]
+    args.n_data = 200
+    args.output_dir = None
+    args.delimiter = "_"
+    args.normalize_time = True
+    process_file("../../experimental_data/data_dany/test_joint/acetate_hi1_f01234578910_b_joints.csv", args)
+    return 0
+         
+         
 # ================================================================================ #
 if __name__ == "__main__":
-    main()
+    profile_main()
+
+#     import cProfile
+#     import re
+#     cProfile.run("profile_main()")
