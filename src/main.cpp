@@ -137,7 +137,7 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
 
     // combine the two 
     _file_log << "Outfile: " << outfile << "\n";
-    combine_predictions(cells);
+    combine_predictions(cells, params_vecs);
 
     /* save */
     write_predictions_to_file(cells, outfile_f, params_list, "f");

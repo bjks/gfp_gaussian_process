@@ -677,7 +677,6 @@ def process_file(joint_filename, args):
             
         output_file_csv = output_file_npz[:-4] + ".csv"
         to_save_dict = read_final_params(joint_filename)
-        print(args.normalize_time)
         if not args.normalize_time:
             corr = files2correlation_function(joint_filename, 
                                               prediction_filename, 
@@ -803,7 +802,8 @@ def profile_main():
          
 # ================================================================================ #
 if __name__ == "__main__":
-    profile_main()
+    main()
+#     profile_main()
 
 #     import cProfile
 #     import re

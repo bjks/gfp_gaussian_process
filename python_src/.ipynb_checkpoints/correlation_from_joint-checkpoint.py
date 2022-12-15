@@ -803,7 +803,8 @@ def profile_main():
          
 # ================================================================================ #
 if __name__ == "__main__":
-    profile_main()
+    main()
+#     profile_main()
 
 #     import cProfile
 #     import re

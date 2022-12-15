@@ -409,19 +409,54 @@ void prediction_backward(const std::vector<std::vector<double>> &params_vecs, st
     }
 }
 
+void divide_by_prior(Eigen::VectorXd &m, Eigen::MatrixXd &c, std::vector<double> params_vec){
+    /* 
+    Given the product of forward and backward part of the posterior 
+    * this function divides by the prior for  z_n 
+    */ 
 
-void combine_predictions(std::vector<MOMAdata> &cells){
+    Eigen::VectorXd mean_prior(4);
+    mean_prior << 0, 0, params_vec[0], params_vec[3];
+
+    Eigen::MatrixXd inv_cov_prior = Eigen::MatrixXd::Zero(4, 4);
+    inv_cov_prior(2,2) = (2.*params_vec[1])/params_vec[2];
+    inv_cov_prior(3,3) = (2.*params_vec[4])/params_vec[5];
+
+    Eigen::MatrixXd new_cov = (c.inverse() - inv_cov_prior).inverse();
+    Eigen::VectorXd new_mean = new_cov*(c.inverse()*m - inv_cov_prior*mean_prior);
+    m = new_mean;
+    c = new_cov;
+}
+
+
+void combine_predictions(std::vector<MOMAdata> &cells, std::vector<std::vector<double>> params_vecs){
     /* combines foward and backward predictions by multiplying the gaussians of those predictions */
     Eigen::VectorXd temp_mean(4); 
     Eigen::MatrixXd temp_cov(4,4); 
+    int segment;
 
     for(size_t i=0; i<cells.size();++i){
+
+
         for (size_t j=0; j<cells[i].time.size();++j ){
             temp_mean << cells[i].mean_forward[j];
             temp_cov << cells[i].cov_forward[j];
 
             multiply_gaussian(temp_mean, temp_cov, 
                                 cells[i].mean_backward[j], cells[i].cov_backward[j]);
+
+            if (j==0){
+                if (cells[i].is_root()){
+                    segment = cells[i].segment[0];
+                }
+                else{
+                    segment = cells[i].parent->segment[cells[i].parent->segment.size()-1];
+                }
+                divide_by_prior(temp_mean, temp_cov, params_vecs[segment]);
+            }
+
+            divide_by_prior(temp_mean, temp_cov, params_vecs[cells[i].segment[j]]);
+            
             cells[i].mean_prediction.push_back(temp_mean);
             cells[i].cov_prediction.push_back(temp_cov);
         }

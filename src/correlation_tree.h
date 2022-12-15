@@ -374,9 +374,28 @@ Gaussian next_joint(Gaussian joint, Affine_gaussian conditional){
 }
 
 
-Gaussian incorporate_backward_prob(Seperated_gaussian joint, Eigen::VectorXd mean_backward, Eigen::MatrixXd cov_backward){
-    /* Incorporates backward distribution to the joint distribtion */
-    Gaussian backward(mean_backward, cov_backward);
+Gaussian incorporate_backward_prob(Seperated_gaussian joint, 
+                                    Eigen::VectorXd mean_backward, 
+                                    Eigen::MatrixXd cov_backward, 
+                                    std::vector<double> params_vec){
+    /* Incorporates backward distribution to the joint distribtion and divides by the prior P(z_n) */
+
+    /* define prior */
+    Eigen::VectorXd mean_prior(4);
+    mean_prior << 0, 0, params_vec[0], params_vec[3];
+
+    Eigen::MatrixXd inv_cov_prior = Eigen::MatrixXd::Zero(4, 4);
+    inv_cov_prior(2,2) = (2.*params_vec[1])/params_vec[2];
+    inv_cov_prior(3,3) = (2.*params_vec[4])/params_vec[5];
+
+    /* divide backward part by prior */
+    Eigen::MatrixXd new_backward_cov = (cov_backward.inverse() - inv_cov_prior).inverse();
+    Eigen::VectorXd new_backward_mean = new_backward_cov*(cov_backward.inverse()*mean_backward - \
+                                                        inv_cov_prior*mean_prior);
+    
+    Gaussian backward(new_backward_mean, new_backward_cov);
+
+    /* multiply forward and backward part */
     Gaussian marginal = Gaussian::multiply(joint.marginal, backward);
     Seperated_gaussian new_joint(marginal, joint.conditional);
     return new_joint.to_joint();
@@ -428,7 +447,8 @@ bool calc_joint_distributions(  const std::vector<std::vector<double>> &params_v
 
         combined_joint = incorporate_backward_prob(seperate_gaussian(cell.joint ), 
                                                     cell.mean_backward[n+m], 
-                                                    cell.cov_backward[n+m]);
+                                                    cell.cov_backward[n+m], 
+                                                    params_vec);
         
         if (crosscovariance_is_small(combined_joint, tolerance_joint)){
             return true;
