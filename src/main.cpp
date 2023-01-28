@@ -66,7 +66,7 @@ void run_minimization(std::vector<MOMAdata> &cells,
                           arguments["search_space"], 
                           arguments["noise_model"],
                           arguments["cell_division_model"],
-                          "0.4.1");
+                          "0.4.2");
 
     std::string outfile_params = outfile_name_parameter_file(arguments, params, segment);
     create_parameter_file(outfile_params, params);

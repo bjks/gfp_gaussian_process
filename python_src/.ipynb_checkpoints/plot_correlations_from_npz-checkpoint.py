@@ -446,7 +446,8 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
                                 highlight_y0=False,
                                 cov=False, 
                                  color_by="condition",
-                                legend=True):
+                                legend=True,
+                                title=None):
 
     if cov:
         get_func=Correlation_function.get_cov_mle
@@ -472,6 +473,7 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
         ax0 = plt.axes()
     axs = [ax0]
 
+    ax0.set_title(title)
     for ax in axs:
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -579,11 +581,11 @@ def plot_xy_correlation_list(correlation_function_list, x, y,
     if log:
         ax0.set_yscale('log')
         
-#         yticks = np.ravel([np.array([1, 5])*(10.**i) for i in np.arange(-10,10)])
-#         yticks = yticks[(yticks>=new_ylim[0]) * (yticks<=new_ylim[1])]
+        yticks = np.ravel([np.array([1,2, 5])*(10.**i) for i in np.arange(-10,10)])
+        yticks = yticks[(yticks>=new_ylim[0]) * (yticks<=new_ylim[1])]
         
-#         ax0.set_yticks(yticks)
-#         ax0.set_yticklabels(yticks)
+        ax0.set_yticks(yticks)
+        ax0.set_yticklabels(yticks)
     ax0.set_ylim(new_ylim)
         
     if ylabel == None:

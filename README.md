@@ -1,6 +1,6 @@
 # gfp_gaussian_process
 
-__Version: 0.4__
+__Version: 0.4.2__
 
 ---------
 Likelihood calculation on single cell level is reimplementaion of the [python code](https://github.com/fioriathos/new_protein_project).
@@ -8,7 +8,7 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
 
 ---
 ## Table of Contents
-- [gfp_gaussian_process](#gfp_gaussian_process)
+- [gfp\_gaussian\_process](#gfp_gaussian_process)
   - [Table of Contents](#table-of-contents)
   - [1 Compile](#1-compile)
     - [1.1 Compile locally](#11-compile-locally)
@@ -19,7 +19,7 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
       - [2.1.2 Parameter file](#212-parameter-file)
     - [2.2 Using segments](#22-using-segments)
     - [2.2.3 Optional arguments](#223-optional-arguments)
-      - [2.3.1 Csv_config file](#231-csv_config-file)
+      - [2.3.1 Csv\_config file](#231-csv_config-file)
   - [3 Model parameters](#3-model-parameters)
   - [4 Output](#4-output)
   - [5 Running modes](#5-running-modes)
@@ -33,6 +33,7 @@ Likelihood calculation on single cell level is reimplementaion of the [python co
     - [Changed in 0.3.0](#changed-in-030)
     - [Changes in 0.4.0](#changes-in-040)
     - [Changes in 0.4.1](#changes-in-041)
+    - [Changes in 0.4.2](#changes-in-042)
   - [TODO](#todo)
 
 ---
@@ -273,6 +274,9 @@ The code has a number of errors that might be thrown at runtime. Some of them ar
 
 ### Changes in 0.4.1
 - changed tolerance defaults to 1e-10
+
+### Changes in 0.4.2 
+- taking care of prior correctly
 
 ## TODO
 - [x] prepare for cluster
