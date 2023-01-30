@@ -454,8 +454,9 @@ void combine_predictions(std::vector<MOMAdata> &cells, std::vector<std::vector<d
                 }
                 divide_by_prior(temp_mean, temp_cov, params_vecs[segment]);
             }
-
-            divide_by_prior(temp_mean, temp_cov, params_vecs[cells[i].segment[j]]);
+            else{
+                divide_by_prior(temp_mean, temp_cov, params_vecs[cells[i].segment[j]]);
+            }
             
             cells[i].mean_prediction.push_back(temp_mean);
             cells[i].cov_prediction.push_back(temp_cov);
