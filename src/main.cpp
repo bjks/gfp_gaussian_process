@@ -268,9 +268,9 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
                 }
                 else if (k==key_indices["-h"]){
                     arguments["help"] = "1";
-                    _file_log << "Usage: ./gfp_gaussian [-options]\n";
+                    std::cout << "Usage: ./gfp_gaussian [-options]\n";
                     for(size_t j=0; j<keys.size(); ++j)
-                        _file_log << pad_str(keys[j][0] + ", "+ keys[j][1], 35) << keys[j][2] <<"\n";
+                        std::cout << pad_str(keys[j][0] + ", "+ keys[j][1], 35) << keys[j][2] <<"\n";
                 }
             }
         }
@@ -281,31 +281,31 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
 
     /* Check if meaningfull search space argument */
     if (arguments["search_space"] != "log" && arguments["search_space"] != "linear"){
-        _file_log << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
+        std::cout << "(arg_parser) ERROR: search_space must be either 'log' or 'linear', not " << arguments["search_space"];
         throw std::invalid_argument("Invalide argument");
     }
 
     if (arguments["noise_model"] != "const" && arguments["noise_model"] != "scaled"){
-        _file_log << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
+        std::cout << "(arg_parser) ERROR: noise_model must be either 'const' or 'scaled', not " << arguments["noise_model"];
         throw std::invalid_argument("Invalide argument");
     }
     if (arguments["cell_division_model"] != "gauss" && arguments["cell_division_model"] != "binomial"){
-        _file_log << "(arg_parser) ERROR: cell_division_model must be either 'gauss' or 'binomial', not " << arguments["cell_division_model"];
+        std::cout << "(arg_parser) ERROR: cell_division_model must be either 'gauss' or 'binomial', not " << arguments["cell_division_model"];
         throw std::invalid_argument("Invalide argument");
     }
 
     /* Check is required filenames are parsed and files exist */
     if (!arguments.count("infile")){
-        _file_log << "(arg_parser) ERROR: Required infile flag not set!\n";
+        std::cout << "(arg_parser) ERROR: Required infile flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
     else if(! std::filesystem::exists(arguments["infile"])){
-        _file_log << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
+        std::cout << "(arg_parser) ERROR: Infile " << arguments["infile"] << " not found (use '-h' for help)!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
 
     if (!arguments.count("parameter_bounds")){
-        _file_log << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
+        std::cout << "(arg_parser) ERROR: Required parameter_bounds flag not set!\n";
         throw std::invalid_argument("Invalide argument");
     }
 
@@ -313,27 +313,23 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
     std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
     for (size_t i=0; i<param_files.size(); ++i){
         if(!std::filesystem::exists(param_files[i])){   
-            _file_log << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
+            std::cout << "(arg_parser) ERROR: Paramters bound file '" << param_files[i] << "' not found (use '-h' for help)!" << std::endl;
             throw std::invalid_argument("Invalide argument");
         }
     }
 
     /* Check if csv file (if parsed) exists, to avoid confusion */
     if(arguments.count("csv_config") && !std::filesystem::exists(arguments["csv_config"])){   
-        _file_log << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
+        std::cout << "(arg_parser) ERROR: csv_config flag set, but csv configuration file " << arguments["csv_config"] << " not found!" << std::endl;
         throw std::invalid_argument("Invalide argument");
     }
     return arguments;
 }
 
-std::string outfile_name_log(std::map<std::string, std::string> arguments, 
-                                    std::vector<Parameter_set> params_list, std::string suffix=""){
+std::string outfile_name_log(std::map<std::string, std::string> arguments, std::string suffix=""){
     /* Filename for a log file */
     std::string outfile = out_dir(arguments);
     outfile += file_base(arguments["infile"]);
-    for (size_t i=0; i<params_list.size(); ++i){
-        outfile += outfile_param_code(params_list[i]);
-    }
     return outfile + suffix + ".log";
 }
 
@@ -359,15 +355,16 @@ int main(int argc, char** argv){
         if (arguments.count("help")){
             return EXIT_SUCCESS;    
         }
+        
+        outfile_log  = outfile_name_log(arguments);
+        outfile_log_success  = outfile_name_log(arguments, "_success");
+        outfile_log_error  = outfile_name_log(arguments, "_error");
+        
 
         /* Read parameters as a vector of Parameter_set instances */
         std::vector<std::string> param_files = split_string_at(arguments["parameter_bounds"], " ");
         std::vector<Parameter_set> params_list;
-        
-        outfile_log  = outfile_name_log(arguments, params_list);
-        outfile_log_success  = outfile_name_log(arguments, params_list, "_success");
-        outfile_log_error  = outfile_name_log(arguments, params_list, "_error");
-        
+
         _file_log = std::ofstream(outfile_log, std::ios_base::app);
         std::cout << "Temporary log file '" << outfile_log <<  "' created\n";
 

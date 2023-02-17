@@ -88,6 +88,8 @@ class GGP_cell:
         self.cov_gg = []
         self.cov_ll = []
         self.cov_qq = []
+        
+        self.cov_lq = []
 
     def to_df(self, n=1, start=0):
         df = pd.DataFrame({   "cell_id": ([self.cell_id]*len(self.time))[start::n],
@@ -108,6 +110,7 @@ def df2ggp_cells(dataset,
             cov_gg="cov_gg",
             cov_ll="cov_ll",
             cov_qq="cov_qq",
+            cov_lq="cov_lq",
             cell_id="cell_id", 
             parent_id="parent_id"):
     """ 
@@ -136,7 +139,9 @@ def df2ggp_cells(dataset,
         cell_list[-1].cov_gg.append(row[cov_gg])
         cell_list[-1].cov_ll.append(row[cov_ll])
         cell_list[-1].cov_qq.append(row[cov_qq])
-
+        
+        cell_list[-1].cov_lq.append(row[cov_lq])
+        
         last_cell = row[cell_id]
     return cell_list
 
