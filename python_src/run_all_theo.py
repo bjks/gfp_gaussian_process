@@ -234,7 +234,7 @@ def main():
             if len(suffix_param_files)==2:
                 param_files = suffix_param_files
             else:
-                print("Not enough parameter files found for",infile," using suffix -> don't run")
+                print(len(suffix_param_files), "parameter files found for",infile,"using suffix -> don't run")
                 continue
 
         # deal with -b parameter files
@@ -249,7 +249,7 @@ def main():
                     free_up_parameters(infered_parameter_files[1], args.free_up)
                 param_files = infered_parameter_files
             else:
-                print("Not enough parameter files found for",infile,"using infer -> don't run")
+                print(len(infered_parameter_files), "parameter files found for",infile,"using infer -> don't run")
                 continue
 
 

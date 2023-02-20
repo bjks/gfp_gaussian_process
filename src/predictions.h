@@ -334,19 +334,19 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
 * the params_vec contains paramters in the following (well defined) order:
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
-    int segment;
 
-    if (cell.is_leaf()){
-        segment = 0;
-    }
-    else{
-        segment = cell.segment[cell.segment.size()-1];
-    }
+    // int segment;
+
+    // if (cell.is_leaf()){
+    //     segment = 0;
+    // }
+    // else{
+    // }
+    int segment = cell.segment[cell.segment.size()-1];
 
     init_sc_distribution_r(cell, params_vecs[segment]);
 
     Eigen::VectorXd xg(2);
-
     Eigen::MatrixXd D(2,2);
 
     Eigen::Matrix2d S;
@@ -354,6 +354,13 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
     std::vector<double> params_vec;
 
     for (long t=cell.time.size()-1; t>-1; --t ){
+
+        // save current mean/cov before (!) those are set for the next time point
+        append_reversed_mean(cell);
+        append_reversed_cov(cell);
+
+
+        // calculate some things we need for the liklihood and the posterior
         xg(0) = cell.log_length(t) - cell.mean(0);
         xg(1) = cell.fp(t)         - cell.mean(1);
         
@@ -369,10 +376,6 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
 
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
-
-        // save current mean/cov before (!) those are set for the next time point
-        append_reversed_mean(cell);
-        append_reversed_cov(cell);
 
         posterior(xg, cell, S, Si); // updates mean/cov
 
