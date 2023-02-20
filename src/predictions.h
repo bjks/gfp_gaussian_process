@@ -335,13 +335,7 @@ void sc_prediction_backward(const std::vector<std::vector<double>> &params_vecs,
 * {mean_lambda, gamma_lambda, var_lambda, mean_q, gamma_q, var_q, beta, var_x, var_g, var_dx, var_dg}
 */
 
-    // int segment;
 
-    // if (cell.is_leaf()){
-    //     segment = 0;
-    // }
-    // else{
-    // }
     int segment = cell.segment[cell.segment.size()-1];
 
     init_sc_distribution_r(cell, params_vecs[segment]);
