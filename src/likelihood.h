@@ -66,15 +66,8 @@ void sc_likelihood(const std::vector<double> &params_vec,
         S = cell.cov.block(0,0,2,2) + D;
         Si = S.inverse();
 
-        tl += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree     
-        posterior(xg, cell, S, Si); // updates mean/cov        
-
-        if (t<cell.time.size()-1) {
-            mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
-                        params_vec[1], params_vec[2], params_vec[3], 
-                        params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
-        }        
-        
+        tl += log_likelihood(xg, cell, S, Si); // add to total_likelihood of entire tree  
+           
         if (std::isnan(tl)){
             if (_save_ll){
                 _file_iteration << _iteration + 1 << ",";
@@ -98,6 +91,14 @@ void sc_likelihood(const std::vector<double> &params_vec,
 
             throw std::domain_error("Likelihood is Nan");
         }
+
+        posterior(xg, cell, S, Si); // updates mean/cov     
+
+        if (t<cell.time.size()-1) {
+            mean_cov_model(cell, cell.time(t+1)-cell.time(t) , params_vec[0], 
+                        params_vec[1], params_vec[2], params_vec[3], 
+                        params_vec[4], params_vec[5], params_vec[6]); // updates mean/cov
+        }   
     }
 }
 
@@ -148,11 +149,11 @@ double total_likelihood(const std::vector<double> &params_vec, std::vector<doubl
 
     /* Print output dependend on set _print_level */
     if (_print_level>0){
-            _file_log << _iteration << ": ";
+            std::cout << _iteration << ": ";
             for (size_t i=0; i<params_vec.size(); ++i){
-                _file_log << std::setprecision(20) << params_vec[i]  << ", ";
+                std::cout << std::setprecision(20) << params_vec[i]  << ", ";
             }
-            _file_log << "ll=" << std::setprecision(30) << tl << std::setprecision(15) << "\n";
+            std::cout << "ll=" << std::setprecision(30) << tl << std::setprecision(15) << "\n";
     }
     return -tl;
 }
