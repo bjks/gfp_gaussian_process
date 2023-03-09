@@ -29,7 +29,3 @@ optional arguments:
 The script `correlation_from_joint.py` takes the directory where the `<prefix>_joints.csv` files are located (`-d`). In the same derectory, the corresponding `<prefix>_prediciton.csv` file must be located. An ouput directory can be given (`-o`) otherwise the input  directory is used. This script will produce `<prefix>_correlations.npz` files. This step can be run as a slurm job with several cores.
 
 The filenames of the data sets MUST include one of the keywords provided by `-k`, this will pick the dt provided by `-dt`, which should correspond to the time between measurements. The keyword must be seperated by the delimiter set by `-d`.
-
-
-## 3. Plot correlation functions
-The `<prefix>__correlations.npz` can be plotted using the python notebooks `plot_correlations_<...>_ipynb`.
