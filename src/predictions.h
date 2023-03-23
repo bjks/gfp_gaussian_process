@@ -38,17 +38,26 @@ void mean_cov_after_division(MOMAdata &cell, const std::vector<double> &params_v
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
     if (cell.cell_division_model == "binomial"){
-        D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
-        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
+        cell.cov(0,0) += var_dx;
+        cell.cov(0,1) = cell.cov(1,0) = cell.mean(1)/2. * var_dx + cell.cov(0,1); 
+        cell.cov(1,1) =   var_dx * (cell.mean(1)*cell.mean(1) + cell.cov(1,1))/2.\
+                        + var_dg * cell.mean(1)/4. * (1-var_dx) \
+                        + cell.cov(1,1)/4.;
+
+        cell.cov(2,1) /= 2;
+        cell.cov(1,2) /= 2;
+
+        cell.cov(3,1) /= 2;
+        cell.cov(1,3) /= 2;
+
+        cell.mean = F*cell.mean + f;
     }
     else{
         D(0,0) = var_dx;
         D(1,1) = var_dg;
+        cell.mean = F*cell.mean + f;
+        cell.cov = D + F * cell.cov * F.transpose();
     }
-
-    cell.mean = F*cell.mean + f;
-    cell.cov = D + F * cell.cov * F.transpose();
 }
 
 void init_sc_distribution(MOMAdata &cell, const std::vector<double> &params_vec){
@@ -200,37 +209,65 @@ void mean_cov_after_division_r(MOMAdata &cell, std::vector<double> params_vec){
     double var_dx = params_vec[9];
     double var_dg = params_vec[10];
 
-    /* Covariance for first duagther cell */
+    /* Covariance and mean for first duagther cell */
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
     if (cell.cell_division_model == "binomial"){
-        D(0,0) = var_dx;
-        D(1,1) =  8.*var_dx * cell.daughter1->mean(1)*cell.daughter1->mean(1) + 2.*var_dg*cell.daughter1->mean(1);
-        D(0,1) = D(1,0) = 2.*cell.daughter1->mean(1) * var_dx;
+        cell.mean = cell.daughter1->mean;
+        cell.cov = cell.daughter1->cov;
+
+        cell.cov(0,0) += var_dx;
+        cell.cov(1,1) = 8. * var_dx * (cell.mean(1)*cell.mean(1) + cell.cov(1,1)) \
+                    + 2. * var_dg * cell.mean(1) \
+                    + 8. * cell.cov(1,1);
+        cell.cov(0,1) = cell.cov(1,0) = 2.*cell.mean(1) * var_dx + 4.*cell.cov(0,1); 
+
+        cell.cov(2,1) *= 2;
+        cell.cov(1,2) *= 2;
+        cell.cov(3,1) *= 2;
+        cell.cov(1,3) *= 2;
+
+        cell.mean(0) += log(2.);
+        cell.mean(1) *= 2;
     }
     else{
         D(0,0) = var_dx;
         D(1,1) = var_dg;
+        cell.mean = F*cell.daughter1->mean + f;
+        cell.cov = D + F * cell.daughter1->cov * F.transpose();
     }
 
-    cell.mean = F*cell.daughter1->mean + f;
-    cell.cov = D + F * cell.daughter1->cov * F.transpose();
-
     if (cell.daughter2 != nullptr){
-        /* Covariance for second daughter cell */
+        /* Covariance and mean for second daughter cell */
+        Eigen::Vector4d mean2;
+        Eigen::MatrixXd cov2;
         if (cell.cell_division_model == "binomial"){
-            D(0,0) = var_dx;
-            D(1,1) =  8.*var_dx * cell.daughter2->mean(1)*cell.daughter2->mean(1) + 2.*var_dg*cell.daughter2->mean(1);
-            D(0,1) = D(1,0) = 2.*cell.daughter2->mean(1) * var_dx;
+            mean2 = cell.daughter2->mean;
+            cov2 = cell.daughter2->cov;
+
+            cov2(0,0) += var_dx;
+            cov2(1,1) = 8. * var_dx * (mean2(1)*mean2(1) + cov2(1,1)) \
+                        + 2. * var_dg * mean2(1) \
+                        + 8. * cov2(1,1);
+            cov2(0,1) = cov2(1,0) = 2.*mean2(1) * var_dx + 4.*cov2(0,1); 
+
+            cov2(2,1) *= 2;
+            cov2(1,2) *= 2;
+            cov2(3,1) *= 2;
+            cov2(1,3) *= 2;
+
+            mean2(0) += log(2.);
+            mean2(1) *= 2;
         }
         else{
             D(0,0) = var_dx;
             D(1,1) = var_dg;
+            mean2 = F*cell.daughter2->mean + f;
+            cov2 = D + F * cell.daughter2->cov * F.transpose();
         }
-        Eigen::Vector4d mean2 = F*cell.daughter2->mean + f;
-        Eigen::MatrixXd cov2 = D + F * cell.daughter2->cov * F.transpose();
-
+        /* if there is a second daughter cell then multiply the priors of daughter 1 and 2 */
         multiply_gaussian(cell.mean, cell.cov, mean2, cov2);
     }
+    /* propagate z in time */
     mean_cov_model_r(cell, cell.daughter1->time(0) - cell.time(cell.time.size()-1),
             params_vec[0], params_vec[1], params_vec[2],
             params_vec[3], params_vec[4], params_vec[5], 

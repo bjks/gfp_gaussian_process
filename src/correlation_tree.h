@@ -163,6 +163,10 @@ Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, 
     cell.mean = cell.mean_forward[t];
     cell.cov = cell.cov_forward[t];
 
+    // C_n (D_n)
+    Eigen::VectorXd mean1 = cell.mean;
+    Eigen::MatrixXd cov1 = cell.cov;
+
     mean_cov_model(cell, cell.daughter1->time(0) - cell.time(t), 
                         params_vec[0], params_vec[1], params_vec[2], 
                         params_vec[3], params_vec[4], params_vec[5], 
@@ -171,40 +175,77 @@ Gaussian consecutive_joint_cell_division(const std::vector<double> &params_vec, 
     double var_dx = params_vec[9];
     double var_dg = params_vec[10];
 
-    /* create F, f, D */
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
+    Gaussian joint;
 
     if (cell.cell_division_model == "binomial"){
-        D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
-        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
+        /* cov of t+1 */
+        cell.cov(0,0) += var_dx;
+        cell.cov(0,1) = cell.cov(1,0) = cell.mean(1)/2. * var_dx + cell.cov(0,1); 
+        cell.cov(1,1) =   var_dx * (cell.mean(1)*cell.mean(1) + cell.cov(1,1))/2.\
+                        + var_dg * cell.mean(1)/4. * (1-var_dx) \
+                        + cell.cov(1,1)/4.;
+
+        cell.cov(2,1) /= 2;
+        cell.cov(1,2) /= 2;
+
+        cell.cov(3,1) /= 2;
+        cell.cov(1,3) /= 2;
+
+        cell.mean = F*cell.mean + f;
+
+        Eigen::MatrixXd cross_cov = cell.cov_forward[t];
+        cross_cov(1, 0) /= 2.;
+        cross_cov(1, 1) /= 2.;
+        cross_cov(1, 2) /= 2.;
+        cross_cov(1, 3) /= 2.;
+
+        Eigen::VectorXd mean2 = cell.mean;    
+        Eigen::MatrixXd cov2 = cell.cov;
+
+        // construct the joint over [z_n+1, z_n]
+        Eigen::VectorXd mean_joint(8); 
+        mean_joint << mean2, mean1;
+        
+        Eigen::MatrixXd cov_joint(8, 8); 
+        cov_joint << vstack(hstack(cov2,                    cross_cov), 
+                            hstack(cross_cov.transpose(),   cov1));
+        
+        joint = Gaussian(mean_joint, cov_joint);
     }
     else{
         D(0,0) = var_dx;
         D(1,1) = var_dg;
+        cell.mean = F*cell.mean + f;
+        cell.cov = D + F * cell.cov * F.transpose();
+
+        /* write joint as seperated gaussian of the conditional z_n+1| z_n 
+        (the model itself is formulated like that) and the marginal over z_n */
+        Affine_gaussian conditional(f, F, D);
+        Gaussian marginal(cell.mean_forward[t],  cell.cov_forward[t]);
+
+        /* calculate the joint ie the 8 dimensional gaussian N( [z_n, z_n+1]^T |..., ... )*/
+        Seperated_gaussian joint_sep(marginal, conditional);
+        Gaussian joint_yx = joint_sep.to_joint();
+        /* ->  N( [z_n+1, z_n]^T |..., ... ) */
+        joint = joint_yx.flip_xy();
     }
-
-    /* write joint as seperated gaussian of the conditional z_n+1| z_n 
-    (the model itself is formulated like that) and the marginal over z_n */
-    Affine_gaussian conditional(f, F, D);
-    Gaussian marginal(cell.mean_forward[t],  cell.cov_forward[t]);
-
-    /* calculate the joint ie the 8 dimensional gaussian N( [z_n, z_n+1]^T |..., ... )*/
-    Seperated_gaussian joint_sep(marginal, conditional);
-    Gaussian joint = joint_sep.to_joint();
-
-    /* ->  N( [z_n+1, z_n]^T |..., ... ) */
-    return joint.flip_xy();
+    return joint;
 }
 
 
-Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> &params_vec, MOMAdata cell, size_t t){    
+Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> &params_vec, MOMAdata cell, size_t t){ 
+
     cell.mean = cell.mean_forward[t];
     cell.cov = cell.cov_forward[t];
+
+    // C_n (D_n)
+    Eigen::VectorXd mean1 = cell.mean;
+    Eigen::MatrixXd cov1 = cell.cov;
 
     mean_cov_model(cell, cell.daughter1->time(0) - cell.time(t), 
                         params_vec[0], params_vec[1], params_vec[2], 
@@ -214,28 +255,67 @@ Affine_gaussian consecutive_conditional_cell_division(const std::vector<double> 
     double var_dx = params_vec[9];
     double var_dg = params_vec[10];
 
-    /* create F, f, D */
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
     F(1,1) = 0.5;
     Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
 
+    Gaussian joint;
 
-    if (cell.cell_division_model== "binomial"){
-        D(0,0) = var_dx;
-        D(0,1) = D(1,0) = cell.mean(1)/2. * var_dx;
-        D(1,1) = cell.mean(1)*cell.mean(1)/2.*var_dx + var_dg * cell.mean(1)/4. * (1-var_dx);
+    if (cell.cell_division_model == "binomial"){
+        /* cov of t+1 */
+        cell.cov(0,0) += var_dx;
+        cell.cov(0,1) = cell.cov(1,0) = cell.mean(1)/2. * var_dx + cell.cov(0,1); 
+        cell.cov(1,1) =   var_dx * (cell.mean(1)*cell.mean(1) + cell.cov(1,1))/2.\
+                        + var_dg * cell.mean(1)/4. * (1-var_dx) \
+                        + cell.cov(1,1)/4.;
+
+        cell.cov(2,1) /= 2;
+        cell.cov(1,2) /= 2;
+
+        cell.cov(3,1) /= 2;
+        cell.cov(1,3) /= 2;
+
+        cell.mean = F*cell.mean + f;
+
+        Eigen::MatrixXd cross_cov = cell.cov_forward[t];
+        cross_cov(1, 0) /= 2.;
+        cross_cov(1, 1) /= 2.;
+        cross_cov(1, 2) /= 2.;
+        cross_cov(1, 3) /= 2.;
+
+        Eigen::VectorXd mean2 = cell.mean;    
+        Eigen::MatrixXd cov2 = cell.cov;
+        // construct the joint over [z_n, z_n+1]
+        Eigen::VectorXd mean_joint(8); 
+        mean_joint << mean1, mean2;
+        
+        Eigen::MatrixXd cov_joint(8, 8); 
+        cov_joint << vstack(hstack(cov1,                    cross_cov.transpose()), 
+                            hstack(cross_cov,   cov2));
+
+        Gaussian joint(mean_joint, cov_joint);
+
+        // get conditional P (z_n+1 | z_n) writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
+        Affine_gaussian conditional = seperate_gaussian(joint).conditional.transform();
+        return conditional;
     }
     else{
+        /* create F, f, D */
+        Eigen::MatrixXd F = Eigen::MatrixXd::Identity(4, 4);
+        F(1,1) = 0.5;
+        Eigen::Vector4d f(-log(2.), 0.0, 0.0, 0.0);
+        Eigen::MatrixXd D = Eigen::MatrixXd::Zero(4, 4);
+
         D(0,0) = var_dx;
         D(1,1) = var_dg;
-    }
 
-    /* write conditional as affine gaussian of z_n+1| z_n (the model itself is formulated like that)
-    * writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
-    */
-    Affine_gaussian conditional(f, F, D);
-    return conditional.transform();
+        /* write conditional as affine gaussian of z_n+1| z_n (the model itself is formulated like that)
+        * writen as gaussian N(z_n+1| ... ) -> N(z_n| ... )
+        */
+        Affine_gaussian conditional(f, F, D);
+        return conditional.transform();
+    }
 }
 
 /* ==================================================================================================== */
