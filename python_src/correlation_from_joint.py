@@ -257,11 +257,11 @@ class Correlation:
         self.dt = dt
         self.n = 0
 
-        self.m = np.zeros((8), dtype=np.float96)
-        self.mm = np.zeros((8,8), dtype=np.float96)
+        self.m = np.zeros((8), dtype=np.longfloat)
+        self.mm = np.zeros((8,8), dtype=np.longfloat)
 
-        self.c = np.zeros((2), dtype=np.float96)
-        self.cc = np.zeros((2,2), dtype=np.float96)
+        self.c = np.zeros((2), dtype=np.longfloat)
+        self.cc = np.zeros((2,2), dtype=np.longfloat)
         
         # Those will be set in average and normalize, resprectively 
         self.cov = None
@@ -297,7 +297,7 @@ class Correlation:
         # Equivalent to:
         # for i in range(8): for j in range(8): self.mm[i,j] += joint.m[i] * joint.m[j] + joint.C[i,j]
        
-        c = joint.m[[1,5]]/np.exp(joint.m[[0,4]],  dtype=np.float96)
+        c = joint.m[[1,5]]/np.exp(joint.m[[0,4]],  dtype=np.longfloat)
         self.c += c
         self.cc += c * c[:,np.newaxis]
 
