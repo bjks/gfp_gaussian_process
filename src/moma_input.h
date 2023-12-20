@@ -464,12 +464,12 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config, std::st
     std::string curr_cell;
 
     int last_idx = -1;
-    long line_count = 0;
+    long line_count = 1; // 1, since header line is already read
     while (getline(file, line)) {
+        ++line_count;
         try{
             line_parts = split_string_at(line, config.delm);
             if (config.filter_col.empty() || string2bool(line_parts[header_indices[config.filter_col]])){
-                ++line_count;
 
                 // compose the cell id of the cells using the cell_tags
                 curr_cell = get_cell_id(line_parts, header_indices, config.cell_tags);
@@ -509,7 +509,15 @@ std::vector<MOMAdata> read_data(std::string filename, CSVconfig &config, std::st
             }
         }
         catch(std::exception &e){
-            _file_log << "(read_data) ERROR: Line "<< line_count << " cannnot be processed (" << e.what() <<")" << std::endl;
+            _file_log << "(read_data) ERROR: Line no." << line_count \
+                        << " ["  \
+                        << curr_cell << " , "  \
+                        << line_parts[header_indices[config.time_col]] << " , "  \
+                        << line_parts[header_indices[config.length_col]] << " , "  \
+                        << line_parts[header_indices[config.fp_col]] << " , "  \
+                        << line_parts[header_indices[config.segment_col]]  \
+                        << "]" \
+                        << " cannnot be processed (" << e.what() <<")" << std::endl;
             throw;
         }
     }

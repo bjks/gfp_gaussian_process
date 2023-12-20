@@ -1,0 +1,8 @@
+# Example configuration file to specify how the input file will be interpreted
+time_col = time_min  
+length_col = length 
+length_islog = false 
+fp_col = gfp 
+cell_tags = lane, cell_id 
+parent_tags = lane, parent_id 
+rescale_time = 1 

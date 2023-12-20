@@ -1,0 +1,16 @@
+# Example parameter file that specifies the initial parameter set, the first step size, and lower and upper bounds
+mean_lambda = 2.31E-03, 2.31E-04
+gamma_lambda = 4.36E-02, 4.36E-03
+var_lambda = 9.75E-08, 9.75E-09
+
+mean_q = 9.03E+01, 9.03E+00
+gamma_q = 1.60E-02, 1.60E-03
+var_q = 1.94E+01, 1.94E+00
+
+beta = 4.95E-04
+
+var_x = 3.35E-04, 3.35E-05
+var_g = 8.26E-01, 8.26E-02
+
+var_dx = 1.63E-04, 1.63E-05
+var_dg = 7.48E-01, 7.48E-02
