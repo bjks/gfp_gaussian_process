@@ -54,10 +54,13 @@ Make sure the correct paths to the two libraries are set in the `Makefile`. Curr
 1. Install nlopt
 - Will install nlopt in home-directory with static linking. You can change that via `DCMAKE_INSTALL_PREFIX`, but make sure to adjust the makefile accordingly!
 ```
-ml CMake
-wget https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz
-tar -xf v2.6.2.tar.gz 
-cd nlopt-2.6.2/
+ml purge
+ml GCC/8.3.0
+ml Eigen/3.3.7
+ml CMake/3.15.3-GCCcore-8.3.0
+wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz
+tar -xf v2.7.1.tar.gz 
+cd nlopt-2.7.1/
 cmake -DCMAKE_INSTALL_PREFIX=~/nlopt -DBUILD_SHARED_LIBS=OFF .
 make
 make install
