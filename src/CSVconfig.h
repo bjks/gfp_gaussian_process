@@ -12,7 +12,7 @@ public:
     // Defaults
     std::string time_col = "time";
     double rescale_time = 1.;
-    std::string length_col = "length_um";
+    std::string length_col = "length";
     bool length_islog = false;
     std::string fp_col = "gfp";
     double fp_auto = 0;
@@ -20,8 +20,8 @@ public:
     std::string segment_col = "";
     std::string filter_col = "";
 
-    std::vector<std::string> cell_tags {"date", "pos", "gl", "id"};
-    std::vector<std::string> parent_tags {"date", "pos", "gl", "parent_id"};
+    std::vector<std::string> cell_tags {"cell_id"};
+    std::vector<std::string> parent_tags {"parent_id"};
 
     CSVconfig(std::string filename) {
         std::ifstream fin(filename);

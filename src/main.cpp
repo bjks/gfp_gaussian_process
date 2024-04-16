@@ -119,8 +119,8 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     _file_log << "-> prediction" << "\n";
     
     std::string outfile   = outfile_name_prediction(arguments, params_list);
-    std::string outfile_b = outfile_name_prediction(arguments, params_list, "_backward");
-    std::string outfile_f = outfile_name_prediction(arguments, params_list, "_forward");
+    // std::string outfile_b = outfile_name_prediction(arguments, params_list, "_backward");
+    // std::string outfile_f = outfile_name_prediction(arguments, params_list, "_forward");
 
     std::vector<std::vector<double>> params_vecs;
     for (size_t i=0; i<params_list.size(); ++i){
@@ -128,11 +128,11 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     }
 
     // forward...
-    _file_log << "Outfile forward: " << outfile_f << "\n";
+    // _file_log << "Outfile forward: " << outfile_f << "\n";
     prediction_forward(params_vecs, cells);
 
     // backward...
-    _file_log << "Outfile backward: " << outfile_b << "\n";
+    // _file_log << "Outfile backward: " << outfile_b << "\n";
     prediction_backward(params_vecs, cells);
 
     // combine the two 
@@ -140,8 +140,8 @@ void run_prediction_segments(std::vector<MOMAdata> &cells,
     combine_predictions(cells, params_vecs);
 
     /* save */
-    write_predictions_to_file(cells, outfile_f, params_list, "f");
-    write_predictions_to_file(cells, outfile_b, params_list, "b");
+    // write_predictions_to_file(cells, outfile_f, params_list, "f");
+    // write_predictions_to_file(cells, outfile_b, params_list, "b");
 
     write_predictions_to_file(cells, outfile, params_list);
 }
@@ -194,7 +194,7 @@ std::map<std::string, std::string> arg_parser(int argc, char** argv){
         {"-h",      "--help",                   "this help message"},
         {"-i",      "--infile",                 "(required) input data file"},
         {"-b",      "--parameter_bounds",       "(required) file(s) setting the type, step, bounds of the parameters"},
-        {"-c",      "--csv_config",             "file that sets the colums that will be used from the input file"},
+        {"-c",      "--csv_config",             "file that sets the columns that will be used from the input file"},
         {"-l",      "--print_level",            "print level {0,1,2}, default: 0"},
         {"-o",      "--outdir",                 "specify output direction and do not use default"},
         {"-t",      "--tolerance_maximization",  "absolute tolerance of maximization between optimization steps, default: 1e-10"},
